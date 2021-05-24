@@ -2,7 +2,7 @@ import json
 import sys
 import getpass
 
-fnjson = 'simFull.json'
+fnjson = 'sn.json'
 
 for i in range(len(sys.argv)):
   if sys.argv[i].endswith('.json'):
