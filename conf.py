@@ -2,7 +2,7 @@ import json
 import sys
 import getpass
 
-fnjson = 'sim.json'
+fnjson = 'simFull.json'
 
 if getpass.getuser().count('samn') > 0: fnjson = 'sn.json' # this is just temporary - for samn
 
