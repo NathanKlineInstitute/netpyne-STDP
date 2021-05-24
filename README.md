@@ -25,7 +25,10 @@ Add needed dirs
 
     mkdir data
 
+Compile mod files
+
+    nrnivmodl mod
 
 ### run 
 
-    py sim.py
+    python3 sim.py
