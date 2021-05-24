@@ -1,0 +1,11 @@
+numpy
+scipy
+matplotlib
+pandas
+PyOpenGL
+scikit-image
+gym[atari]
+neuron
+netpyne
+ipython
+jupyter
