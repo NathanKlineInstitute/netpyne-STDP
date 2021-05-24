@@ -607,7 +607,7 @@ class AIGame:
         self.env.render() # Renders the game after the stay steps
       else:
         #observation, reward, done, info, hit = self.env.step(caction)
-        observation, reward, _, _ = self.env.step(caction)
+        observation, reward = self.env.step(caction)
       #find position of ball after action
       proposed_target_action, FollowTargetSign, current_ball_dir, xpos_Ball2 = self.useRacketPredictedPos(observation)
       ball_hits_racket = 0
