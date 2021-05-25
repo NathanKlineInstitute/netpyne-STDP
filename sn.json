@@ -11,7 +11,6 @@
         0,
         1
     ],
-    "useSimulatedEnv": 0,
     "simulatedEnvParams": {
         "random": 0,
         "yball": 80,
@@ -36,11 +35,12 @@
         "hitBall": 1.0
     },
     "actionsPerPlay": 1,
+    "observationsToKeep": 10,
+    "rewardsToKeep": 10,
     "followOnlyTowards": 1,
     "useRacketPredictedPos": 1,
     "useFollowMoveOutput": 0,
     "DirectionDetectionAlgo": {
-        "CentroidTracker": 1,
         "OpticFlow": 0,
         "FlowWidth": 1,
         "UseFull": 1
@@ -69,9 +69,6 @@
         "saveCellSecs": 0,
         "saveCellConns": 0,
         "saveMotionFields": 0,
-        "targettedRL": 0,
-        "targettedRLOppFctr": 0.5,
-        "targettedRLDscntFctr": 0.05,
         "tstepPerAction": 50,
         "saveWeights": 1,
         "saveAssignedFiringRates": 0,
