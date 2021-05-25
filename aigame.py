@@ -31,25 +31,17 @@ from conf import dconf
 
 # make the environment - env is global so that it only gets created on a single node (important when using MPI with > 1 node)
 useSimulatedEnv = False
-try:
-  if 'useSimulatedEnv' in dconf: useSimulatedEnv = dconf['useSimulatedEnv']
-  if useSimulatedEnv:
-    #from simulatePongFull import simulatePong
-    #env = simulatePong()
-    from simplePong import simplePong
-    env = simplePong()
+if 'useSimulatedEnv' in dconf: useSimulatedEnv = dconf['useSimulatedEnv']
+if useSimulatedEnv:
+  raise Error('Unimplemented!')
+else:
+  if 'frameskip' in dconf['env']:
+    env = gym.make(dconf['env']['name'],frameskip=dconf['env']['frameskip'],repeat_action_probability=0.)
   else:
-    if 'frameskip' in dconf['env']:
-      env = gym.make(dconf['env']['name'],frameskip=dconf['env']['frameskip'],repeat_action_probability=0.)
-    else:
-      env = gym.make(dconf['env']['name'],repeat_action_probability=0.)    
-    if dconf['env']['savemp4']: env = wrappers.Monitor(env, './videos/' + dconf['sim']['name'] + '/',force=True)
-    env.reset()
-except:
-  print('Exception in makeENV')
-  env = gym.make('Pong-v0',frameskip=1,repeat_action_probability=0.)
-  env = wrappers.Monitor(env, './videos/' + str(time()) + '/',force=True)
+    env = gym.make(dconf['env']['name'])    
+  if dconf['env']['savemp4']: env = wrappers.Monitor(env, './videos/' + dconf['sim']['name'] + '/',force=True)
   env.reset()
+
 
 # get smallest angle difference
 def getangdiff (ang1, ang2):

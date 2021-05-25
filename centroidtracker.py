@@ -5,6 +5,7 @@ code obtained from pyimagesearch (https://www.pyimagesearch.com/2018/07/23/simpl
 from scipy.spatial import distance as dist
 from collections import OrderedDict
 import numpy as np
+
 class CentroidTracker:
   def __init__(self, maxDisappeared=0):
     self.nextObjectID = 0
