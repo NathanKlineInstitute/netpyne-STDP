@@ -20,15 +20,15 @@ sim.davgW = {} # average adjustable weights on a target population
 sim.allTimes = []
 sim.allRewards = [] # list to store all rewards
 sim.allActions = [] # list to store all actions
-sim.allProposedActions = [] # list to store all proposed actions
-sim.allHits = [] #list to store all hits
+#remove proposed actions
+#remove allHits
 sim.allMotorOutputs = [] # list to store firing rate of output motor neurons.
-sim.followTargetSign = [] # whether racket moved closer (1) or farther (-1) from y intercept target at each step
+#remove followTargetSign
 sim.ActionsRewardsfilename = 'data/'+dconf['sim']['name']+'ActionsRewards.txt'
 sim.MotorOutputsfilename = 'data/'+dconf['sim']['name']+'MotorOutputs.txt'
 sim.WeightsRecordingTimes = []
 sim.allRLWeights = [] # list to store weights --- should remove that
-sim.allNonRLWeights = [] # list to store weights --- should remove that
+# remove allNonRLWeights
 sim.topologicalConns = dict() # dictionary to save topological connections.
 sim.lastMove = dconf['moves']['LEFT']
 #sim.NonRLweightsfilename = 'data/'+dconf['sim']['name']+'NonRLweights.txt'  # file to store weights
@@ -53,58 +53,12 @@ ETypes = dconf['net']['ETypes'] # excitatory neuron types
 ITypes = dconf['net']['ITypes'] # inhibitory neuron types
 allpops = list(dconf['net']['allpops'].keys())
 EMotorPops = dconf['net']['EMotorPops'] # excitatory neuron motor populations
-EVPops = dconf['net']['EVPops'] # excitatory visual populations
-EVDirPops = dconf['net']['EVDirPops'] # excitatory visual dir selective populations (corresponds to VD in cmat)
-EVLocPops = dconf['net']['EVLocPops'] # excitatory visual location selective populations (corresponds to VL in cmat)
+
 cmat = dconf['net']['cmat'] # connection matrix (for classes, synapses, probabilities [probabilities not used for topological conn])
 
 dnumc = OrderedDict({ty:dconf['net']['allpops'][ty]*scale for ty in allpops}) # number of neurons of a given type
 
-def getpadding ():
-  # get padding-related parameters -- NB: not used
-  dnumc_padx = OrderedDict({ty:dconf['net']['allpops'][ty]*0 for ty in allpops}) # a dictionary with zeros to keep number of padded neurons in one dimension
-  dtopoldivcons = dconf['net']['alltopoldivcons']
-  dtopolconvcons = dconf['net']['alltopolconvcons']
-  allpops_withconvtopology = list(dtopolconvcons.keys())
-  allpops_withdivtopology = list(dtopoldivcons.keys())
-  # below is the code for updating neuronal pop size to include padding.
-  if dconf['net']['useNeuronPad']: # PADDING NEEDS TO BE FIXED..... DONT USE IT UNTIL FIXED
-    # first make dicionary of paddings in each dimension for each pop
-    for pop in allpops_withconvtopology:
-      receptive_fields = []
-      for postpop in list(dtopolconvcons[pop].keys()):
-        if dnumc[postpop]>0:
-          receptive_fields.append(dtopolconvcons[pop][postpop])
-      if len(receptive_fields)>0:
-        max_receptive_field = np.amax(receptive_fields)
-      else:
-        max_receptive_field = 0
-      if dnumc[pop]>0 and max_receptive_field>0:
-        dnumc_padx[pop] = max_receptive_field-1
-    for pop in allpops_withdivtopology:
-      receptive_fields = []
-      for postpop in list(dtopoldivcons[pop].keys()):
-        if dnumc[postpop]>0:
-          receptive_fields.append(dtopoldivcons[pop][postpop])
-      if len(receptive_fields)>0:
-        max_receptive_field = np.amax(receptive_fields)
-      else:
-        max_receptive_field = 0
-      if dnumc[pop]>0 and max_receptive_field>0:
-        dnumc_padx[pop] = max_receptive_field-1
-    for pop in allpops:
-      if dnumc[pop]>0 and dnumc_padx[pop]>0:
-        dnumc[pop] = int((np.sqrt(dnumc[pop])+dnumc_padx[pop])**2)
-    dnumc_padx['EMUP'] = 2
-    dnumc_padx['EMDOWN'] = 2
-    if dnumc['EMSTAY']>0: dnumc_padx['EMSTAY'] = 2
-    dnumc['EMUP'] = int((np.sqrt(dnumc['EMUP'])+dnumc_padx['EMUP'])**2)
-    dnumc['EMDOWN'] = int((np.sqrt(dnumc['EMDOWN'])+dnumc_padx['EMDOWN'])**2)
-  return dnumc_padx, dtopoldivcons,dtopolconvcons,allpops_withconvtopology,allpops_withdivtopology
-
-dnumc_padx, dtopoldivcons,dtopolconvcons,allpops_withconvtopology,allpops_withdivtopology = getpadding()
-
-lrecpop = ['EMUP', 'EMDOWN'] # which populations to record from
+lrecpop = ['EMUP', 'EMDOWN'] # which plastic populations to record from
 
 if cmat['VD']['VD']['conv'] > 0 or \
    cmat['VD']['VL']['conv'] > 0 or \
@@ -131,9 +85,6 @@ if dconf['net']['RLconns']['Visual'] or dconf['net']['STDPconns']['Visual']:
   if lrecpop.count('EV4')==0: lrecpop.append('EV4')
   if lrecpop.count('EMT')==0: lrecpop.append('EMT')
 
-if dconf['net']['RLconns']['EIPlast'] or dconf['net']['STDPconns']['EIPlast']:
-  for IType in ITypes:
-    if dnumc[IType] > 0: lrecpop.append(IType)
 
 # Network parameters
 netParams = specs.NetParams() #object of class NetParams to store the network parameters
@@ -761,32 +712,7 @@ if not dconf['sim']['useReducedNetwork']:
         netParams.connParams[k]['weight'] = getInitWeight(weight) # make sure non-uniform weights
         netParams.connParams[k]['plast'] = {'mech': 'STDP', 'params': dSTDPparams[synmech]}
 
-if dconf['net']['VisualFeedback'] and not dconf['sim']['useReducedNetwork']:
-  # visual area feedback connections
-  pretyList = ['EV1','EV4','EMT']
-  potyList = ['ER','EV1','EV4']
-  allconnList = [blistEV1toER,blistEV4toEV1,blistEMTtoEV4]
-  allconnCoords = [connCoordsEV1toER,connCoordsEV4toEV1,connCoordsEMTtoEV4]
-  for prety,poty,connList,connCoords in zip(pretyList,potyList,allconnList,allconnCoords):
-    if dnumc[prety] <= 0 or dnumc[poty] <= 0: continue # skip empty pops
-    for strty,synmech,synweight in zip(['','n'],['AM2', 'NM2'],[cmat[prety][poty]['AM2']*cfg.EEGain, cmat[prety][poty]['NM2']*cfg.EEGain]):
-        if synweight <= 0.0: continue
-        k = strty+prety+'->'+strty+poty
-        netParams.connParams[k] = {
-          'preConds': {'pop': prety},
-          'postConds': {'pop': poty},
-          'connList': connList,
-          'weight': getInitWeight(synweight),
-          'delay': getInitDelay('Dend'),
-          'synMech': synmech,'sec':EExcitSec, 'loc':0.5,'weightIndex':getWeightIndex(synmech, ECellModel)} # 'weight' should be fixed
-        sim.topologicalConns[prety+'->'+poty] = {}
-        sim.topologicalConns[prety+'->'+poty]['blist'] = connList
-        sim.topologicalConns[prety+'->'+poty]['coords'] = connCoords
-        # only turn on plasticity when specified to do so
-        if dconf['net']['RLconns']['FeedbackLocNeurons'] and dSTDPparamsRL[synmech]['RLon']:
-          netParams.connParams[k]['plast'] = {'mech': 'STDP', 'params': dSTDPparamsRL[synmech]}
-        elif dconf['net']['STDPconns']['FeedbackLocNeurons'] and dSTDPparams[synmech]['STDPon']:
-          netParams.connParams[k]['plast'] = {'mech': 'STDP', 'params': dSTDPparams[synmech]}
+
 
   #I to E feedback connections
   netParams.connParams['IV1->ER'] = {
@@ -818,25 +744,7 @@ if dconf['net']['VisualFeedback'] and not dconf['sim']['useReducedNetwork']:
           'synMech': 'GABA','sec':'soma', 'loc':0.5,'weightIndex':getWeightIndex('GA', ECellModel)}
   sim.topologicalConns['IMT->EV4'] = {'blist':blistIMTtoEV4, 'coords':connCoordsIMTtoEV4}
 
-#I to I - between areas
-if dconf['sim']['useReducedNetwork']==0:
-  netParams.connParams['IV1->IV4'] = {
-        'preConds': {'pop': 'IV1'},
-        'postConds': {'pop': 'IV4'},
-        'connList': blistIV1toIV4,
-        'weight': cmat['IV1']['IV4']['GA'] * cfg.IIGain,
-        'delay': getInitDelay('Soma'),
-        'synMech': 'GABA','sec':'soma', 'loc':0.5,'weightIndex':getWeightIndex('GA', ICellModel)}
-  sim.topologicalConns['IV1->IV4'] = {'blist':blistIV1toIV4, 'coords':connCoordsIV1toIV4}
 
-  netParams.connParams['IV4->IMT'] = {
-        'preConds': {'pop': 'IV4'},
-        'postConds': {'pop': 'IMT'},
-        'connList': blistIV4toIMT,
-        'weight': cmat['IV4']['IMT']['GA'] * cfg.IIGain,
-        'delay': getInitDelay('Soma'),
-        'synMech': 'GABA','sec':'soma', 'loc':0.5,'weightIndex':getWeightIndex('GA', ICellModel)}
-  sim.topologicalConns['IV4->IMT'] = {'blist':blistIV4toIMT, 'coords':connCoordsIV4toIMT}
 
 def connectEVToTarget (lpoty, useTopological):
   if dconf['sim']['useReducedNetwork']:
@@ -1279,78 +1187,6 @@ def mulAdjustableWeights (sim, dfctr):
         if 'hSTDP' in conn:
           conn['hObj'].weight[PlastWeightIndex] *= dfctr[pop]
 
-def normalizeAdjustableWeights (sim, t, lpop):
-  # normalize the STDP/RL weights during the simulation - called in trainAgent
-  if dconf['net']['CellWNorm']['On']:
-    # print('normalizing CellWNorm at t=',t)
-    global dsumWInit
-    dsumWCurr = getSumAdjustableWeights(sim) # get current sum of adjustable weight values
-    MinFctr, MaxFctr = dconf['net']['CellWNorm']['MinFctr'], dconf['net']['CellWNorm']['MaxFctr']
-    for cell in sim.net.cells:
-      if cell.gid in dsumWInit:
-        currW = dsumWCurr[cell.gid]
-        initW = dsumWInit[cell.gid]
-        if currW > 0 and currW != initW:
-          fctrA = currW / initW
-          dochange = False
-          if fctrA < MinFctr:
-            fctrB = (MinFctr * initW) / currW # factor to restore weights to boundary
-            dochange = True
-          elif fctrA > MaxFctr:
-            fctrB = (MaxFctr * initW) / currW # factor to restore weights to boundary
-            dochange = True
-          # print('initW:',initW,'currW:',currW,'fctr:',fctr)
-          if dochange:
-            for conn in cell.conns:
-              if 'hSTDP' in conn:
-                conn['hObj'].weight[PlastWeightIndex] *= fctrB
-  else:
-    davg = getAverageAdjustableWeights(sim, lpop)
-    try:
-      dfctr = {}
-      MinFctr, MaxFctr = dconf['net']['EEMWghtThreshMin'], dconf['net']['EEMWghtThreshMax']
-      # normalize weights across populations to avoid bias
-      initavgW = cmat['EA']['EM']['AM2'] # initial average weight <<-- THAT ASSUMES ONLY USING NORM ON EM POPULATIONS!
-      if dconf['net']['EEMPopNorm']:
-        curravgW = np.mean([davg[k] for k in lpop]) # current average weight
-        if curravgW <= 0.0: curravgw = initavgW
-        if curravgW > 0 and curravgW != initavgW:
-          fctrA = curravgW / initavgW
-          dochange = False
-          if fctrA < MinFctr:
-            fctrB = (MinFctr * initavgW) / curravgW # factor to restore weights to boundary
-            dochange = True
-          elif fctrA > MaxFctr:
-            # fctrB = ((1.0+MaxFctr/2.0)*initavgW) / curravgW # factor to move weight to mid btwn start and max
-            fctrB = initavgW / curravgW # go back to initial
-            dochange = True
-          # print('initW:',initW,'currW:',currW,'fctr:',fctr)
-          if dochange:
-            for k in lpop: dfctr[k] = fctrB
-          else:
-            for k in lpop: dfctr[k] = 1.0
-      else:
-        MinFctr, MaxFctr = dconf['net']['EEMWghtThreshMin'], dconf['net']['EEMWghtThreshMax']
-        for k in lpop:
-          curravgW = davg[k]
-          if curravgW > 0 and curravgW != initavgW:
-            fctrA = curravgW / initavgW
-            dochange = False
-            if fctrA < MinFctr:
-              fctrB = (MinFctr * initavgW) / curravgW # factor to restore weights to boundary
-              dochange = True
-            elif fctrA > MaxFctr:
-              fctrB = (MaxFctr * initavgW) / curravgW # factor to restore weights to boundary
-              dochange = True
-            # print('initW:',initW,'currW:',currW,'fctr:',fctr)
-            if dochange:
-              dfctr[k] = fctrB
-            else:
-              dfctr[k] = 1.0
-      if sim.rank==0: print('sim.rank=',sim.rank,'davg:',davg,'dfctr:',dfctr)
-      mulAdjustableWeights(sim,dfctr)
-    except:
-      print('Exception; davg:',davg)
 
 def saveGameBehavior(sim):
   with open(sim.ActionsRewardsfilename,'w') as fid3:
@@ -1358,8 +1194,6 @@ def saveGameBehavior(sim):
       fid3.write('%0.1f' % sim.allTimes[i])
       fid3.write('\t%0.1f' % sim.allActions[i])
       fid3.write('\t%0.5f' % sim.allRewards[i])
-      fid3.write('\t%0.1f' % sim.allProposedActions[i]) #the number of proposed action should be equal to the number of actions
-      fid3.write('\t%0.1f' % sim.allHits[i]) #1 when the racket hits the ball and -1 when the racket misses the ball
       # fid3.write('\t%d' % sim.followTargetSign[i])
       fid3.write('\n')
 
@@ -1598,19 +1432,6 @@ def trainAgent (t):
       if dconf['randmove']:
         lmoves = list(dconf['moves'].values())
         for ts in range(int(dconf['actionsPerPlay'])): actions.append(lmoves[np.random.randint(0,len(lmoves))])
-      elif dconf['stochmove']:
-        if random.uniform(0,1) <= dconf['stochmove']:
-          lmoves = [dconf['moves']['UP'], dconf['moves']['DOWN'], dconf['moves']['NOMOVE']]
-          actions.append(lmoves[np.random.randint(0,len(lmoves))])
-          print('stochastic move = ', actions[-1])
-        else:
-          if F_UPs[ts]>F_DOWNs[ts]: # UP WINS
-            actions.append(dconf['moves']['UP'])
-          elif F_DOWNs[ts]>F_UPs[ts]: # DOWN WINS
-            actions.append(dconf['moves']['DOWN'])
-          else:
-            actions.append(dconf['moves']['NOMOVE'])
-        sim.lastMove = actions[-1]
       else:
         for ts in range(int(dconf['actionsPerPlay'])):
           if F_UPs[ts]>F_DOWNs[ts]: # UP WINS
@@ -1630,12 +1451,10 @@ def trainAgent (t):
 
     # use py_broadcast to avoid converting to/from Vector
     sim.pc.py_broadcast(critic, 0) # broadcast critic value to other nodes
-    if dconf['sim']['anticipatedRL']:
-      print(proposed_actions)
-      sim.pc.py_broadcast(proposed_actions,0) # used proposed actions to target/potentiate the pop representing anticipated action.
+    
   else: # other workers
     critic = sim.pc.py_broadcast(None, 0) # receive critic value from master node
-    if dconf['sim']['anticipatedRL']: proposed_actions = sim.pc.py_broadcast(None, 0)
+
     if dconf['verbose']>1:
       print('UPactions: ', UPactions,'DOWNactions: ', DOWNactions)
 
@@ -1665,29 +1484,13 @@ def trainAgent (t):
     tvec_actions = []
     for ts in range(len(actions)): tvec_actions.append(t-tstepPerAction*(len(actions)-ts-1))
     for ltpnt in tvec_actions: sim.allTimes.append(ltpnt)
-  updateInputRates() # update firing rate of inputs to R population (based on image content)
+  updateInputRates() # update firing rate of inputs to R population (based on game state)
   NBsteps += 1
   if NBsteps % recordWeightStepSize == 0:
     if dconf['verbose'] > 0 and sim.rank==0:
       print('Weights Recording Time:', t, 'NBsteps:',NBsteps,'recordWeightStepSize:',recordWeightStepSize)
     recordAdjustableWeights(sim, t, lrecpop)
     #recordWeights(sim, t)
-  if NBsteps % normalizeWeightStepSize == 0:
-    if dconf['verbose'] > 0 and sim.rank==0:
-      print('Weight Normalize Time:', t, 'NBsteps:',NBsteps,'normalizeWeightStepSize:',normalizeWeightStepSize)
-    sim.pc.barrier()
-    normalizeAdjustableWeights(sim, t, lrecpop)
-    sim.pc.barrier()
-  if dconf['net']['homPlast']['On']:
-    if NBsteps % dconf['net']['homPlast']['hsIntervalSteps'] == 0:
-      if sim.rank==0: print('adjustTargetWBasedOnFiringRates')
-      hsInterval = tstepPerAction*dconf['actionsPerPlay']*dconf['net']['homPlast']['hsIntervalSteps']
-      getFiringRateWithIntervalAllNeurons(sim, [t-hsInterval,t], sim.dHPlastPops) # call this function at hsInterval
-      adjustTargetWBasedOnFiringRates(sim) # call this function at hsInterval
-    if NBsteps % dconf['net']['homPlast']['updateIntervalSteps'] == 0:
-      if sim.rank==0: print('adjustWeightsBasedOnFiringRates')
-      adjustWeightsBasedOnFiringRates(sim,sim.dHPlastPops,synType=dconf['net']['homPlast']['synType'])
-      sim.pc.barrier()
 
 def getAllSTDPObjects (sim):
   # get all the STDP objects from the simulation's cells
@@ -1806,12 +1609,6 @@ if dconf['simtype']['ResumeSim']:
   except:
     print('Could not restore STDP weights from file.')
 
-if dconf['net']['homPlast']['On']:
-  # call this once before the simulation
-  initTargetFR(sim,dconf['net']['homPlast']['mintargetFR'],dconf['net']['homPlast']['maxtargetFR'])
-  # call this once before running the simulation.
-  initTargetW(sim,list(dconf['net']['homPlast']['mintargetFR'].keys()),synType=dconf['net']['homPlast']['synType'])
-
 def setdminID (sim, lpop):
   # setup min ID for each population in lpop
   alltags = sim._gatherAllCellTags() #gather cell tags; see https://github.com/Neurosim-lab/netpyne/blob/development/netpyne/sim/gather.py
@@ -1825,7 +1622,6 @@ setdminID(sim, allpops)
 tPerPlay = tstepPerAction*dconf['actionsPerPlay']
 InitializeInputRates()
 #InitializeNoiseRates()
-dsumWInit = getSumAdjustableWeights(sim) # get sum of adjustable weights at start of sim
 sim.runSimWithIntervalFunc(tPerPlay,trainAgent) # has periodic callback to adjust STDP weights based on RL signal
 if sim.rank==0 and fid4 is not None: fid4.close()
 if ECellModel == 'INTF7' or ICellModel == 'INTF7': intf7.insertSpikes(sim, simConfig.recordStep)
@@ -1877,12 +1673,6 @@ def saveSynWeights ():
 
 if sim.saveWeights: saveSynWeights()
 
-def saveMotionFields (ldflow): pickle.dump(ldflow, open('data/'+dconf['sim']['name']+'MotionFields.pkl', 'wb'))
-
-def saveObjPos (dobjpos):
-  # save object position dictionary
-  for k in dobjpos.keys(): dobjpos[k] = np.array(dobjpos[k])
-  pickle.dump(dobjpos, open('data/'+dconf['sim']['name']+'objpos.pkl', 'wb'))
 
 def saveAssignedFiringRates (dAllFiringRates): pickle.dump(dAllFiringRates, open('data/'+dconf['sim']['name']+'AssignedFiringRates.pkl', 'wb'))
 
