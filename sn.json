@@ -1,7 +1,13 @@
 {
     "env": {
         "name": "CartPole-v1",
-        "savemp4": 0
+        "savemp4": 0,
+        "observation_map": [
+            {"type": "linear"},
+            {"type": "sigmoid", "scale": 10},
+            {"type": "linear"},
+            {"type": "sigmoid", "scale": 10}
+        ]
     },
     "moves": {
         "LEFT": 0,
@@ -61,7 +67,7 @@
         "RLFakeUpRule": 0,
         "RLFakeDownRule": 0,
         "RLFakeStayRule": 0,
-        "name": "21may14_TARG0_I_gcp_",
+        "name": "21may_NetPyNE_project",
         "doquit": 1,
         "doplot": 0,
         "saveCellSecs": 0,
@@ -165,7 +171,6 @@
             "IMUP": 0,
             "IMDOWN": 0
         },
-        "InputPop": "EA",
         "ETypes": [
             "ER",
             "EV1",
@@ -432,43 +437,6 @@
             "On": 0,
             "MinFctr": 1.0,
             "MaxFctr": 15.0
-        },
-        "homPlast": {
-            "On": 0,
-            "dshift": 0.0,
-            "mintargetFR": {
-                "EV1": 0.125,
-                "EV4": 0.125,
-                "EMT": 0.125,
-                "EV1DE": 0.125,
-                "EV1DW": 0.125,
-                "EV1DN": 0.125,
-                "EV1DS": 0.125,
-                "EV1DSE": 0.125,
-                "EV1DNE": 0.125,
-                "EV1DSW": 0.125,
-                "EV1DNW": 0.125,
-                "EMRIGHT": 0.125,
-                "EMLEFT": 0.125
-            },
-            "maxtargetFR": {
-                "EV1": 60,
-                "EV4": 60,
-                "EMT": 60,
-                "EV1DE": 60,
-                "EV1DW": 60,
-                "EV1DN": 60,
-                "EV1DS": 60,
-                "EV1DSE": 60,
-                "EV1DNE": 60,
-                "EV1DSW": 60,
-                "EV1DNW": 60,
-                "EMRIGHT": 60,
-                "EMLEFT": 60
-            },
-            "hsIntervalSteps": 100,
-            "updateIntervalSteps": 100,
-            "synType": "AMPA"
         },
         "EEMRecProbCross": 1,
         "VisualFeedback": 0,

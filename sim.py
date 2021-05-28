@@ -29,7 +29,6 @@ sim.MotorOutputsfilename = 'data/'+dconf['sim']['name']+'MotorOutputs.txt'
 sim.WeightsRecordingTimes = []
 sim.allRLWeights = [] # list to store weights --- should remove that
 # remove allNonRLWeights
-sim.topologicalConns = dict() # dictionary to save topological connections.
 sim.lastMove = dconf['moves']['LEFT']
 #sim.NonRLweightsfilename = 'data/'+dconf['sim']['name']+'NonRLweights.txt'  # file to store weights
 sim.plotWeights = 0  # plot weights
@@ -40,7 +39,6 @@ sim.saveMotionFields = dconf['sim']['saveMotionFields'] # whether to save the mo
 sim.saveObjPos = 1 # save ball and paddle position to file
 sim.saveAssignedFiringRates = dconf['sim']['saveAssignedFiringRates']
 recordWeightStepSize = dconf['sim']['recordWeightStepSize']
-normalizeWeightStepSize = dconf['sim']['normalizeWeightStepSize']
 #recordWeightDT = 1000 # interval for recording synaptic weights (change later)
 recordWeightDCells = 1 # to record weights for sub samples of neurons
 tstepPerAction = dconf['sim']['tstepPerAction'] # time step per action (in ms)
@@ -316,38 +314,6 @@ for ty in sim.lnoisety: allpops.append(ty)
 #####################################################################################
 
 #Local excitation
-#E to E recurrent connectivity within visual areas
-for epop in EVPops:
-  if dnumc[epop] <= 0: continue # skip rule setup for empty population
-  prety = poty = epop
-  repstr = 'VD' # replacement presynaptic type string (VD -> EV1DE, EV1DNE, etc.; VL -> EV1, EV4, etc.)
-  if prety in EVLocPops: repstr = 'VL'
-  wAM, wNM = cmat[repstr][repstr]['AM2'], cmat[repstr][repstr]['NM2']
-  for strty,synmech,weight in zip(['','n'],['AM2', 'NM2'],[wAM*cfg.EEGain, wNM*cfg.EEGain]):
-    k = strty+prety+'->'+strty+poty
-    if weight <= 0.0: continue
-    netParams.connParams[k] = {
-      'preConds': {'pop': prety},
-      'postConds': {'pop': poty},
-      'convergence': getconv(cmat, repstr, repstr, dnumc[prety]),
-      'weight': getInitWeight(weight),
-      'delay': getInitDelay('Dend'),
-      'synMech': synmech,
-      'sec':EExcitSec, 'loc':0.5,
-      'weightIndex':getWeightIndex(synmech, ECellModel)
-    }
-    useRL = useSTDP = False
-    if prety in EVDirPops:
-      if dconf['net']['RLconns']['RecurrentDirNeurons']: useRL = True
-      if dconf['net']['STDPconns']['RecurrentDirNeurons']: useSTDP = True
-    if prety in EVLocPops:
-      if dconf['net']['RLconns']['RecurrentLocNeurons']: useRL = True
-      if dconf['net']['STDPconns']['RecurrentLocNeurons']: useSTDP = True
-    if useRL and dSTDPparamsRL[synmech]['RLon']: # only turn on plasticity when specified to do so
-      netParams.connParams[k]['plast'] = {'mech': 'STDP', 'params': dSTDPparamsRL[synmech]}
-    elif useSTDP and dSTDPparams[synmech]['STDPon']:
-      netParams.connParams[k]['plast'] = {'mech': 'STDP', 'params': dSTDPparams[synmech]}
-
 #E to I within area
 if dnumc['ER']>0:
   netParams.connParams['ER->IR'] = {
@@ -545,64 +511,6 @@ for preIType in ITypes:
       'synMech': 'GABA', 'sec':'soma', 'loc':0.5,'weightIndex':getWeightIndex(sy, ICellModel)}
 
 #E to E feedforward connections - AMPA,NMDA
-lprety,lpoty,lblist,lconnsCoords = [],[],[],[]
-if not dconf['sim']['useReducedNetwork']:
-  if dnumc['ER']>0:
-    lprety.append('ER')
-    lpoty.append('EV1')
-    lblist.append(blistERtoEV1)
-    lconnsCoords.append(connCoordsERtoEV1)
-  lprety.append('EV1'); lpoty.append('EV4'); lblist.append(blistEV1toEV4); lconnsCoords.append(connCoordsEV1toEV4)
-  lprety.append('EV4'); lpoty.append('EMT'); lblist.append(blistEV4toEMT); lconnsCoords.append(connCoordsEV4toEMT)
-  for prety,poty,blist,connCoords in zip(lprety,lpoty,lblist,lconnsCoords):
-    for strty,synmech,weight in zip(['','n'],['AM2', 'NM2'],[cmat[prety][poty]['AM2']*cfg.EEGain,cmat[prety][poty]['NM2']*cfg.EEGain]):
-      k = strty+prety+'->'+strty+poty
-      if weight <= 0.0: continue
-      netParams.connParams[k] = {
-            'preConds': {'pop': prety},
-            'postConds': {'pop': poty},
-            'weight': weight ,
-            'delay': getInitDelay('Dend'),
-            'synMech': synmech,'sec':EExcitSec, 'loc':0.5,'weightIndex':getWeightIndex(synmech, ECellModel)}
-      netParams.connParams[k]['convergence'] = getconv(cmat,prety,poty,dnumc[prety])
-      if dconf['net']['RLconns']['Visual'] and dSTDPparamsRL[synmech]['RLon']: # only turn on plasticity when specified to do so
-        netParams.connParams[k]['weight'] = getInitWeight(weight) # make sure non-uniform weights
-        netParams.connParams[k]['plast'] = {'mech': 'STDP', 'params': dSTDPparamsRL[synmech]}
-      elif dconf['net']['STDPconns']['Visual'] and dSTDPparams[synmech]['STDPon']:
-        netParams.connParams[k]['weight'] = getInitWeight(weight) # make sure non-uniform weights
-        netParams.connParams[k]['plast'] = {'mech': 'STDP', 'params': dSTDPparams[synmech]}
-
-
-
-  #I to E feedback connections
-  netParams.connParams['IV1->ER'] = {
-        'preConds': {'pop': 'IV1'},
-        'postConds': {'pop': 'ER'},
-        'connList': blistIV1toER,
-        'weight': cmat['IV1']['ER']['GA'] * cfg.IEGain,
-        'delay': getInitDelay('Soma'),
-        'synMech': 'GABA','sec':'soma', 'loc':0.5,'weightIndex':getWeightIndex('GA', ECellModel)}
-  sim.topologicalConns['IV1->ER'] = {}
-  sim.topologicalConns['IV1->ER']['blist'] = blistIV1toER
-  sim.topologicalConns['IV1->ER']['coords'] = connCoordsIV1toER
-  netParams.connParams['IV4->EV1'] = {
-          'preConds': {'pop': 'IV4'},
-          'postConds': {'pop': 'EV1'},
-          'connList': blistIV4toEV1,
-          'weight': cmat['IV4']['EV1']['GA'] * cfg.IEGain,
-          'delay': getInitDelay('Soma'),
-          'synMech': 'GABA','sec':'soma', 'loc':0.5,'weightIndex':getWeightIndex('GA', ECellModel)}
-  sim.topologicalConns['IV4->EV1'] = {}
-  sim.topologicalConns['IV4->EV1']['blist'] = blistIV4toEV1
-  sim.topologicalConns['IV4->EV1']['coords'] = connCoordsIV4toEV1
-  netParams.connParams['IMT->EV4'] = {
-          'preConds': {'pop': 'IMT'},
-          'postConds': {'pop': 'EV4'},
-          'connList': blistIMTtoEV4,
-          'weight': cmat['IMT']['EV4']['GA'] * cfg.IEGain,
-          'delay': getInitDelay('Soma'),
-          'synMech': 'GABA','sec':'soma', 'loc':0.5,'weightIndex':getWeightIndex('GA', ECellModel)}
-  sim.topologicalConns['IMT->EV4'] = {'blist':blistIMTtoEV4, 'coords':connCoordsIMTtoEV4}
 
 # add connections from first to second visual association area
 # EA -> EA2 (feedforward)
@@ -752,7 +660,7 @@ if getconv(cmat,'EM','EA',dnumc['EMLEFT'])>0:
             netParams.connParams[k]['plast'] = {'mech': 'STDP', 'params': dSTDPparams[synmech]}
 
 fconn = 'data/'+dconf['sim']['name']+'synConns.pkl'
-pickle.dump(sim.topologicalConns, open(fconn, 'wb'))
+pickle.dump(sim.conns, open(fconn, 'wb'))
 ###################################################################################################################################
 
 sim.AIGame = None # placeholder
@@ -963,10 +871,16 @@ def updateInputRates():
         offset = sim.simData['dminID'][pop]
         #print(pop,pop[lsz:],offset)
         for cell in lCell:
-          if dFiringRates[pop[lsz:]][int(cell.gid-offset)]==0:
-            cell.hPointp.interval = 1e12
-          else:
-            cell.hPointp.interval = 1000.0/dFiringRates[pop[lsz:]][int(cell.gid-offset)] #40
+          # TODO: Change here to get the correct input rate
+          # print('here')
+          # print(int(cell.gid))
+          # print(offset)
+          # print(int(cell.gid - offset))
+          # print(input_rates)
+
+          # rate = dFiringRates[pop[lsz:]][int(cell.gid-offset)]
+          rate = input_rates[int(cell.gid-offset)]
+          cell.hPointp.interval = 1000.0 / rate if rate != 0 else 1e12 #40
 
 
 def getActions(moves, pop_to_move):
@@ -1017,8 +931,9 @@ def trainAgent (t):
 
   if t<(tstepPerAction*dconf['actionsPerPlay']): # for the first time interval use randomly selected actions
     actions =[]
+    movecodes = [v for k,v in dconf['moves'].items()]
     for _ in range(int(dconf['actionsPerPlay'])):
-      action = dconf['movecodes'][random.randint(0,len(dconf['movecodes'])-1)]
+      action = movecodes[random.randint(0, len(movecodes)-1)]
       actions.append(action)
   else: #the actions should be based on the activity of motor cortex (EMRIGHT, EMLEFT)
     actions = getActions(dconf['moves'], dconf['pop_to_move'])
@@ -1215,7 +1130,10 @@ def saveSynWeights ():
 if sim.saveWeights: saveSynWeights()
 
 
-def saveAssignedFiringRates (dAllFiringRates): pickle.dump(dAllFiringRates, open('data/'+dconf['sim']['name']+'AssignedFiringRates.pkl', 'wb'))
+def saveAssignedFiringRates (dAllFiringRates):
+  pickle.dump(
+    dAllFiringRates,
+    open('data/'+dconf['sim']['name']+'AssignedFiringRates.pkl', 'wb'))
 
 def saveInputImages (Images):
   # save input images to txt file (switch to pkl?)
