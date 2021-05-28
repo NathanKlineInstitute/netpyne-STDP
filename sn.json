@@ -7,10 +7,10 @@
         "LEFT": 0,
         "RIGHT": 1
     },
-    "movecodes": [
-        0,
-        1
-    ],
+    "pop_to_move": {
+        "EMLEFT": "LEFT",
+        "EMRIGHT": "RIGHT"
+    },
     "simulatedEnvParams": {
         "random": 0,
         "yball": 80,
@@ -159,8 +159,8 @@
             "EA2": 10,
             "IA2": 10,
             "IA2L": 10,
-            "EMDOWN": 10,
-            "EMUP": 10,
+            "EMLEFT": 10,
+            "EMRIGHT": 10,
             "IM": 10,
             "IML": 10,
 
@@ -180,8 +180,8 @@
             "EV1DSE",
             "EV4",
             "EMT",
-            "EMDOWN",
-            "EMUP",
+            "EMLEFT",
+            "EMRIGHT",
             "EA",
             "EA2"
         ],
@@ -201,8 +201,8 @@
             "IA2L"
         ],
         "EMotorPops": [
-            "EMDOWN",
-            "EMUP"
+            "EMLEFT",
+            "EMRIGHT"
         ],
         "EVPops": [
             "EV1",
@@ -235,9 +235,7 @@
             "EV4",
             "EMT"
         ],
-        "AngRFSigma": 22.5,
         "EXPDir": 1,
-        "VTopoI": 0,
         "alltopoldivcons": {
             "IR": {
                 "ER": 5
@@ -251,8 +249,8 @@
             },
             "EV4": {
                 "EV1": 3,
-                "EMDOWN": 3,
-                "EMUP": 3
+                "EMLEFT": 3,
+                "EMRIGHT": 3
             },
             "IV4": {
                 "EV4": 5,
@@ -260,8 +258,8 @@
             },
             "EMT": {
                 "EV4": 3,
-                "EMDOWN": 3,
-                "EMUP": 3
+                "EMLEFT": 3,
+                "EMRIGHT": 3
             },
             "IMT": {
                 "EMT": 5,
@@ -272,46 +270,46 @@
             "ER": {
                 "IR": 3,
                 "EV1": 3,
-                "EMDOWN": 3,
-                "EMUP": 3
+                "EMLEFT": 3,
+                "EMRIGHT": 3
             },
             "EV1": {
                 "IV1": 3,
                 "EV4": 3,
-                "EMDOWN": 3,
-                "EMUP": 3
+                "EMLEFT": 3,
+                "EMRIGHT": 3
             },
             "EV1DE": {
-                "EMDOWN": 3,
-                "EMUP": 3
+                "EMLEFT": 3,
+                "EMRIGHT": 3
             },
             "EV1DNE": {
-                "EMDOWN": 3,
-                "EMUP": 3
+                "EMLEFT": 3,
+                "EMRIGHT": 3
             },
             "EV1DN": {
-                "EMDOWN": 3,
-                "EMUP": 3
+                "EMLEFT": 3,
+                "EMRIGHT": 3
             },
             "EV1DNW": {
-                "EMDOWN": 3,
-                "EMUP": 3
+                "EMLEFT": 3,
+                "EMRIGHT": 3
             },
             "EV1DW": {
-                "EMDOWN": 3,
-                "EMUP": 3
+                "EMLEFT": 3,
+                "EMRIGHT": 3
             },
             "EV1DSW": {
-                "EMDOWN": 3,
-                "EMUP": 3
+                "EMLEFT": 3,
+                "EMRIGHT": 3
             },
             "EV1DS": {
-                "EMDOWN": 3,
-                "EMUP": 3
+                "EMLEFT": 3,
+                "EMRIGHT": 3
             },
             "EV1DSE": {
-                "EMDOWN": 3,
-                "EMUP": 3
+                "EMLEFT": 3,
+                "EMRIGHT": 3
             },
             "IV1": {
                 "IV4": 5
@@ -375,7 +373,6 @@
             "FeedbackMtoA2": 0,
             "FeedbackA2toA": 0
         },
-        "useBinaryImage": 1,
         "useNeuronPad": 0,
         "DirMinRate": 0.0,
         "DirMaxRate": 150.0,
@@ -387,32 +384,32 @@
             "VL":{"VD":{"AM2": 0,"NM2": 0, "conv": 0},
                   "VL":{"AM2": 0.5,"NM2": 0.01, "conv": 0},
                   "EA":{"AM2": 12.5,"NM2": 1, "conv": 640},
-            "EA2":{"AM2": 0.01,"NM2": 0.0, "conv": 0},
-                  "EMDOWN":{"AM2": 0.01,"NM2": 0.0, "conv": 0},
-                  "EMUP":{"AM2": 0.01,"NM2": 0.0, "conv": 0}},
+                  "EA2":{"AM2": 0.01,"NM2": 0.0, "conv": 0},
+                  "EMLEFT":{"AM2": 0.01,"NM2": 0.0, "conv": 0},
+                  "EMRIGHT":{"AM2": 0.01,"NM2": 0.0, "conv": 0}},
             "VD":{"VL":{"AM2": 0,"NM2": 0, "conv": 0},
                   "VD":{"AM2": 0,"NM2": 0, "conv": 0},
                   "EA":{"AM2": 1.0,"NM2": 0.1, "conv": 320},
-            "EA2":{"AM2": 0.4,"NM2": 0.0, "conv": 0},
-                  "EMDOWN":{"AM2": 0.4,"NM2": 0.0, "conv": 0},
-                  "EMUP":{"AM2": 0.4,"NM2": 0.0, "conv": 0},
+                  "EA2":{"AM2": 0.4,"NM2": 0.0, "conv": 0},
+                  "EMLEFT":{"AM2": 0.4,"NM2": 0.0, "conv": 0},
+                  "EMRIGHT":{"AM2": 0.4,"NM2": 0.0, "conv": 0},
                   "ID":{"AM2": 10, "conv": 12}},
             "EA":{"EA":{"AM2": 0.01,"NM2": 0.0, "conv": 60},
                   "EA2":{"AM2": 0.01,"NM2": 0.0, "conv": 100},
                   "EM":{"AM2": 0.01,"NM2": 0.0, "conv": 100},
                   "IA":{"AM2": 1.95,"NM2":0.0195, "conv": 93},
-            "IAL":{"AM2": 0.98,"NM2":0.098, "conv": 110}},
+                  "IAL":{"AM2": 0.98,"NM2":0.098, "conv": 110}},
             "EA2":{"EA":{"AM2": 0.01,"NM2": 0.0,"conv": 0},
                    "EA2":{"AM2": 0.01,"NM2": 0.0,"conv": 60},
                    "EM":{"AM2": 0.01,"NM2": 0.0,"conv": 60},
                    "IA2":{"AM2": 1.95,"NM2":0.0195,"conv": 93},
-            "IA2L":{"AM2": 0.98,"NM2":0.098,"conv": 110}},
+                   "IA2L":{"AM2": 0.98,"NM2":0.098,"conv": 110}},
             "EM":{"EM":{"AM2": 0.01,"NM2": 0.0,"conv": 60},
                   "EA":{"AM2": 0.01,"NM2": 0.0,"conv": 0},
                   "EA2":{"AM2": 0.01,"NM2": 0.0,"conv": 0},
                   "IRecip":{"AM2": 20,"NM2": 0,"conv": 18},
                   "IM":{"AM2": 1.95,"NM2":0.0195,"conv": 93},
-            "IML":{"AM2": 0.98,"NM2":0.098,"conv": 110}},
+                  "IML":{"AM2": 0.98,"NM2":0.098,"conv": 110}},
             "IR":{"IR":{"GA": 1.25,"p": 0.15}},
             "IV1":{"EV1":{"GA": 5,"p": 0.1},
                    "IV1":{"GA": 1.25,"p": 0.1},
@@ -429,22 +426,22 @@
                    "EV4":{"GA": 1.0,"p": 0.0}},
             "IM":{"EM":{"GA": 9.0, "conv":22},
                   "IM":{"GA": 4.5, "conv": 31},
-            "IML":{"GA": 4.5, "conv": 17}},
+                  "IML":{"GA": 4.5, "conv": 17}},
             "IML":{"EM":{"GA2": 2.5, "conv": 8},
-            "IM":{"GA2": 2.25, "conv": 12},
+                   "IM":{"GA2": 2.25, "conv": 12},
                    "IML":{"GA2": 4.5, "conv": 2}},
             "IMRecip":{"EM": {"GA": 10,"p": 0.125}},
             "IA":{"EA":{"GA": 9.0,"conv": 22},
                   "IA":{"GA": 4.5,"conv": 31},
-            "IAL":{"GA": 4.5,"conv": 17}},
+                  "IAL":{"GA": 4.5,"conv": 17}},
             "IAL":{"EA":{"GA2": 2.5,"conv": 8},
-            "IA":{"GA2": 2.25,"conv": 12},
+                   "IA":{"GA2": 2.25,"conv": 12},
                    "IAL":{"GA2": 4.5,"conv": 2}},
             "IA2":{"EA2":{"GA": 9.0,"conv": 22},
                    "IA2":{"GA": 4.5,"conv": 31},
-            "IA2L":{"GA": 4.5,"conv": 17}},
+                   "IA2L":{"GA": 4.5,"conv": 17}},
             "IA2L":{"EA2":{"GA2": 2.5,"conv": 8},
-            "IA2":{"GA2": 2.25,"conv": 12},
+                    "IA2":{"GA2": 2.25,"conv": 12},
                     "IA2L":{"GA2": 4.5,"conv": 2}},
             "IMUP":{"IMUP":{"GA": 1.25,"p": 0.15}},
             "IMDOWN":{"IMDOWN":{"GA": 1.25,"p": 0.15}},
@@ -481,8 +478,8 @@
                 "EV1DNE": 0.125,
                 "EV1DSW": 0.125,
                 "EV1DNW": 0.125,
-                "EMUP": 0.125,
-                "EMDOWN": 0.125
+                "EMRIGHT": 0.125,
+                "EMLEFT": 0.125
             },
             "maxtargetFR": {
                 "EV1": 60,
@@ -496,8 +493,8 @@
                 "EV1DNE": 60,
                 "EV1DSW": 60,
                 "EV1DNW": 60,
-                "EMUP": 60,
-                "EMDOWN": 60
+                "EMRIGHT": 60,
+                "EMLEFT": 60
             },
             "hsIntervalSteps": 100,
             "updateIntervalSteps": 100,
@@ -630,13 +627,14 @@
         }
     },
     "noise": {
-        "EMDOWN": {"AM": {"w":0, "rate":0},
+        "EMLEFT": {
+                "AM": {"w":0, "rate":0},
                 "NM": {"w":0, "rate":0},
                 "GA": {"w":1.875, "rate":100},
                 "AM2": {"w": 3.938, "rate": 200},
                 "NM2": {"w": 0, "rate": 0},
                 "GA2": {"w": 1.875, "rate": 100}},
-        "EMUP": {"AM": {"w":0, "rate":0},
+        "EMRIGHT": {"AM": {"w":0, "rate":0},
                 "NM": {"w":0, "rate":0},
                 "GA": {"w":1.875, "rate":100},
                 "AM2": {"w": 3.938, "rate": 200},

@@ -3,19 +3,10 @@ AIGame: Run an OpenAIGym
 """
 
 import gym
-import cv2
-
-from copy import copy, deepcopy
-from random import uniform, seed, sample, randint
-from matplotlib import pyplot as plt
-import random
-import numpy as np
-from skimage.transform import downscale_local_mean, resize
-from skimage.color import rgb2gray
-from skimage.filters import threshold_otsu
 from gym import wrappers
+import numpy as np
 from time import time
-from collections import OrderedDict, deque
+from collections import deque
 
 
 class AIGame:

@@ -3,3 +3,4 @@ __pycache__/
 x86_64/
 data/
 backupcfg/
+.ipynb_checkpoints/

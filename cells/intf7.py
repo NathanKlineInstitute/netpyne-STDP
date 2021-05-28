@@ -31,7 +31,7 @@ def insertSpikes (sim, dt, spkht=50):
   import numpy as np
   sampr = 1e3 / dt # sampling rate
   spkt, spkid = sim.simData['spkt'], sim.simData['spkid']
-  spk = pd.DataFrame(np.array([spkid, spkt]).T,columns=['spkid','spkt'])
+  spk = pd.DataFrame(np.array([spkid, spkt]).T, columns=['spkid','spkt'])
   for kvolt in sim.simData['V_soma'].keys():
     cellID = int(kvolt.split('_')[1])
     spkts = spk[spk.spkid == cellID]
