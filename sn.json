@@ -58,8 +58,6 @@
         "recordStep": 1.0,
         "recordStim": 0,
         "recordWeightStepSize": 200,
-        "normalizeWeightStepSize": 50000000000000000000000000000000000000,
-        "normalizeWeightsAtStart": 0,
         "RLFakeUpRule": 0,
         "RLFakeDownRule": 0,
         "RLFakeStayRule": 0,
@@ -167,6 +165,7 @@
             "IMUP": 0,
             "IMDOWN": 0
         },
+        "InputPop": "EA",
         "ETypes": [
             "ER",
             "EV1",
@@ -203,37 +202,6 @@
         "EMotorPops": [
             "EMLEFT",
             "EMRIGHT"
-        ],
-        "EVPops": [
-            "EV1",
-            "EV1DE",
-            "EV1DNE",
-            "EV1DN",
-            "EV1DNW",
-            "EV1DW",
-            "EV1DSW",
-            "EV1DS",
-            "EV1DSE",
-            "EV4",
-            "EMT"
-        ],
-        "EVDirPops": [
-            "EV1DE",
-            "EV1DNE",
-            "EV1DN",
-            "EV1DNW",
-            "EV1DW",
-            "EV1DSW",
-            "EV1DS",
-            "EV1DSE"
-        ],
-        "IVDirPops": [
-            "ID"
-        ],
-        "EVLocPops": [
-            "EV1",
-            "EV4",
-            "EMT"
         ],
         "EXPDir": 1,
         "alltopoldivcons": {
@@ -374,10 +342,12 @@
             "FeedbackA2toA": 0
         },
         "useNeuronPad": 0,
+
         "DirMinRate": 0.0,
         "DirMaxRate": 150.0,
-        "LocMaxRate": 150.0,
+        "InputMaxRate": 150.0,
         "FiringRateCutoff": 50.0,
+
         "stimModVD": 35,
         "stimModVL": 35,
         "cmat": {

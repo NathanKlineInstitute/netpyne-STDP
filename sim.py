@@ -1,18 +1,21 @@
 from netpyne import specs, sim
 from neuron import h
+
 import numpy as np
 import random
-from conf import dconf # configuration dictionary
 import pandas as pd
 import pickle
-from collections import OrderedDict
-from connUtils import *
-from matplotlib import pyplot as plt
 import os
 import time
-import anim
+from collections import OrderedDict
+from matplotlib import pyplot as plt
 from matplotlib import animation
+
+from conf import dconf
 from cells import intf7
+from connUtils import *
+from game_interface import GameInterface
+from utils import syncdata_alltoall
 
 random.seed(1234) # this will not work properly across runs with different number of nodes
 
@@ -272,24 +275,7 @@ def setupStimMod ():
         'delay': getInitDelay('STIMMOD'),
         'connList':blist, 'weightIndex':getWeightIndex('AMPA',ECellModel)}
       wt = stimModDirW # rest of inputs use this weight
-  else:
-    # these are the image-based inputs provided to the R (retinal) cells
-    netParams.stimSourceParams['stimMod'] = {'type': 'NetStim', 'rate': 'variable', 'noise': 0}
-    netParams.stimTargetParams['stimMod->'+inputPop] = {
-      'source': 'stimMod',
-      'conds': {'pop': inputPop},
-      'convergence': 1,
-      'weight': stimModLocW,
-      'delay': 1,
-      'synMech': 'AMPA'}
-    for pop in ['EV1D'+Dir for Dir in ['E','NE','N', 'NW','W','SW','S','SE']]:
-      netParams.stimTargetParams['stimMod->'+pop] = {
-        'source': 'stimMod',
-        'conds': {'pop': pop},
-        'convergence': 1,
-        'weight': stimModDirW,
-        'delay': 1,
-        'synMech': 'AMPA'}
+
   return lstimty
 
 sim.lstimty = setupStimMod() # when using IntFire4 cells lstimty has the NetStim populations that send spikes to EV1, EV1DE, etc.
@@ -628,167 +614,6 @@ if not dconf['sim']['useReducedNetwork']:
           'delay': getInitDelay('Soma'),
           'synMech': 'GABA','sec':'soma', 'loc':0.5,'weightIndex':getWeightIndex('GA', ECellModel)}
   sim.topologicalConns['IMT->EV4'] = {'blist':blistIMTtoEV4, 'coords':connCoordsIMTtoEV4}
-
-
-
-def connectEVToTarget (lpoty, useTopological):
-  if dconf['sim']['useReducedNetwork']:
-    print(cLV1toEA)
-    synmech = 'AM2'
-    weight = cfg.EEGain*cmat['VL']['EA']['AM2']
-    netParams.connParams['EV1->EA'] = {
-        'preConds': {'pop': 'EV1'},
-        'postConds': {'pop': 'EA'},
-        'connList': cLV1toEA,
-        'weight': getInitWeight(weight),
-        'delay': getInitDelay('Dend'),
-        'synMech': synmech,
-        'sec':EExcitSec, 'loc':0.5,'weightIndex':getWeightIndex(synmech, ECellModel)
-    }
-    if dconf['net']['RLconns']['FeedForwardLocNtoA'] and dSTDPparamsRL[synmech]['RLon']:
-      netParams.connParams['EV1->EA']['plast'] = {'mech': 'STDP', 'params': dSTDPparamsRL[synmech]}
-    elif dconf['net']['STDPconns']['FeedForwardLocNtoA'] and dSTDPparams[synmech]['STDPon']:
-      netParams.connParams['EV1->EA']['plast'] = {'mech': 'STDP', 'params': dSTDPparams[synmech]}
-    weight = cfg.EEGain*cmat['VD']['EA']['AM2']
-    netParams.connParams['EV1DE->EA'] = {
-        'preConds': {'pop': 'EV1DE'},
-        'postConds': {'pop': 'EA'},
-        'connList': cLV1DEtoEA,
-        'weight': getInitWeight(weight),
-        'delay': getInitDelay('Dend'),
-        'synMech': synmech,
-        'sec':EExcitSec, 'loc':0.5,'weightIndex':getWeightIndex(synmech, ECellModel)
-    }
-    netParams.connParams['EV1DNE->EA'] = {
-        'preConds': {'pop': 'EV1DNE'},
-        'postConds': {'pop': 'EA'},
-        'connList': cLV1DNEtoEA,
-        'weight': getInitWeight(weight),
-        'delay': getInitDelay('Dend'),
-        'synMech': synmech,
-        'sec':EExcitSec, 'loc':0.5,'weightIndex':getWeightIndex(synmech, ECellModel)
-    }
-    netParams.connParams['EV1DN->EA'] = {
-        'preConds': {'pop': 'EV1DN'},
-        'postConds': {'pop': 'EA'},
-        'connList': cLV1DNtoEA,
-        'weight': getInitWeight(weight),
-        'delay': getInitDelay('Dend'),
-        'synMech': synmech,
-        'sec':EExcitSec, 'loc':0.5,'weightIndex':getWeightIndex(synmech, ECellModel)
-    }
-    netParams.connParams['EV1DNW->EA'] = {
-        'preConds': {'pop': 'EV1DNW'},
-        'postConds': {'pop': 'EA'},
-        'connList': cLV1DNWtoEA,
-        'weight': getInitWeight(weight),
-        'delay': getInitDelay('Dend'),
-        'synMech': synmech,
-        'sec':EExcitSec, 'loc':0.5,'weightIndex':getWeightIndex(synmech, ECellModel)
-    }
-    netParams.connParams['EV1DW->EA'] = {
-        'preConds': {'pop': 'EV1DW'},
-        'postConds': {'pop': 'EA'},
-        'connList': cLV1DWtoEA,
-        'weight': getInitWeight(weight),
-        'delay': getInitDelay('Dend'),
-        'synMech': synmech,
-        'sec':EExcitSec, 'loc':0.5,'weightIndex':getWeightIndex(synmech, ECellModel)
-    }
-    netParams.connParams['EV1DSW->EA'] = {
-        'preConds': {'pop': 'EV1DSW'},
-        'postConds': {'pop': 'EA'},
-        'connList': cLV1DSWtoEA,
-        'weight': getInitWeight(weight),
-        'delay': getInitDelay('Dend'),
-        'synMech': synmech,
-        'sec':EExcitSec, 'loc':0.5,'weightIndex':getWeightIndex(synmech, ECellModel)
-    }
-    netParams.connParams['EV1DS->EA'] = {
-        'preConds': {'pop': 'EV1DS'},
-        'postConds': {'pop': 'EA'},
-        'connList': cLV1DStoEA,
-        'weight': getInitWeight(weight),
-        'delay': getInitDelay('Dend'),
-        'synMech': synmech,
-        'sec':EExcitSec, 'loc':0.5,'weightIndex':getWeightIndex(synmech, ECellModel)
-    }
-    netParams.connParams['EV1DSE->EA'] = {
-        'preConds': {'pop': 'EV1DSE'},
-        'postConds': {'pop': 'EA'},
-        'connList': cLV1DSEtoEA,
-        'weight': getInitWeight(weight),
-        'delay': getInitDelay('Dend'),
-        'synMech': synmech,
-        'sec':EExcitSec, 'loc':0.5,'weightIndex':getWeightIndex(synmech, ECellModel)
-    }
-    ldirconns = ['EV1DE->EA','EV1DNE->EA','EV1DN->EA','EV1DNW->EA','EV1DW->EA','EV1DSW->EA','EV1DS->EA','EV1DSE->EA']
-    if dconf['net']['RLconns']['FeedForwardDirNtoA'] and dSTDPparamsRL[synmech]['RLon']:
-      for dirconns in ldirconns:
-        netParams.connParams[dirconns]['plast'] = {'mech': 'STDP', 'params': dSTDPparamsRL[synmech]}
-    elif dconf['net']['STDPconns']['FeedForwardDirNtoA'] and dSTDPparams[synmech]['STDPon']:
-      for dirconns in ldirconns:
-        netParams.connParams[dirconns]['plast'] = {'mech': 'STDP', 'params': dSTDPparams[synmech]}
-  else:
-    # connect excitatory visual area neurons to list of postsynaptic types (lpoty)
-    for prety in EVPops:
-      if dnumc[prety] <= 0: continue
-      for poty in lpoty:
-        if dnumc[poty] <= 0: continue
-        suffix = 'M'
-        if poty == 'EA': suffix = 'A'
-        if poty == 'EA2': suffix = 'A2'
-        if useTopological:
-          try: div = dconf['net']['alltopoldivcons'][prety][poty]
-          except: div = 3
-          # BE CAREFUL. THERE IS ALWAYS A CHANCE TO USE dnumc[prety] nad dnumc[poty] that produces inaccuracies.
-          # works fine if used in multiples (400->100; 100->400; 100->100).
-          blist = []
-          connCoords = []
-          if dconf['net']['allpops'][prety]==dconf['net']['allpops'][poty] or dconf['net']['allpops'][prety]>dconf['net']['allpops'][poty]:
-            blist, connCoords = connectLayerswithOverlap(NBpreN=dnumc[prety],NBpostN=dnumc[poty],overlap_xdir = dtopolconvcons[prety][poty], \
-                                             padded_preneurons_xdir = dnumc_padx[prety], padded_postneurons_xdir = dnumc_padx[poty])
-          elif dconf['net']['allpops'][prety]<dconf['net']['allpops'][poty]:
-            blist, connCoords = connectLayerswithOverlapDiv(NBpreN=dnumc[prety],NBpostN=dnumc[poty],overlap_xdir = dtopoldivcons[prety][poty], \
-                                                padded_preneurons_xdir = dnumc_padx[prety], padded_postneurons_xdir = dnumc_padx[poty])
-            print(prety,poty,blist)
-          sim.topologicalConns[prety+'->'+poty] = {'blist':blist,'coords':connCoords}
-        repstr = 'VD' # replacement presynaptic type string (VD -> EV1DE, EV1DNE, etc.; VL -> EV1, EV4, etc.)
-        if prety in EVLocPops: repstr = 'VL'
-        lsynw = [cmat[repstr][poty]['AM2']*cfg.EEGain, cmat[repstr][poty]['NM2']*cfg.EEGain]
-        for strty,synmech,weight in zip(['','n'],['AM2', 'NM2'],lsynw):
-          k = strty+prety+'->'+strty+poty
-          if weight <= 0.0: continue
-          if poty == 'EA' or poty == 'EA2':
-            wtval = weight # make sure EA,EA2 get enough input
-          else:
-            wtval = getInitWeight(weight)
-          netParams.connParams[k] = {
-            'preConds': {'pop': prety},
-            'postConds': {'pop': poty},
-            'weight': wtval,
-            'delay': getInitDelay('Dend'),
-            'synMech': synmech,
-            'sec':EExcitSec, 'loc':0.5,'weightIndex':getWeightIndex(synmech, ECellModel)
-          }
-          if useTopological:
-            netParams.connParams[k]['connList'] = blist
-          else:
-            netParams.connParams[k]['convergence'] = getconv(cmat,repstr,poty,dnumc[prety])
-          useRL = useSTDP = False
-          if prety in EVDirPops:
-            if dconf['net']['RLconns']['FeedForwardDirNto'+suffix]: useRL = True
-            if dconf['net']['STDPconns']['FeedForwardDirNto'+suffix]: useSTDP = True
-          if prety in EVLocPops:
-            if dconf['net']['RLconns']['FeedForwardLocNto'+suffix]: useRL = True
-            if dconf['net']['STDPconns']['FeedForwardLocNto'+suffix]: useSTDP = True
-          if dSTDPparamsRL[synmech]['RLon'] and useRL: # only turn on plasticity when specified to do so
-            netParams.connParams[k]['plast'] = {'mech': 'STDP', 'params': dSTDPparamsRL[synmech]}
-          elif dSTDPparams[synmech]['STDPon'] and useSTDP:
-            netParams.connParams[k]['plast'] = {'mech': 'STDP', 'params': dSTDPparams[synmech]}
-
-connectEVToTarget(['EA','EA2'], dconf['architectureVtoA']['useTopological']) # connect primary visual to visual association
-connectEVToTarget(EMotorPops, dconf['architectureVtoM']['useTopological']) # connect primary visual to motor
 
 # add connections from first to second visual association area
 # EA -> EA2 (feedforward)
@@ -1134,29 +959,10 @@ def InitializeInputRates ():
           if cell.gid in sim.net.pops[pop].cellGids:
             cell.hPointp.interval = 1e12
             cell.hPointp.start = 0 # np.random.uniform(0,1200)
-  else:
-    if dnumc['ER']>0:
-      lratepop = ['ER', 'EV1DE', 'EV1DNE', 'EV1DN', 'EV1DNW', 'EV1DW', 'EV1DSW', 'EV1DS', 'EV1DSE']
-    else:
-      lratepop = ['EV1', 'EV1DE', 'EV1DNE', 'EV1DN', 'EV1DNW', 'EV1DW', 'EV1DSW', 'EV1DS', 'EV1DSE']
-    for pop in lratepop:
-      lCell = [c for c in sim.net.cells if c.gid in sim.net.pops[pop].cellGids] # this is the set of cells
-      for cell in lCell:
-        for stim in cell.stims:
-          if stim['source'] == 'stimMod':
-            stim['hObj'].interval = 1e12
 
-def updateInputRates ():
-  # update the source firing rates for the primary visual neuron populations (location V1 and direction sensitive)
-  # based on image contents
-  # this py_alltoall seems to work, but is apparently not as fast as py_broadcast (which has problems - wrong-sized array sometimes!)
-  root = 0
-  nhost = sim.pc.nhost()
-  
-  # TODO: implement firing rates based on the deleted code in AIGame
-  src = [sim.AIGame.dFiringRates]*nhost if sim.rank == root else [None]*nhost
-  dFiringRates = sim.pc.py_alltoall(src)[0]
-  # if sim.rank == 0: dFiringRates = sim.AIGame.dFiringRates
+def updateInputRates():
+  input_rates = sim.GameInterface.input_firing_rates()
+  input_rates = syncdata_alltoall(sim, input_rates)
 
   # if sim.rank == 0: print(dFiringRates['EV1'])
   # update input firing rates for stimuli to ER,EV1 and direction sensitive cells
@@ -1172,23 +978,6 @@ def updateInputRates ():
             cell.hPointp.interval = 1e12
           else:
             cell.hPointp.interval = 1000.0/dFiringRates[pop[lsz:]][int(cell.gid-offset)] #40
-  else:
-    if dnumc['ER']>0:
-      lratepop = ['ER', 'EV1DE', 'EV1DNE', 'EV1DN', 'EV1DNW', 'EV1DW', 'EV1DSW', 'EV1DS', 'EV1DSE']
-    else:
-      lratepop = ['EV1', 'EV1DE', 'EV1DNE', 'EV1DN', 'EV1DNW', 'EV1DW', 'EV1DSW', 'EV1DS', 'EV1DSE']
-    for pop in lratepop:
-      if dnumc[pop] <= 0: continue
-      lCell = [c for c in sim.net.cells if c.gid in sim.net.pops[pop].cellGids] # this is the set of cells
-      offset = sim.simData['dminID'][pop]
-      #if dconf['verbose'] > 1: print(sim.rank,'updating len(',pop,len(lCell),'source firing rates. len(dFiringRates)=',len(dFiringRates[pop]))
-      for cell in lCell:
-        for stim in cell.stims:
-          if stim['source'] == 'stimMod':
-            if dFiringRates[pop][int(cell.gid-offset)]==0:
-              stim['hObj'].interval = 1e12
-            else:
-              stim['hObj'].interval = 1000.0/dFiringRates[pop][int(cell.gid-offset)] #40 #fchoices[rind] #10 #
 
 
 def getActions(moves, pop_to_move):
@@ -1243,14 +1032,18 @@ def trainAgent (t):
       action = dconf['movecodes'][random.randint(0,len(dconf['movecodes'])-1)]
       actions.append(action)
   else: #the actions should be based on the activity of motor cortex (EMRIGHT, EMLEFT)
-    actions = getActions(dconf['moves'], )
+    actions = getActions(dconf['moves'], dconf['pop_to_move'])
 
 
   if sim.rank == 0:
     rewards = sim.AIGame.playGame(actions)
 
     # specifically for CartPole-v1. TODO: move to a diff file
-    critic = abs(sim.AIGame.observations[-1][2]) * 100
+    
+    if len(sim.AIGame.observations) < 2:
+      critic = abs(sim.AIGame.observations[-1][2]) * 100
+    else:
+      critic = (sim.AIGame.observations[-1][2] - sim.AIGame.observations[-2][2]) * 100
 
     # use py_broadcast to avoid converting to/from Vector
     sim.pc.py_broadcast(critic, 0) # broadcast critic value to other nodes
@@ -1277,35 +1070,25 @@ def trainAgent (t):
 
   NBsteps += 1
   if NBsteps % recordWeightStepSize == 0:
-    if dconf['verbose'] > 0 and sim.rank == 0:
+    if dconf['verbose'] > 0 and sim.rank==0:
       print('Weights Recording Time:', t, 'NBsteps:',NBsteps,'recordWeightStepSize:',recordWeightStepSize)
-    recordAdjustableWeights(sim, t, lrecpop)
+    recordAdjustableWeights(sim, t, lrecpop) 
+    #recordWeights(sim, t)
 
 def getAllSTDPObjects (sim):
   # get all the STDP objects from the simulation's cells
   dSTDPmech = {'all':[]} # dictionary of STDP objects keyed by type (all, for EMRIGHT, EMLEFT populations)
   for pop in dconf['pop_to_move'].keys(): dSTDPmech[pop] = []
 
-  if dconf['sim']['targettedRL']:
-    # dcell = {pop:[] for pop in Mpops} # SN: exptl
-    if dconf['sim']['targettedRL']>=4:
-      dSTDPmech['nonEM'] = [] # not post-synapse of an EM neuron (only used for targetted RL when RL plasticity at non-EM neurons)
-      dSTDPmech['EM'] = [] # post-synapse of an EM neuron (EMLEFT or EMRIGHT, etc.)
   for cell in sim.net.cells:
     #if cell.gid in sim.net.pops['EMLEFT'].cellGids and cell.gid==sim.simData['dminID']['EMLEFT']: print(cell.conns)
     for conn in cell.conns:
       STDPmech = conn.get('hSTDP')  # check if the connection has a NEURON STDP mechanism object
       if STDPmech:
         dSTDPmech['all'].append(STDPmech)
-        isEM = False
-        for pop in Mpops:
+        for pop in dconf['pop_to_move'].keys():
           if cell.gid in sim.net.pops[pop].cellGids:
             dSTDPmech[pop].append(STDPmech)
-            isEM = True
-            if dconf['sim']['targettedRL']>=4: dSTDPmech['EM'].append(STDPmech) # any EM
-            # if dconf['sim']['targettedRL']: dcell[pop].append(conn.preGid) # SN: exptl presynaptic ID
-        if dconf['sim']['targettedRL']>=4:
-          if not isEM: dSTDPmech['nonEM'].append(STDPmech)
   return dSTDPmech
 
 # Alternate to create network and run simulation
@@ -1315,6 +1098,7 @@ sim.initialize(simConfig = simConfig, netParams = netParams)
 if sim.rank == 0:  # sim rank 0 specific init and backup of config file
   from aigame import AIGame
   sim.AIGame = AIGame(dconf) # only create AIGame on node 0
+  sim.GameInterface = GameInterface(sim.AIGame, dconf)
   # node 0 saves the json config file
   # this is just a precaution since simConfig pkl file has MOST of the info; ideally should adjust simConfig to contain
   # ALL of the required info
@@ -1342,7 +1126,7 @@ sim.setupRecording()                  # setup variables to record for each cell 
 
 dSTDPmech = getAllSTDPObjects(sim) # get all the STDP objects up-front
 
-def updateSTDPWeights (sim, W):
+def resumeSTDPWeights (sim, W):
   #this function assign weights stored in 'ResumeSimFromFile' to all connections by matching pre and post neuron ids
   # get all the simulation's cells (on a given node)
   for cell in sim.net.cells:
@@ -1366,14 +1150,14 @@ if dconf['simtype']['ResumeSim']:
   try:
     from simdat import readweightsfile2pdf
     A = readweightsfile2pdf(dconf['simtype']['ResumeSimFromFile'])
-    updateSTDPWeights(sim, A[A.time == max(A.time)]) # take the latest weights saved
+    resumeSTDPWeights(sim, A[A.time == max(A.time)]) # take the latest weights saved
     sim.pc.barrier() # wait for other nodes
     if sim.rank == 0: print('Updated STDP weights')
-    if 'normalizeWeightsAtStart' in dconf['sim']:
-      if dconf['sim']['normalizeWeightsAtStart']:
-        normalizeAdjustableWeights(sim, 0, lrecpop)
-        print(sim.rank,'normalized adjustable weights at start')
-        sim.pc.barrier() # wait for other nodes
+    # if 'normalizeWeightsAtStart' in dconf['sim']:
+    #   if dconf['sim']['normalizeWeightsAtStart']:
+    #     normalizeAdjustableWeights(sim, 0, lrecpop)
+    #     print(sim.rank,'normalized adjustable weights at start')
+    #     sim.pc.barrier() # wait for other nodes
   except:
     print('Could not restore STDP weights from file.')
 
