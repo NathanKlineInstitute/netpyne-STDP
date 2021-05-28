@@ -60,15 +60,6 @@ dnumc = OrderedDict({ty:dconf['net']['allpops'][ty]*scale for ty in allpops}) # 
 
 lrecpop = ['EMRIGHT', 'EMLEFT'] # which plastic populations to record from
 
-if cmat['VD']['VD']['conv'] > 0 or \
-   cmat['VD']['VL']['conv'] > 0 or \
-   cmat['VL']['VL']['conv'] > 0 or \
-   cmat['VL']['VD']['conv'] > 0 or \
-   dconf['net']['VisualFeedback']:
-  for pop in EVPops:
-    lrecpop.append(pop)
-  if dconf['net']['VisualFeedback'] and dnumc['ER']>0: lrecpop.append('ER')
-
 if dnumc['EA']>0 and (dconf['net']['RLconns']['RecurrentANeurons'] or \
                       dconf['net']['STDPconns']['RecurrentANeurons'] or \
                       dconf['net']['RLconns']['FeedbackMtoA'] or \
@@ -225,24 +216,21 @@ netParams.synMechParams['NM2'] = netParams.synMechParams['NMDA'] = {'mod': 'Exp2
 # inhibitory synaptic mechanism
 netParams.synMechParams['GA'] = netParams.synMechParams['GABA'] = {'mod': 'Exp2Syn', 'tau1': 0.07, 'tau2': 9.1, 'e': -80}
 
-def readSTDPParams ():
-  dSTDPparamsRL = {} # STDP-RL parameters for AMPA,NMDA synapses; generally uses shorter/longer eligibility traces
-  lsy = ['AMPA', 'NMDA']
-  if 'AMPAI' in dconf['RL']: lsy.append('AMPAI')
-  for sy,gain in zip(lsy,[cfg.EEGain,cfg.EEGain,cfg.EIGain]):
-    dSTDPparamsRL[sy] = dconf['RL'][sy]
-    for k in dSTDPparamsRL[sy].keys():
-      if k.count('wt') or k.count('wbase') or k.count('wmax'): dSTDPparamsRL[sy][k] *= gain
-  lsy = ['AMPA', 'NMDA']
-  if 'AMPAI' in dconf['STDP']: lsy.append('AMPAI')
-  dSTDPparams = {} # STDPL parameters for AMPA,NMDA synapses; generally uses shorter/longer eligibility traces
-  for sy,gain in zip(lsy,[cfg.EEGain,cfg.EEGain,cfg.EIGain]):
-    dSTDPparams[sy] = dconf['STDP'][sy]
-    for k in dSTDPparams[sy].keys():
-      if k.count('wt') or k.count('wbase') or k.count('wmax'): dSTDPparams[sy][k] *= gain
-  dSTDPparamsRL['AM2']=dSTDPparamsRL['AMPA']; dSTDPparamsRL['NM2']=dSTDPparamsRL['NMDA']
-  dSTDPparams['AM2']=dSTDPparams['AMPA']; dSTDPparams['NM2']=dSTDPparams['NMDA']
-  return dSTDPparamsRL, dSTDPparams
+def readSTDPParams():
+  ruleParams = []
+  for rule in ['RL', 'STDP']:
+    lsy = ['AMPA', 'NMDA', 'AMPAI']
+    gains = [cfg.EEGain, cfg.EEGain, cfg.EIGain]
+    dSTDPparams = {} # STDP-RL/STDPL parameters for AMPA,NMDA synapses; generally uses shorter/longer eligibility traces
+    for sy,gain in zip(lsy, gains):
+      dSTDPparams[sy] = dconf[rule][sy]
+      for k in dSTDPparams[sy].keys():
+        if k.count('wt') or k.count('wbase') or k.count('wmax'): dSTDPparams[sy][k] *= gain
+
+    dSTDPparams['AM2']=dSTDPparams['AMPA']
+    dSTDPparams['NM2']=dSTDPparams['NMDA']
+    ruleParams.append(dSTDPparams)
+  return ruleParams
 
 dSTDPparamsRL, dSTDPparams = readSTDPParams()
 
@@ -273,7 +261,8 @@ def setupStimMod ():
         'postConds': {'pop':poty},
         'weight':wt,
         'delay': getInitDelay('STIMMOD'),
-        'connList':blist, 'weightIndex':getWeightIndex('AMPA',ECellModel)}
+        'connList':blist,
+        'weightIndex': getWeightIndex('AMPA',ECellModel)}
       wt = stimModDirW # rest of inputs use this weight
 
   return lstimty
