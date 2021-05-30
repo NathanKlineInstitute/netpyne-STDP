@@ -32,18 +32,18 @@ class GameInterface:
     self.obs_space = self.AIGame.env.observation_space
     self.obs_map = [_parse_obs_map(func_def) for func_def in config['env']['observation_map']]
     self.inputMaxRate = config['net']['InputMaxRate']
-    # self.inputPop = config['net']['InputPop']
-    # self.inputPopSize = config['net']['allpops'][self.inputPop]
+    self.inputPop = config['net']['inputPop']
+    self.inputPopSize = config['net']['allpops'][self.inputPop]
 
   def input_firing_rates(self):
-    return [_map_observation(obsVal,
+    vals = [_map_observation(obsVal,
       minVal=self.obs_space.low[idx],
       maxVal=self.obs_space.high[idx],
       minRate=0, maxRate=self.inputMaxRate,
       func=self.obs_map[idx])
     for idx, obsVal in enumerate(self.AIGame.observations[-1])]
 
-    # rates = np.tile(
-    #   np.array(vals),
-    #   int(self.inputPopSize / len(vals)) + 1)[:self.inputPopSize]
-    # return rates
+    rates = np.tile(
+      np.array(vals),
+      int(self.inputPopSize / len(vals)) + 1)[:self.inputPopSize]
+    return rates
