@@ -18,40 +18,9 @@
         "EMLEFT": "LEFT",
         "EMRIGHT": "RIGHT"
     },
-    "simulatedEnvParams": {
-        "random": 0,
-        "yball": 80,
-        "yracket": 40,
-        "dodraw": 0,
-        "racket_dy": 5,
-        "possible_ball_dy": [1,1,1,1,1,1,1,1,1,1,1,1,1],
-        "possible_ball_dx": [1,1,1,1,1,1,1,1,1,1,1,1,1],
-        "top_bottom_rule": 0
-    },
-    "wiggle": 6,
-    "stochmove": 0,
-    "0rand": 0,
-    "movefctr": 1.0,
-    "avoidStuck": 0,
-    "useImagePadding": 0,
-    "rewardcodes": {
-        "scorePoint": 0.0,
-        "losePoint": -0.1,
-        "followTarget": 0.0,
-        "avoidTarget": 0.0,
-        "hitBall": 1.0
-    },
     "actionsPerPlay": 1,
     "observationsToKeep": 10,
     "rewardsToKeep": 10,
-    "followOnlyTowards": 1,
-    "useRacketPredictedPos": 1,
-    "useFollowMoveOutput": 0,
-    "DirectionDetectionAlgo": {
-        "OpticFlow": 0,
-        "FlowWidth": 1,
-        "UseFull": 1
-    },
     "verbose": 0,
     "stayStepLim": 0,
     "simtype": {
@@ -59,18 +28,18 @@
         "ResumeSimFromFile": "data/21may5_TARG0_S_gcp__step_15_synWeights_final.pkl"
     },
     "sim": {
-        "duration": 500000,
+        "duration": 1000,
         "dt": 0.6,
         "verbose": 0,
         "recordStep": 1.0,
-        "recordStim": 0,
+        "recordStim": 1,
         "recordWeightStepSize": 200,
         "RLFakeUpRule": 0,
         "RLFakeDownRule": 0,
         "RLFakeStayRule": 0,
         "name": "21may_NetPyNE_project",
         "doquit": 1,
-        "doplot": 0,
+        "doplot": 1,
         "saveCellSecs": 0,
         "saveCellConns": 0,
         "saveMotionFields": 0,
@@ -78,14 +47,6 @@
         "saveWeights": 1,
         "saveAssignedFiringRates": 0,
         "useReducedNetwork": 0
-    },
-    "architectureVtoA": {
-        "useProbabilistic": 1,
-        "useTopological": 0
-    },
-    "architectureVtoM": {
-        "useProbabilistic": 1,
-        "useTopological": 0
     },
     "cell": {
         "E": {"ahpwt": 1,
@@ -156,17 +117,11 @@
             "EMLEFT",
             "EMRIGHT"
         ],
-        "EXPDir": 1,
         "STDPconns": {
             "EE": 1
         },
-        "useNeuronPad": 0,
-
-        "DirMinRate": 0.0,
-        "DirMaxRate": 150.0,
+        
         "InputMaxRate": 150.0,
-        "FiringRateCutoff": 50.0,
-
         "stimModW": 35,
         "synMechParams": {
             "AMPA": {"mod": "Exp2Syn", "tau1": 0.05, "tau2": 5.3, "e": 0},
@@ -195,16 +150,6 @@
                    "IA":{"GA2": 2.25,"p": 0.25},
                    "IAL":{"GA2": 4.5,"p": 0.25}}
         },
-        "EEMWghtThreshMin": 0.9,
-        "EEMWghtThreshMax": 4.0,
-        "EEMPopNorm": 1,
-        "CellWNorm": {
-            "On": 0,
-            "MinFctr": 1.0,
-            "MaxFctr": 15.0
-        },
-        "EEMRecProbCross": 1,
-        "VisualFeedback": 0,
         "weightVar": 0.5,
         "delays": {
             "soma": [1.8, 2.2],
