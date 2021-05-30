@@ -45,16 +45,14 @@ tstepPerAction = dconf['sim']['tstepPerAction'] # time step per action (in ms)
 
 fid4=None # only used by rank 0
 
-scale = dconf['net']['scale'] # scales the size of the network (only number of neurons)
-
-ETypes = dconf['net']['ETypes'] # excitatory neuron types
-ITypes = dconf['net']['ITypes'] # inhibitory neuron types
 allpops = list(dconf['net']['allpops'].keys())
+inputPop = dconf['net']['inputPop']
 EMotorPops = dconf['net']['EMotorPops'] # excitatory neuron motor populations
+# number of neurons of a given type: dnumc
+scale = dconf['net']['scale'] # scales the size of the network (only number of neurons)
+dnumc = OrderedDict({ ty: dconf['net']['allpops'][ty] * scale for ty in allpops })
 
 cmat = dconf['net']['cmat'] # connection matrix (for classes, synapses, probabilities [probabilities not used for topological conn])
-
-dnumc = OrderedDict({ty:dconf['net']['allpops'][ty]*scale for ty in allpops}) # number of neurons of a given type
 
 lrecpop = ['EMRIGHT', 'EMLEFT'] # which plastic populations to record from
 
@@ -89,17 +87,22 @@ simConfig.recordTraces = {'V_soma':{'sec':'soma','loc':0.5,'var':'v'}}  # Dict w
 simConfig.recordCellsSpikes = [-1] # this means record from all neurons - including stim populations, if any
 simConfig.recordStep = dconf['sim']['recordStep'] # Step size in ms to save data (e.g. V traces, LFP, etc)
 simConfig.filename = 'data/'+dconf['sim']['name']+'simConfig'  # Set file output name
-simConfig.saveJson = False
+simConfig.saveJson = True
 simConfig.savePickle = True            # Save params, network and sim output to pickle file
 simConfig.saveMat = False
 simConfig.saveFolder = 'data'
 # simConfig.backupCfg = ['sim.json', 'backupcfg/'+dconf['sim']['name']+'sim.json']
 simConfig.createNEURONObj = True  # create HOC objects when instantiating network
 simConfig.createPyStruct = True  # create Python structure (simulator-independent) when instantiating network
-simConfig.analysis['plotTraces'] = {'include': [(pop, 0) for pop in ['ER','IR','EV1','EV1DE','ID','IV1','EV4','IV4','EMT','IMT','EMLEFT','EMRIGHT','IM','IML','IMUP','IMDOWN','EA','IA','IAL','EA2','IA2','IA2L']]}
-simConfig.analysis['plotRaster'] = {'popRates':'overlay','showFig':dconf['sim']['doplot']}
+simConfig.analysis['plotTraces'] = {
+  'include': [(pop, 0) for pop in dconf['net']['allpops'].keys()]
+}
+simConfig.analysis['plotRaster'] = {
+  'popRates': 'overlay',
+  'showFig': dconf['sim']['doplot']
+}
 #simConfig.analysis['plot2Dnet'] = True
-#simConfig.analysis['plotConn'] = True           # plot connectivity matrix
+# simConfig.analysis['plotConn'] = True           # plot connectivity matrix
 # simConfig.coreneuron = True
 # synaptic weight gain (based on E, I types)
 cfg = simConfig
@@ -158,7 +161,7 @@ def getComp (sy):
 
 #Population parameters
 for ty in allpops:
-  if ty in ETypes:
+  if ty.startswith('E'):
     netParams.popParams[ty] = {'cellType':ty, 'numCells': dnumc[ty], 'cellModel': ECellModel}
   else:
     netParams.popParams[ty] = {'cellType':ty, 'numCells': dnumc[ty], 'cellModel': ICellModel}
@@ -171,16 +174,18 @@ def makeECellModel (ECellModel):
     EExcitSec = 'soma' # section where excitatory synapses placed
     simConfig.recordTraces = {'V_soma':{'var':'m'}}  # Dict with traces to record
     netParams.defaultThreshold = 0.0
-    for ty in ETypes:
-      #netParams.popParams[ty]={'cellType':ty,'numCells':dnumc[ty],'cellModel':ECellModel}#, 'params':{'taue':5.35,'taui1':9.1,'taui2':0.07,'taum':20}}
-      netParams.popParams[ty] = {'cellType':ty, 'cellModel': 'IntFire4', 'numCells': dnumc[ty], 'taue': 1.0}  # pop of IntFire4
+    for ty in allpops:
+      if ty.startswith('E'):
+        #netParams.popParams[ty]={'cellType':ty,'numCells':dnumc[ty],'cellModel':ECellModel}#, 'params':{'taue':5.35,'taui1':9.1,'taui2':0.07,'taum':20}}
+        netParams.popParams[ty] = {'cellType': ty, 'cellModel': 'IntFire4', 'numCells': dnumc[ty], 'taue': 1.0}  # pop of IntFire4
   elif ECellModel == 'INTF7':
     EExcitSec = 'soma' # section where excitatory synapses placed
     simConfig.recordTraces = {'V_soma':{'var':'Vm'}}  # Dict with traces to record
     netParams.defaultThreshold = -40.0
-    for ty in ETypes:
-      netParams.popParams[ty] = {'cellType':ty, 'cellModel': 'INTF7', 'numCells': dnumc[ty]} # pop of IntFire4
-      for k,v in intf7.INTF7E.dparam.items(): netParams.popParams[ty][k] = v
+    for ty in allpops:
+      if ty.startswith('E'):
+        netParams.popParams[ty] = {'cellType':ty, 'cellModel': 'INTF7', 'numCells': dnumc[ty]}
+        for k,v in intf7.INTF7E.dparam.items(): netParams.popParams[ty][k] = v
     PlastWeightIndex = intf7.dsyn['AM2']
   return EExcitSec, PlastWeightIndex
 
@@ -189,18 +194,20 @@ def makeICellModel (ICellModel):
   if ICellModel == 'IntFire4':
     simConfig.recordTraces = {'V_soma':{'var':'m'}}  # Dict with traces to record
     netParams.defaultThreshold = 0.0
-    for ty in ITypes:
-      netParams.popParams[ty] = {'cellType':ty, 'cellModel': 'IntFire4', 'numCells': dnumc[ty], 'taue': 1.0}  # pop of IntFire4
+    for ty in allpops:
+      if ty.startswith('I'):
+        netParams.popParams[ty] = {'cellType':ty, 'cellModel': 'IntFire4', 'numCells': dnumc[ty], 'taue': 1.0}  # pop of IntFire4
   elif ICellModel == 'INTF7':
     EExcitSec = 'soma' # section where excitatory synapses placed
     simConfig.recordTraces = {'V_soma':{'var':'Vm'}}  # Dict with traces to record
     netParams.defaultThreshold = -40.0
-    for ty in ITypes:
-      netParams.popParams[ty] = {'cellType':ty, 'cellModel': 'INTF7', 'numCells': dnumc[ty]}
-      if ty.count('L') > 0: # LTS
-        for k,v in intf7.INTF7IL.dparam.items(): netParams.popParams[ty][k] = v
-      else: # FS
-        for k,v in intf7.INTF7I.dparam.items(): netParams.popParams[ty][k] = v
+    for ty in allpops:
+      if ty.startswith('I'):
+        netParams.popParams[ty] = {'cellType':ty, 'cellModel': 'INTF7', 'numCells': dnumc[ty]}
+        if ty.count('L') > 0: # LTS
+          for k,v in intf7.INTF7IL.dparam.items(): netParams.popParams[ty][k] = v
+        else: # FS
+          for k,v in intf7.INTF7I.dparam.items(): netParams.popParams[ty][k] = v
 
 EExcitSec,PlastWeightIndex = makeECellModel(ECellModel)
 print('EExcitSec,PlastWeightIndex:',EExcitSec,PlastWeightIndex)
@@ -240,48 +247,52 @@ def getWeightIndex (synmech, cellModel):
 def setupStimMod ():
   # setup variable rate NetStim sources (send spikes based on image contents)
   lstimty = []
-  inputPop = 'EV1' # which population gets the direct visual inputs (pixels)
-  if dnumc['ER']>0: inputPop = 'ER'
-  stimModLocW = dconf['net']['stimModVL']
-  stimModDirW = dconf['net']['stimModVD']
+  stimModW = dconf['net']['stimModW']
   if ECellModel == 'IntFire4' or ECellModel == 'INTF7':
     lpoty = [inputPop]
-    for poty in ['EV1D'+Dir for Dir in ['E','NE','N', 'NW','W','SW','S','SE']]: lpoty.append(poty)
-    wt = stimModLocW
     for poty in lpoty:
       if dnumc[poty] <= 0: continue
       stimty = 'stimMod'+poty
       lstimty.append(stimty)
-      netParams.popParams[stimty] = {'cellModel': 'NSLOC', 'numCells': dnumc[poty],'rate': 'variable', 'noise': 0, 'start': 0}
+      netParams.popParams[stimty] = {
+        'cellModel': 'NSLOC',
+        'numCells': dnumc[poty],
+        'rate': 'variable',
+        'noise': 0,
+        'start': 0}
       blist = [[i,i] for i in range(dnumc[poty])]
       netParams.connParams[stimty+'->'+poty] = {
-        'preConds': {'pop':stimty},
-        'postConds': {'pop':poty},
-        'weight':wt,
+        'preConds': {'pop': stimty},
+        'postConds': {'pop': poty},
+        'weight': stimModLocW,
         'delay': getInitDelay('STIMMOD'),
-        'connList':blist,
-        'weightIndex': getWeightIndex('AMPA',ECellModel)}
-      wt = stimModDirW # rest of inputs use this weight
-
+        'connList': blist,
+        'weightIndex': getWeightIndex('AMPA', ECellModel)}
   return lstimty
 
-sim.lstimty = setupStimMod() # when using IntFire4 cells lstimty has the NetStim populations that send spikes to EV1, EV1DE, etc.
+# Note: when using IntFire4 cells lstimty has the NetStim populations
+# that send spikes to EV1, EV1DE, etc.
+sim.lstimty = setupStimMod()
 for ty in sim.lstimty: allpops.append(ty)
 
 # Stimulation parameters
-def setupNoiseStim ():
+def setupNoiseStim():
   lnoisety = []
   dnoise = dconf['noise']
   # setup noisy NetStim sources (send random spikes)
   if ECellModel == 'IntFire4' or ECellModel == 'INTF7':
-    lpoty = dnoise.keys()
-    for poty in lpoty:
-      lsy = dnoise[poty].keys()
-      for sy in lsy:
-        Weight,Rate = dnoise[poty][sy]['w'],dnoise[poty][sy]['rate']
-        if Weight > 0.0 and Rate > 0.0: # only create the netstims if rate,weight > 0
+    for poty, dpoty in dnoise.items():
+      for sy, dsy in dpoty.items():
+        Weight, Rate = dsy['w'], dsy['rate']
+        if Weight > 0.0 and Rate > 0.0:
+          # only create the netstims if rate,weight > 0
           stimty = 'stimNoise'+poty+'_'+sy
-          netParams.popParams[stimty] = {'cellModel': 'NetStim', 'numCells': dnumc[poty],'rate': Rate, 'noise': 1.0, 'start': 0}
+          netParams.popParams[stimty] = {
+            'cellModel': 'NetStim',
+            'numCells': dnumc[poty],
+            'rate': Rate,
+            'noise': 1.0,
+            'start': 0}
           blist = [[i,i] for i in range(dnumc[poty])]
           netParams.connParams[stimty+'->'+poty] = {
             'preConds': {'pop':stimty},
@@ -291,19 +302,6 @@ def setupNoiseStim ():
             'connList':blist,
             'weightIndex':getWeightIndex(sy,ECellModel)}
           lnoisety.append(stimty)
-  else:
-    # setup noise inputs
-    lpoty = dnoise.keys()
-    for poty in lpoty:
-      lsy = dnoise[poty].keys()
-      for sy in lsy:
-        Weight,Rate = dnoise[poty][sy]['w'],dnoise[poty][sy]['rate']
-        if Weight > 0.0 and Rate > 0.0: # only create the netstims if rate,weight > 0
-          stimty = poty+'Mbkg'+sy
-          netParams.stimSourceParams[stimty] = {'type': 'NetStim', 'rate': Rate, 'noise': 1.0}
-          netParams.stimTargetParams[poty+'Mbkg->all'] = {
-            'source': stimty, 'conds': {'cellType': EMotorPops}, 'weight': Weight, 'delay': 'max(1, normal(5,2))', 'synMech': sy}
-          # lnoisety.append(ty+'Mbkg'+sy)
   return lnoisety
 
 sim.lnoisety = setupNoiseStim()
@@ -659,8 +657,6 @@ if getconv(cmat,'EM','EA',dnumc['EMLEFT'])>0:
           elif useSTDP and dSTDPparams[synmech]['STDPon']:
             netParams.connParams[k]['plast'] = {'mech': 'STDP', 'params': dSTDPparams[synmech]}
 
-fconn = 'data/'+dconf['sim']['name']+'synConns.pkl'
-pickle.dump(sim.conns, open(fconn, 'wb'))
 ###################################################################################################################################
 
 sim.AIGame = None # placeholder
@@ -1010,10 +1006,15 @@ if sim.rank == 0:  # sim rank 0 specific init and backup of config file
   backupcfg(dconf['sim']['name'])
   safemkdir('data') # make sure data (output) directory exists
 
+
 sim.net.createPops()                      # instantiate network populations
 sim.net.createCells()                     # instantiate network cells based on defined populations
 sim.net.connectCells()                    # create connections between cells based on params
 sim.net.addStims()                        #instantiate netStim
+
+if sim.rank == 0:
+  fconn = 'data/'+dconf['sim']['name']+'_sim'
+  sim.saveData(filename=fconn)
 
 def setrecspikes ():
   if dconf['sim']['recordStim']:
@@ -1078,6 +1079,11 @@ setdminID(sim, allpops)
 tPerPlay = tstepPerAction*dconf['actionsPerPlay']
 InitializeInputRates()
 #InitializeNoiseRates()
+
+# Plot 2d net
+# sim.analysis.plot2Dnet(saveFig='data/net.png', showConns=True)
+sim.analysis.plotConn(saveFig='data/conns.png')
+
 sim.runSimWithIntervalFunc(tPerPlay,trainAgent) # has periodic callback to adjust STDP weights based on RL signal
 if sim.rank == 0 and fid4 is not None: fid4.close()
 if ECellModel == 'INTF7' or ICellModel == 'INTF7': intf7.insertSpikes(sim, simConfig.recordStep)

@@ -139,23 +139,7 @@
         "ICellModel": "INTF7",
         "scale": 1,
         "allpops": {
-            "ER": 0,
-            "IR": 0,
-            "EV1": 400,
-            "EV1DE": 0,
-            "EV1DNE": 0,
-            "EV1DN": 0,
-            "EV1DNW": 0,
-            "EV1DW": 0,
-            "EV1DSW": 0,
-            "EV1DS": 0,
-            "EV1DSE": 0,
-            "ID": 0,
-            "IV1": 0,
-            "EV4": 0,
-            "IV4": 0,
-            "EMT": 0,
-            "IMT": 0,
+            "ES": 12,
 
             "EA": 10,
             "IA": 10,
@@ -163,141 +147,16 @@
             "EA2": 10,
             "IA2": 10,
             "IA2L": 10,
-            "EMLEFT": 10,
-            "EMRIGHT": 10,
-            "IM": 10,
-            "IML": 10,
 
-            "IMUP": 0,
-            "IMDOWN": 0
+            "EMLEFT": 10,
+            "EMRIGHT": 10
         },
-        "ETypes": [
-            "ER",
-            "EV1",
-            "EV1DE",
-            "EV1DNE",
-            "EV1DN",
-            "EV1DNW",
-            "EV1DW",
-            "EV1DSW",
-            "EV1DS",
-            "EV1DSE",
-            "EV4",
-            "EMT",
-            "EMLEFT",
-            "EMRIGHT",
-            "EA",
-            "EA2"
-        ],
-        "ITypes": [
-            "IR",
-            "IV1",
-            "IV4",
-            "IMT",
-            "IM",
-            "IML",
-            "ID",
-            "IMUP",
-            "IMDOWN",
-            "IA",
-            "IAL",
-            "IA2",
-            "IA2L"
-        ],
+        "inputPop": "ES",
         "EMotorPops": [
             "EMLEFT",
             "EMRIGHT"
         ],
         "EXPDir": 1,
-        "alltopoldivcons": {
-            "IR": {
-                "ER": 5
-            },
-            "EV1": {
-                "ER": 3
-            },
-            "IV1": {
-                "EV1": 5,
-                "ER": 5
-            },
-            "EV4": {
-                "EV1": 3,
-                "EMLEFT": 3,
-                "EMRIGHT": 3
-            },
-            "IV4": {
-                "EV4": 5,
-                "EV1": 5
-            },
-            "EMT": {
-                "EV4": 3,
-                "EMLEFT": 3,
-                "EMRIGHT": 3
-            },
-            "IMT": {
-                "EMT": 5,
-                "EV4": 5
-            }
-        },
-        "alltopolconvcons": {
-            "ER": {
-                "IR": 3,
-                "EV1": 3,
-                "EMLEFT": 3,
-                "EMRIGHT": 3
-            },
-            "EV1": {
-                "IV1": 3,
-                "EV4": 3,
-                "EMLEFT": 3,
-                "EMRIGHT": 3
-            },
-            "EV1DE": {
-                "EMLEFT": 3,
-                "EMRIGHT": 3
-            },
-            "EV1DNE": {
-                "EMLEFT": 3,
-                "EMRIGHT": 3
-            },
-            "EV1DN": {
-                "EMLEFT": 3,
-                "EMRIGHT": 3
-            },
-            "EV1DNW": {
-                "EMLEFT": 3,
-                "EMRIGHT": 3
-            },
-            "EV1DW": {
-                "EMLEFT": 3,
-                "EMRIGHT": 3
-            },
-            "EV1DSW": {
-                "EMLEFT": 3,
-                "EMRIGHT": 3
-            },
-            "EV1DS": {
-                "EMLEFT": 3,
-                "EMRIGHT": 3
-            },
-            "EV1DSE": {
-                "EMLEFT": 3,
-                "EMRIGHT": 3
-            },
-            "IV1": {
-                "IV4": 5
-            },
-            "EV4": {
-                "IV4": 3,
-                "EMT": 3
-            },
-            "IV4": {
-                "IMT": 5
-            },
-            "EMT": {
-                "IMT": 3
-            }
-        },
         "STDPconns": {
             "EIPlast": 0,
             "Visual": 0,
@@ -353,8 +212,7 @@
         "InputMaxRate": 150.0,
         "FiringRateCutoff": 50.0,
 
-        "stimModVD": 35,
-        "stimModVL": 35,
+        "stimModW": 35,
         "cmat": {
             "VL":{"VD":{"AM2": 0,"NM2": 0, "conv": 0},
                   "VL":{"AM2": 0.5,"NM2": 0.01, "conv": 0},
@@ -576,18 +434,6 @@
                 "NM": {"w":0, "rate":0},
                 "GA": {"w":1.875, "rate":100},
                 "AM2": {"w": 3.938, "rate": 200},
-                "NM2": {"w": 0, "rate": 0},
-                "GA2": {"w": 1.875, "rate": 100}},
-        "IM": {"AM": {"w":1.875, "rate":100},
-                "NM": {"w":0, "rate":0},
-                "GA": {"w":0, "rate":0},
-                "AM2": {"w": 4.125, "rate": 200},
-                "NM2": {"w": 0, "rate": 0},
-                "GA2": {"w": 1.875, "rate": 100}},
-        "IML": {"AM": {"w":1.875, "rate":100},
-                "NM": {"w":0, "rate":0},
-                "GA": {"w":0, "rate":0},
-                "AM2": {"w": 3.0, "rate": 200},
                 "NM2": {"w": 0, "rate": 0},
                 "GA2": {"w": 1.875, "rate": 100}},
         "EA": {"AM": {"w":0, "rate":0},
