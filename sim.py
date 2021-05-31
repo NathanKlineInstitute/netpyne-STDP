@@ -27,7 +27,8 @@ sim.allMotorOutputs = []  # list to store firing rate of output motor neurons.
 sim.ActionsRewardsfilename = 'data/'+dconf['sim']['name']+'ActionsRewards.txt'
 sim.MotorOutputsfilename = 'data/'+dconf['sim']['name']+'MotorOutputs.txt'
 sim.WeightsRecordingTimes = []
-sim.allRLWeights = []  # list to store weights --- should remove that
+sim.allRLWeights = []
+sim.allNonRLWeights = []
 
 # sim.NonRLweightsfilename = 'data/'+dconf['sim']['name']+'NonRLweights.txt'  # file to store weights
 sim.plotWeights = 0  # plot weights
@@ -115,6 +116,7 @@ cfg.saveCellConns = bool(dconf['sim']['saveCellConns'])
 # weight variance -- check if need to vary the initial weights (note, they're over-written if resumeSim==1)
 cfg.weightVar = dconf['net']['weightVar']
 
+
 def isExc(ty): return ty.startswith('E')
 def isInh(ty): return ty.startswith('I')
 def connType(prety, poty): return prety[0] + poty[0]
@@ -173,9 +175,9 @@ def getComp(sy):
 # Population parameters
 for ty in allpops:
   netParams.popParams[ty] = {
-    'cellType': ty,
-    'numCells': dnumc[ty],
-    'cellModel': ECellModel if isExc(ty) else ICellModel}
+      'cellType': ty,
+      'numCells': dnumc[ty],
+      'cellModel': ECellModel if isExc(ty) else ICellModel}
 
 
 def makeECellModel(ECellModel):
@@ -309,6 +311,8 @@ for ty in sim.lstimty:
   allpops.append(ty)
 
 # Stimulation parameters
+
+
 def setupNoiseStim():
   lnoisety = []
   dnoise = dconf['noise']
@@ -478,6 +482,7 @@ def saveWeights(sim, downSampleCells):
       fid2.write('\n')
   print(('Saved Non-RL weights as %s' % sim.NonRLweightsfilename))
 
+
 def plotWeights():
   from pylab import figure, loadtxt, xlabel, ylabel, xlim, ylim, show, pcolor, array, colorbar
   figure()
@@ -542,6 +547,7 @@ def saveGameBehavior(sim):
 
 ######################################################################################
 
+
 def getSpikesWithInterval(trange=None, neuronal_pop=None):
   if len(neuronal_pop) < 1:
     return 0.0
@@ -602,7 +608,7 @@ def updateInputRates():
         offset = sim.simData['dminID'][pop]
         for cell in lCell:
           rate = input_rates[int(cell.gid-offset)]
-          cell.hPointp.interval = 1000.0 / rate if rate != 0 else 1e12  # 40
+          cell.hPointp.interval = dconf['net']['InputMaxRate'] / rate if rate != 0 else 1e12  # 40
 
 
 def getActions(t, moves, pop_to_move):
@@ -642,10 +648,11 @@ def getActions(t, moves, pop_to_move):
         print('Warning: No firing rates for moves {}!'.format(','.join(moves)))
         actions.append(dconf['moves']['LEFT'])
       else:
+        mvsf = [(m, f[ts]) for m, f in move_freq.items()]
+        random.shuffle(mvsf)
         best_move, best_move_freq = sorted(
-            [(m, f[ts]) for m, f in move_freq.items()],
-            key=lambda x: x[1],
-            reverse=True)[0]
+            mvsf, key=lambda x: x[1], reverse=True)[0]
+        print(best_move)
         actions.append(dconf['moves'][best_move])
 
   return actions
@@ -665,7 +672,6 @@ def trainAgent(t):
   # print(sim.simData['spkid'].size())
   # for c,v in sim.simData['V_soma'].items():
   #   print(c, v, v.size(), [v.get(idx) for idx in range(v.size())])
-
 
   # for the first time interval use randomly selected actions
   if t < (tstepPerAction*dconf['actionsPerPlay']):
@@ -772,9 +778,12 @@ sim.net.createPops()
 # instantiate network cells based on defined populations
 sim.net.createCells()
 # create connections between cells based on params
-sim.net.connectCells()
+conns = sim.net.connectCells()
 # instantiate netStim
 sim.net.addStims()
+
+# print('here!')
+# print(conns)
 
 if sim.rank == 0:
   fconn = 'data/'+dconf['sim']['name']+'_sim'
@@ -799,6 +808,7 @@ setrecspikes()
 sim.setupRecording()
 
 dSTDPmech = getAllSTDPObjects(sim)  # get all the STDP objects up-front
+
 
 def resumeSTDPWeights(sim, W):
   # this function assign weights stored in 'ResumeSimFromFile' to all connections by matching pre and post neuron ids
@@ -862,8 +872,8 @@ InitializeInputRates()
 InitializeNoiseRates()
 
 # Plot 2d net
-# sim.analysis.plot2Dnet(saveFig='data/net.png', showConns=True)
-# sim.analysis.plotConn(saveFig='data/conns.png')
+sim.analysis.plot2Dnet(saveFig='data/net.png', showFig=False)
+sim.analysis.plotConn(saveFig='data/conns.png', groupBy='cell', feature='numConns', showFig=False)
 
 # has periodic callback to adjust STDP weights based on RL signal
 sim.runSimWithIntervalFunc(tPerPlay, trainAgent)
@@ -873,6 +883,27 @@ if ECellModel == 'INTF7' or ICellModel == 'INTF7':
   intf7.insertSpikes(sim, simConfig.recordStep)
 sim.gatherData()  # gather data from different nodes
 sim.saveData()  # save data to disk
+
+
+# print(sim.simData)
+# print(dir(sim.simData))
+# print(sim.simData['spkt'])
+# print(sim.simData['spkid'])
+# print(len(sim.simData['spkid']))
+# print(sim.simData['spkt'].size())
+# print(sim.simData['spkid'].size())
+# for c,v in sim.simData['V_soma'].items():
+#   print(c, v, v.size(), [v.get(idx) for idx in range(v.size())])
+
+# if sim.simData['spkt'].size() == sim.simData['spkid'].size():
+#   print('same size')
+#   kt = sim.simData['spkt']
+#   kid = sim.simData['spkid']
+#   # print([(kt.get(idx), kid.get(idx)) for idx in range(kt.size())])
+#   # Check what was stimulated:
+#   for idx in range(kt.size()):
+#     if kid.get(idx) < 62:
+#       print(kt.get(idx), kid.get(idx))
 
 
 def LSynWeightToD(L):
