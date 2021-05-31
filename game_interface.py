@@ -1,9 +1,10 @@
 import numpy as np
+from scipy.special import expit
 
 func_linear = lambda x:x
 func_log = lambda x: np.log(x)
-func_sigmoid = lambda x: 1/(1 + np.exp(-x))
-func_sigmoid_div = lambda y: lambda x: 1/(1 + np.exp(-x / y))
+func_sigmoid = lambda x: expit(x)
+func_sigmoid_div = lambda y: lambda x: expit(x / y)
 
 def _map_observation(
     value, minVal, maxVal, minRate, maxRate,
@@ -11,6 +12,7 @@ def _map_observation(
   val = value
   if prevValue:
     val = value - prevValue
+  val = max(minVal, min(maxVal, val)) # make sure its within bounds
   norm_val = (func(val) - func(minVal)) / (func(maxVal) - func(minVal))
   return norm_val * (maxRate - minRate) + minRate
 
@@ -35,10 +37,19 @@ class GameInterface:
     self.inputPop = config['net']['inputPop']
     self.inputPopSize = config['net']['allpops'][self.inputPop]
 
+  def _get_limit(self, idx, limit_type='min'):
+    if limit_type in self.obs_map:
+      return self.obs_map[idx][limit_type]
+    elif limit_type == 'min':
+      return self.obs_space.low[idx]
+    elif limit_type == 'max':
+      return self.obs_space.high[idx]
+
+
   def input_firing_rates(self):
     vals = [_map_observation(obsVal,
-      minVal=self.obs_space.low[idx],
-      maxVal=self.obs_space.high[idx],
+      minVal=self._get_limit(idx, 'min'),
+      maxVal=self._get_limit(idx, 'max'),
       minRate=0, maxRate=self.inputMaxRate,
       func=self.obs_map[idx])
     for idx, obsVal in enumerate(self.AIGame.observations[-1])]

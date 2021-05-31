@@ -685,14 +685,14 @@ def trainAgent(t):
     actions = getActions(t, dconf['moves'], dconf['pop_to_move'])
 
   if sim.rank == 0:
-    rewards = sim.AIGame.playGame(actions)
+    rewards, done = sim.AIGame.playGame(actions)
+    if done:
+      print('Game finished! Restarting on a new episode!')
 
     # specifically for CartPole-v1. TODO: move to a diff file
 
     if len(sim.AIGame.observations) == 0:
-      # TODO: Handle game failure
-      critic = 10000
-      sim.AIGame.playGame(actions)
+      raise Exception('Failed to get an observation from the Game')
     elif len(sim.AIGame.observations) == 1:
       critic = abs(sim.AIGame.observations[-1][2]) * 100
     else:

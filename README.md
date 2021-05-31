@@ -32,3 +32,11 @@ Compile mod files
 ### run 
 
     python3 sim.py
+
+Check notebooks:
+
+    jupyter notebook
+
+Run tests:
+
+    pytest tests

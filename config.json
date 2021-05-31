@@ -3,10 +3,10 @@
         "name": "CartPole-v1",
         "savemp4": 0,
         "observation_map": [
-            {"type": "linear"},
-            {"type": "sigmoid", "scale": 10},
-            {"type": "linear"},
-            {"type": "sigmoid", "scale": 10}
+            {"type": "linear", "min": -0.7, "max": 0.7},
+            {"type": "sigmoid", "scale": 2, "min": -2, "max": 2},
+            {"type": "linear", "min": -0.2, "max": 0.2},
+            {"type": "sigmoid", "scale": 2, "min": -2.5, "max": 2.5}
         ],
         "episodes": 10
     },

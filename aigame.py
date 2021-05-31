@@ -1,7 +1,3 @@
-"""
-AIGame: Run an OpenAIGym
-"""
-
 import gym
 from gym import wrappers
 import numpy as np
@@ -51,10 +47,11 @@ class AIGame:
       self.count_total_steps += 1
 
       if done:
-        self.env.reset()
         self._clean()
+        observation = self.env.reset()
+        self.observations.append(observation)
         self.count_episodes += 1
         break
 
-    return current_rewards
+    return current_rewards, done
 

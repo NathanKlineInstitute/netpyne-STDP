@@ -12,7 +12,6 @@ for i in range(len(sys.argv)):
 def readconf(fnjson):
   with open(fnjson, 'r') as fp:
     dconf = json.load(fp)
-    # print(dconf)
   return dconf
 
 dconf = readconf(fnjson) # read the configuration
