@@ -1,7 +1,7 @@
 import gym
 from gym import wrappers
 import numpy as np
-from time import time
+from datetime import datetime
 from collections import deque
 
 
@@ -15,21 +15,25 @@ class AIGame:
     env = gym.make(config['env']['name'])
     env.reset()
     self.env = env
+    self.do_render = config['env']['render']
     self.actionsPerPlay = config['actionsPerPlay']
     self.observations = deque(maxlen=config['observationsToKeep'])
     self.rewards = deque(maxlen=config['rewardsToKeep'])
     self.count_episodes = 0
-    self.count_steps = 0
-    self.count_total_steps = 0
+    self.count_steps = [0]
+    self.tstart = None
 
   def _clean(self):
     self.observations.clear()
     self.rewards.clear()
-    self.count_steps = 0
+    self.count_steps.append(0)
+    self.tstart = None
 
   def playGame(self, actions):
     current_rewards = []
     done = False
+    if not self.tstart:
+      self.tstart = datetime.now()
 
     assert len(actions) == self.actionsPerPlay
     for adx in range(self.actionsPerPlay):
@@ -37,16 +41,18 @@ class AIGame:
       caction = actions[adx]
 
       observation, reward, done, info = self.env.step(caction)
-      self.env.render()
+      if self.do_render:
+        self.env.render()
 
       current_rewards.append(reward)
       self.rewards.append(reward)
       self.observations.append(observation)
 
-      self.count_steps += 1
-      self.count_total_steps += 1
+      self.count_steps[-1] += 1
 
       if done:
+        # delta = (datetime.now() - self.tstart) / self.count_steps[-1]
+        # print('Python time per step: {} ms'.format(delta.microseconds / 1000))
         self._clean()
         observation = self.env.reset()
         self.observations.append(observation)

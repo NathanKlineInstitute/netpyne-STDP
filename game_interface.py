@@ -32,13 +32,14 @@ class GameInterface:
   def __init__(self, aigame, config):
     self.AIGame = aigame
     self.obs_space = self.AIGame.env.observation_space
-    self.obs_map = [_parse_obs_map(func_def) for func_def in config['env']['observation_map']]
+    self.obs_map = config['env']['observation_map']
+    self.obs_func = [_parse_obs_map(func_def) for func_def in config['env']['observation_map']]
     self.inputMaxRate = config['net']['InputMaxRate']
     self.inputPop = config['net']['inputPop']
     self.inputPopSize = config['net']['allpops'][self.inputPop]
 
   def _get_limit(self, idx, limit_type='min'):
-    if limit_type in self.obs_map:
+    if limit_type in self.obs_map[idx]:
       return self.obs_map[idx][limit_type]
     elif limit_type == 'min':
       return self.obs_space.low[idx]
@@ -51,7 +52,7 @@ class GameInterface:
       minVal=self._get_limit(idx, 'min'),
       maxVal=self._get_limit(idx, 'max'),
       minRate=0, maxRate=self.inputMaxRate,
-      func=self.obs_map[idx])
+      func=self.obs_func[idx])
     for idx, obsVal in enumerate(self.AIGame.observations[-1])]
 
     rates = np.tile(

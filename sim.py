@@ -7,6 +7,7 @@ import os
 import time
 import numpy as np
 import pandas as pd
+from datetime import datetime
 from collections import OrderedDict
 from matplotlib import pyplot as plt
 
@@ -15,6 +16,7 @@ from cells import intf7
 from connUtils import getconv
 from game_interface import GameInterface
 from utils import syncdata_alltoall
+from simdat import drawraster
 
 # this will not work properly across runs with different number of nodes
 random.seed(1234)
@@ -553,11 +555,17 @@ def getSpikesWithInterval(trange=None, neuronal_pop=None):
     return 0.0
   spkts = sim.simData['spkt']
   spkids = sim.simData['spkid']
-  pop_spikes = 0
+  pop_spikes = dict([(v,0) for v in set(neuronal_pop.values())])
   if len(spkts) > 0:
-    for i in range(len(spkids)):
+    if random.random() < 0.005:
+      print('length', len(spkts), spkts.buffer_size())
+    len_skts = len(spkids)
+    for idx in range(len_skts):
+      i = len_skts - 1 - idx
       if trange[0] <= spkts[i] <= trange[1] and spkids[i] in neuronal_pop:
-        pop_spikes += 1
+        pop_spikes[neuronal_pop[spkids[i]]] += 1
+      if trange[0] > spkts[i]:
+        break
   return pop_spikes
 
 
@@ -594,6 +602,7 @@ def InitializeInputRates():
 
 def updateInputRates():
   input_rates = sim.GameInterface.input_firing_rates()
+  # print(input_rates[:4])
   input_rates = syncdata_alltoall(sim, input_rates)
 
   # if sim.rank == 0: print(dFiringRates['EV1'])
@@ -608,24 +617,29 @@ def updateInputRates():
         offset = sim.simData['dminID'][pop]
         for cell in lCell:
           rate = input_rates[int(cell.gid-offset)]
-          cell.hPointp.interval = dconf['net']['InputMaxRate'] / rate if rate != 0 else 1e12  # 40
+          interval = 1000 / rate if rate != 0 else tstepPerAction
+          cell.hPointp.interval = interval
 
 
 def getActions(t, moves, pop_to_move):
   global fid4, tstepPerAction
-  move_freq = {}
-  # Iterate over move types
-  for move in moves:
-    vec = h.Vector()
-    freq = []
-    for ts in range(int(dconf['actionsPerPlay'])):
-      ts_beg = t-tstepPerAction*(dconf['actionsPerPlay']-ts-1)
-      ts_end = t-tstepPerAction*(dconf['actionsPerPlay']-ts)
-      pop_name = [p for p, m in pop_to_move.items() if m == move][0]
-      freq.append(getSpikesWithInterval(
-          [ts_end, ts_beg], sim.net.pops[pop_name].cellGids))
 
-    sim.pc.allreduce(vec.from_python(freq), 1)  # sum
+  # Get move frequencies
+  move_freq = {}
+  vec = h.Vector()
+  freq = []
+  for ts in range(int(dconf['actionsPerPlay'])):
+    ts_beg = t-tstepPerAction*(dconf['actionsPerPlay']-ts-1)
+    ts_end = t-tstepPerAction*(dconf['actionsPerPlay']-ts)
+    cgids_map = {}
+    for move in moves:
+      pop_name = [p for p, m in pop_to_move.items() if m == move][0]
+      for cgid in sim.net.pops[pop_name].cellGids:
+        cgids_map[cgid] = move
+    freq.append(getSpikesWithInterval([ts_end, ts_beg], cgids_map))
+  for move in moves:
+    freq_move = [q[move] for q in freq]
+    sim.pc.allreduce(vec.from_python(freq_move), 1)  # sum
     move_freq[move] = vec.to_python()
 
   actions = []
@@ -633,8 +647,9 @@ def getActions(t, moves, pop_to_move):
   if sim.rank == 0:
     if fid4 is None:
       fid4 = open(sim.MotorOutputsfilename, 'w')
-    print('t={}: {} spikes: {}'.format(
-        round(t, 2), ','.join(moves), ','.join([str(move_freq[m]) for m in moves])))
+    if dconf['verbose']:
+      print('t={}: {} spikes: {}'.format(
+          round(t,2), ','.join(moves), ','.join([str(move_freq[m]) for m in moves])))
     fid4.write('%0.1f' % t)
     for ts in range(int(dconf['actionsPerPlay'])):
       fid4.write(
@@ -652,7 +667,8 @@ def getActions(t, moves, pop_to_move):
         random.shuffle(mvsf)
         best_move, best_move_freq = sorted(
             mvsf, key=lambda x: x[1], reverse=True)[0]
-        print(best_move)
+        if dconf['verbose']:
+          print('Selected Move', best_move)
         actions.append(dconf['moves'][best_move])
 
   return actions
@@ -663,15 +679,7 @@ def trainAgent(t):
   """
   global NBsteps, epCount, tstepPerAction
 
-  # print(sim.simData)
-  # print(dir(sim.simData))
-  # print(sim.simData['spkt'])
-  # print(sim.simData['spkid'])
-  # print(len(sim.simData['spkid']))
-  # print(sim.simData['spkt'].size())
-  # print(sim.simData['spkid'].size())
-  # for c,v in sim.simData['V_soma'].items():
-  #   print(c, v, v.size(), [v.get(idx) for idx in range(v.size())])
+  t1 = datetime.now()
 
   # for the first time interval use randomly selected actions
   if t < (tstepPerAction*dconf['actionsPerPlay']):
@@ -684,13 +692,26 @@ def trainAgent(t):
   else:
     actions = getActions(t, dconf['moves'], dconf['pop_to_move'])
 
+  t1 = datetime.now() - t1
+  t2 = datetime.now()
+
   if sim.rank == 0:
     rewards, done = sim.AIGame.playGame(actions)
     if done:
-      print('Game finished! Restarting on a new episode!')
+      ep_cnt = dconf['env']['episodes']
+      eval_str = ''
+      if len(sim.AIGame.count_steps) > ep_cnt:
+        # take the steps of the latest `ep_cnt` episodes
+        counted = [steps_per_ep for steps_per_ep in sim.AIGame.count_steps if steps_per_ep > 0][-ep_cnt:]
+        # get the median
+        eval_ep = np.median(counted)
+        epCount.append(eval_ep)
+        eval_str = '(median: {})'.format(eval_ep)
+      
+      last_steps = [k for k in sim.AIGame.count_steps if k != 0][-1]
+      print('Episode finished in {} steps {}!'.format(last_steps, eval_str))
 
-    # specifically for CartPole-v1. TODO: move to a diff file
-
+    # specific for CartPole-v1. TODO: move to a diff file
     if len(sim.AIGame.observations) == 0:
       raise Exception('Failed to get an observation from the Game')
     elif len(sim.AIGame.observations) == 1:
@@ -706,16 +727,19 @@ def trainAgent(t):
     # receive critic value from master node
     critic = sim.pc.py_broadcast(None, 0)
 
-    if dconf['verbose'] > 1:
-      print('UPactions: ', UPactions, 'DOWNactions: ', DOWNactions)
+  t2 = datetime.now() - t2
+  t3 = datetime.now()
 
   if critic != 0:  # if critic signal indicates punishment (-1) or reward (+1)
-    if sim.rank == 0:
-      print('t=', round(t, 2), 'RLcritic:', critic)
     if dconf['verbose']:
-      print('APPLY RL to both EMRIGHT and EMLEFT')
+      if sim.rank == 0:
+        print('t={} Reward:{}'.format(round(t, 2), critic))
     for STDPmech in dSTDPmech['all']:
       STDPmech.reward_punish(critic)
+
+
+  t3 = datetime.now() - t3
+  t4 = datetime.now()
 
   if sim.rank == 0:
     sim.allActions.extend(actions)
@@ -728,6 +752,11 @@ def trainAgent(t):
 
   updateInputRates()  # update firing rate of inputs to R population (based on game state)
 
+
+  t4 = datetime.now() - t4
+  t5 = datetime.now()
+
+
   NBsteps += 1
   if NBsteps % recordWeightStepSize == 0:
     if dconf['verbose'] > 0 and sim.rank == 0:
@@ -736,6 +765,9 @@ def trainAgent(t):
     recordAdjustableWeights(sim, t, dconf['pop_to_move'].keys())
     recordWeights(sim, t)
 
+  t5 = datetime.now() - t5
+  if random.random() < 0.005:
+    print([round(tk.microseconds / 1000, 0) for tk in [t1,t2,t3,t4,t5]])
 
 def getAllSTDPObjects(sim):
   # get all the STDP objects from the simulation's cells
@@ -781,9 +813,6 @@ sim.net.createCells()
 conns = sim.net.connectCells()
 # instantiate netStim
 sim.net.addStims()
-
-# print('here!')
-# print(conns)
 
 if sim.rank == 0:
   fconn = 'data/'+dconf['sim']['name']+'_sim'
@@ -868,12 +897,18 @@ def setdminID(sim, lpop):
 
 setdminID(sim, allpops)
 tPerPlay = tstepPerAction*dconf['actionsPerPlay']
-InitializeInputRates()
+
+# InitializeInputRates()# <-- Do not activate this!
 InitializeNoiseRates()
 
 # Plot 2d net
-sim.analysis.plot2Dnet(saveFig='data/net.png', showFig=False)
-sim.analysis.plotConn(saveFig='data/conns.png', groupBy='cell', feature='numConns', showFig=False)
+# sim.analysis.plot2Dnet(saveFig='data/net.png', showFig=False)
+sim.analysis.plotConn(
+          saveFig='data/connsCells.png', showFig=False,
+          groupBy='cell', feature='weight')
+includePre = list(dconf['net']['allpops'].keys())
+sim.analysis.plotConn(saveFig='data/connsPops.png', showFig=False,
+  includePre=includePre, includePost=includePre, feature='probability')
 
 # has periodic callback to adjust STDP weights based on RL signal
 sim.runSimWithIntervalFunc(tPerPlay, trainAgent)
@@ -964,6 +999,22 @@ def saveAssignedFiringRates(dAllFiringRates):
       dAllFiringRates,
       open('data/'+dconf['sim']['name']+'AssignedFiringRates.pkl', 'wb'))
 
+def prepraster(lpops):
+  # lpops = dnumc
+  dstartidx,dendidx={},{} # starting,ending indices for each population
+  for p in lpops.keys():
+    if lpops[p] > 0:
+      dstartidx[p] = sim.simData['dminID'][p]
+      dendidx[p] = sim.simData['dminID'][p] + lpops[p] - 1
+  spkID= np.array(sim.simData['spkid'])
+  spkT = np.array(sim.simData['spkt'])
+  dspkID,dspkT = {},{}
+  for pop in lpops.keys():
+    # if dnumc[pop] > 0:
+      dspkID[pop] = spkID[(spkID >= dstartidx[pop]) & (spkID <= dendidx[pop])]
+      dspkT[pop] = spkT[(spkID >= dstartidx[pop]) & (spkID <= dendidx[pop])]
+  return dspkID, dspkT
+
 
 if sim.rank == 0:  # only rank 0 should save. otherwise all the other nodes could over-write the output or quit first; rank 0 plots
   if dconf['sim']['doplot']:
@@ -983,5 +1034,15 @@ if sim.rank == 0:  # only rank 0 should save. otherwise all the other nodes coul
   # if sim.saveMotionFields: saveMotionFields(sim.AIGame.ldflow)
   # if sim.saveObjPos: saveObjPos(sim.AIGame.dObjPos)
   # if sim.saveAssignedFiringRates: saveAssignedFiringRates(sim.AIGame.dAllFiringRates)
+
+  lpops = dconf['net']['allpops']
+  for ty in sim.lstimty:
+    lpops[ty] = dconf['net']['allpops'][dconf['net']['inputPop']]
+  dspkID, dspkT = prepraster(lpops)
+  drawraster(
+    [k for k,v in lpops.items() if v > 0],
+    dspkT, dspkID, dnumc, totalDur=dconf['sim']['duration'],
+    figname='data/{}_raster.png'.format(dconf['sim']['name']))
+
   if dconf['sim']['doquit']:
     quit()
