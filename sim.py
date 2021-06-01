@@ -314,7 +314,6 @@ for ty in sim.lstimty:
 
 # Stimulation parameters
 
-
 def setupNoiseStim():
   lnoisety = []
   dnoise = dconf['noise']
@@ -322,7 +321,9 @@ def setupNoiseStim():
   if ECellModel == 'IntFire4' or ECellModel == 'INTF7':
     for poty, dpoty in dnoise.items():
       for sy, dsy in dpoty.items():
-        Weight, Rate = dsy['w'], dsy['rate']
+        damp = dconf['net']['noiseDamping']['E' if isExc(poty) else 'I']
+        Weight, Rate = dsy['w'] * damp, dsy['rate']
+        # print(poty, isExc(poty), damp, Weight)
         if Weight > 0.0 and Rate > 0.0:
           # only create the netstims if rate,weight > 0
           stimty = 'stimNoise'+poty+'_'+sy
@@ -557,8 +558,8 @@ def getSpikesWithInterval(trange=None, neuronal_pop=None):
   spkids = sim.simData['spkid']
   pop_spikes = dict([(v,0) for v in set(neuronal_pop.values())])
   if len(spkts) > 0:
-    if random.random() < 0.005:
-      print('length', len(spkts), spkts.buffer_size())
+    # if random.random() < 0.005:
+    #   print('length', len(spkts), spkts.buffer_size())
     len_skts = len(spkids)
     for idx in range(len_skts):
       i = len_skts - 1 - idx
@@ -766,8 +767,8 @@ def trainAgent(t):
     recordWeights(sim, t)
 
   t5 = datetime.now() - t5
-  if random.random() < 0.005:
-    print([round(tk.microseconds / 1000, 0) for tk in [t1,t2,t3,t4,t5]])
+  # if random.random() < 0.005:
+  #   print([round(tk.microseconds / 1000, 0) for tk in [t1,t2,t3,t4,t5]])
 
 def getAllSTDPObjects(sim):
   # get all the STDP objects from the simulation's cells
@@ -1035,7 +1036,7 @@ if sim.rank == 0:  # only rank 0 should save. otherwise all the other nodes coul
   # if sim.saveObjPos: saveObjPos(sim.AIGame.dObjPos)
   # if sim.saveAssignedFiringRates: saveAssignedFiringRates(sim.AIGame.dAllFiringRates)
 
-  lpops = dconf['net']['allpops']
+  lpops = dict([(k,v) for k,v in dconf['net']['allpops'].items() if v > 0])
   for ty in sim.lstimty:
     lpops[ty] = dconf['net']['allpops'][dconf['net']['inputPop']]
   dspkID, dspkT = prepraster(lpops)

@@ -9,7 +9,7 @@
             {"type": "linear", "min": -0.2, "max": 0.2},
             {"type": "linear", "min": -2.5, "max": 2.5}
         ],
-        "episodes": 7
+        "episodes": 21
     },
     "moves": {
         "LEFT": 0,
@@ -29,7 +29,7 @@
         "ResumeSimFromFile": "data/21may5_TARG0_S_gcp__step_15_synWeights_final.pkl"
     },
     "sim": {
-        "duration": 100000,
+        "duration": 500000,
         "dt": 0.6,
         "verbose": 0,
         "recordStep": 1.0,
@@ -95,23 +95,27 @@
     },
     "net": {
         "Gain": {
-            "EE": 1.0,
-            "EI": 1.0,
-            "IE": 1.0,
-            "II": 1.0
+            "EE": 7.0,
+            "EI": 5.0,
+            "IE": 4.0,
+            "II": 6.0
         },
         "ECellModel": "INTF7",
         "ICellModel": "INTF7",
         "scale": 1,
+        "noiseDamping": {
+            "E": 1.0,
+            "I": 0.5
+        },
         "allpops": {
-            "ES": 20,
+            "ES": 4,
 
-            "EA": 40,
-            "IA": 10,
+            "EA": 20,
+            "IA": 40,
             "IAL": 10,
 
-            "EMLEFT": 40,
-            "EMRIGHT": 40
+            "EMLEFT": 10,
+            "EMRIGHT": 10
         },
         "inputPop": "ES",
         "EMotorPops": [
@@ -122,7 +126,7 @@
             "EE": 1
         },
         
-        "InputMaxRate": 100.0,
+        "InputMaxRate": 50.0,
         "stimModW": 35,
         "synMechParams": {
             "AMPA": {"mod": "Exp2Syn", "tau1": 0.05, "tau2": 5.3, "e": 0},
@@ -138,18 +142,21 @@
             "GA2": "GABA"
         },
         "cmat": {
-            "ES":{"EA":{"AM2": 0.5,"NM2": 0.01, "p": 0.8}},
-            "EA":{"EA":{"AM2": 0.01,"NM2": 0.0, "p": 0.3},
-                  "IA":{"AM2": 1.95,"NM2":0.0195, "p": 0.5},
-                  "IAL":{"AM2": 0.98,"NM2":0.098, "p": 0.5},
-                  "EMLEFT":{"AM2": 0.2,"NM2": 0.0, "p": 0.6},
-                  "EMRIGHT":{"AM2": 0.2,"NM2": 0.0, "p": 0.6}},
-            "IA":{"EA":{"GA": 9.0,"p": 0.25},
-                  "IA":{"GA": 4.5,"p": 0.25},
-                  "IAL":{"GA": 4.5,"p": 0.25}},
-            "IAL":{"EA":{"GA2": 2.5,"p": 0.25},
-                   "IA":{"GA2": 2.25,"p": 0.25},
-                   "IAL":{"GA2": 4.5,"p": 0.25}}
+            "ES":{"EA":{"AM2": 2.0,"NM2": 0.0, "p": 0.8},
+                  "IA":{"AM2": 1.5,"NM2": 0.0, "p": 0.3},
+                  "EMLEFT":{"AM2": 1.0,"NM2": 0.0, "p": 0.1},
+                  "EMRIGHT":{"AM2": 1.0,"NM2": 0.0, "p": 0.1}},
+            "EA":{"EA":{"AM2": 0.1,"NM2": 0.0, "p": 0.2},
+                  "IA":{"AM2": 1.0,"NM2":1.1, "p": 0.2},
+                  "IAL":{"AM2": 1.0,"NM2":0.0, "p": 0.2},
+                  "EMLEFT":{"AM2": 1.0,"NM2": 0.0, "p": 0.6},
+                  "EMRIGHT":{"AM2": 1.0,"NM2": 0.0, "p": 0.6}},
+            "IA":{"EA":{"GA": 0.90,"p": 0.25},
+                  "IA":{"GA": 0.45,"p": 0.25},
+                  "IAL":{"GA": 0.45,"p": 0.25}},
+            "IAL":{"EA":{"GA2": 0.25,"p": 0.25},
+                   "IA":{"GA2": 0.225,"p": 0.25},
+                   "IAL":{"GA2": 0.45,"p": 0.25}}
         },
         "weightVar": 0.5,
         "delays": {
@@ -221,29 +228,29 @@
         "EMLEFT": {
                 "AM": {"w":0, "rate":0},
                 "NM": {"w":0, "rate":0},
-                "GA": {"w":1.875, "rate":100},
+                "GA": {"w":1.875, "rate": 100},
                 "AM2": {"w": 3.938, "rate": 200},
                 "NM2": {"w": 0, "rate": 0},
                 "GA2": {"w": 1.875, "rate": 100}},
         "EMRIGHT": {"AM": {"w":0, "rate":0},
                 "NM": {"w":0, "rate":0},
-                "GA": {"w":1.875, "rate":100},
+                "GA": {"w":1.875, "rate": 100},
                 "AM2": {"w": 3.938, "rate": 200},
                 "NM2": {"w": 0, "rate": 0},
                 "GA2": {"w": 1.875, "rate": 100}},
         "EA": {"AM": {"w":0, "rate":0},
                 "NM": {"w":0, "rate":0},
-                "GA": {"w":1.875, "rate":100},
+                "GA": {"w":1.875, "rate": 100},
                 "AM2": {"w": 3.938, "rate": 200},
                 "NM2": {"w": 0, "rate": 0},
                 "GA2": {"w": 1.875, "rate": 100}},
-        "IA": {"AM": {"w":1.875, "rate":100},
+        "IA": {"AM": {"w":1.875, "rate": 100},
                 "NM": {"w":0, "rate":0},
                 "GA": {"w":0, "rate":0},
                 "AM2": {"w": 4.125, "rate": 200},
                 "NM2": {"w": 0, "rate": 0},
                 "GA2": {"w": 1.875, "rate": 100}},
-        "IAL": {"AM": {"w":1.875, "rate":100},
+        "IAL": {"AM": {"w":1.875, "rate": 100},
                 "NM": {"w":0, "rate":0},
                 "GA": {"w":0, "rate":0},
                 "AM2": {"w": 3.0, "rate": 200},
