@@ -706,7 +706,7 @@ def trainAgent(t):
         counted = [steps_per_ep for steps_per_ep in sim.AIGame.count_steps if steps_per_ep > 0][-ep_cnt:]
         # get the median
         eval_ep = np.median(counted)
-        epCount.append(eval_ep)
+        epCount.append(counted[-1])
         eval_str = '(median: {})'.format(eval_ep)
       
       last_steps = [k for k in sim.AIGame.count_steps if k != 0][-1]
