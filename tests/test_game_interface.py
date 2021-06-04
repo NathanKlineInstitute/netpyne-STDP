@@ -38,8 +38,8 @@ pop_count = mock_config['net']['allpops']['ES']
 EPS = 1e-6
 test_cases = [
   [[0.0] * obs_count, [75.0] * pop_count],
-  [[0.19] * obs_count, [77.96874988, 82.10364272, 109.01936814, 82.10364272] * int(pop_count / obs_count)],
-  [[-0.19] * obs_count, [72.03125012, 67.89635728, 40.98063186, 67.89635728] * int(pop_count / obs_count)],
+  [[0.19] * obs_count, [95.35714286, 84.32733355, 146.25, 83.37413618] * int(pop_count / obs_count)],
+  [[-0.19] * obs_count, [54.64285714, 65.67266645, 3.75, 66.62586382] * int(pop_count / obs_count)],
 ]
 
 class TestGameInterface:
