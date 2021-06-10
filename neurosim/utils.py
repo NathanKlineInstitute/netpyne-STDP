@@ -1,4 +1,5 @@
 import os
+import datetime
 
 
 def syncdata_alltoall(sim, data):
@@ -9,13 +10,6 @@ def syncdata_alltoall(sim, data):
   return sim.pc.py_alltoall(src)[0]
 
 
-def backupcfg(name):
-  # backup the config file to backupcfg subdirectory
-  os.makedirs('backupcfg', exist_ok=True)
-  from conf import fnjson
-  fout = 'backupcfg/' + name + 'sim.json'
-  if os.path.exists(fout):
-    print('removing prior cfg file', fout)
-    os.system('rm ' + fout)
-  # fcfg created in geom.py via conf.py
-  os.system('cp ' + fnjson + '  ' + fout)
+def now_str(diplay_time=False):
+  now = datetime.datetime.now()
+  return now.strftime("%Y%m%d_%H%M%S" if diplay_time else "%Y%m%d")

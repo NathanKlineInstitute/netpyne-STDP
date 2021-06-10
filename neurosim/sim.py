@@ -11,12 +11,16 @@ from datetime import datetime
 from collections import OrderedDict
 from matplotlib import pyplot as plt
 
-from conf import dconf
+from conf import read_conf
 from cells import intf7
 from connUtils import getconv
 from game_interface import GameInterface
 from utils import syncdata_alltoall
 from simdat import drawraster
+
+
+dconf = read_conf()
+outpath = lambda fname: os.path.join(dconf['sim']['outdir'], fname)
 
 # this will not work properly across runs with different number of nodes
 random.seed(1234)
@@ -26,18 +30,18 @@ sim.allTimes = []
 sim.allRewards = []  # list to store all rewards
 sim.allActions = []  # list to store all actions
 sim.allMotorOutputs = []  # list to store firing rate of output motor neurons.
-sim.ActionsRewardsfilename = 'data/'+dconf['sim']['name']+'ActionsRewards.txt'
-sim.MotorOutputsfilename = 'data/'+dconf['sim']['name']+'MotorOutputs.txt'
 sim.WeightsRecordingTimes = []
 sim.allRLWeights = []
 sim.allNonRLWeights = []
 
-# sim.NonRLweightsfilename = 'data/'+dconf['sim']['name']+'NonRLweights.txt'  # file to store weights
+sim.ActionsRewardsfilename = outpath('ActionsRewards.txt')
+sim.MotorOutputsfilename = outpath('MotorOutputs.txt')
+# sim.NonRLweightsfilename = outpath('NonRLweights.txt')  # file to store weights
+
 sim.plotWeights = 0  # plot weights
 sim.saveWeights = 1  # save weights
 if 'saveWeights' in dconf['sim']:
   sim.saveWeights = dconf['sim']['saveWeights']
-sim.saveInputImages = 1  # save Input Images (5 game frames)
 # whether to save the motion fields
 sim.saveMotionFields = dconf['sim']['saveMotionFields']
 sim.saveObjPos = 1  # save ball and paddle position to file
@@ -69,7 +73,7 @@ netParams.defaultThreshold = 0.0
 # object of class SimConfig to store simulation configuration
 simConfig = specs.SimConfig()
 # Simulation options
-# 100e3 # 0.1e5                      # Duration of the simulation, in ms
+# Duration of the simulation, in ms
 simConfig.duration = dconf['sim']['duration']
 # Internal integration timestep to use
 simConfig.dt = dconf['sim']['dt']
@@ -83,14 +87,12 @@ simConfig.recordTraces = {'V_soma': {'sec': 'soma', 'loc': 0.5, 'var': 'v'}}
 simConfig.recordCellsSpikes = [-1]
 # Step size in ms to save data (e.g. V traces, LFP, etc)
 simConfig.recordStep = dconf['sim']['recordStep']
-simConfig.filename = 'data/' + \
-    dconf['sim']['name']+'simConfig'  # Set file output name
+simConfig.filename = outpath('simConfig')  # Set file output name
 simConfig.saveJson = True
 # Save params, network and sim output to pickle file
 simConfig.savePickle = True
 simConfig.saveMat = False
 simConfig.saveFolder = 'data'
-# simConfig.backupCfg = ['sim.json', 'backupcfg/'+dconf['sim']['name']+'sim.json']
 simConfig.createNEURONObj = True  # create HOC objects when instantiating network
 # create Python structure (simulator-independent) when instantiating network
 simConfig.createPyStruct = True
@@ -203,12 +205,13 @@ def makeECellModel(ECellModel):
     # Dict with traces to record
     simConfig.recordTraces = {'V_soma': {'var': 'Vm'}}
     netParams.defaultThreshold = -40.0
+    ecell = intf7.INTF7E(dconf)
     for ty in allpops:
       if isExc(ty):
         netParams.popParams[ty] = {'cellType': ty,
                                    'cellModel': 'INTF7',
                                    'numCells': dnumc[ty]}
-        for k, v in intf7.INTF7E.dparam.items():
+        for k, v in ecell.dparam.items():
           netParams.popParams[ty][k] = v
     PlastWeightIndex = intf7.dsyn['AM2']
   return EExcitSec, PlastWeightIndex
@@ -229,16 +232,18 @@ def makeICellModel(ICellModel):
     # Dict with traces to record
     simConfig.recordTraces = {'V_soma': {'var': 'Vm'}}
     netParams.defaultThreshold = -40.0
+    ilcell = intf7.INTF7IL(dconf)
+    icell = intf7.INTF7I(dconf)
     for ty in allpops:
       if isInh(ty):
         netParams.popParams[ty] = {'cellType': ty,
                                    'cellModel': 'INTF7',
                                    'numCells': dnumc[ty]}
         if ty.count('L') > 0:  # LTS
-          for k, v in intf7.INTF7IL.dparam.items():
+          for k, v in ilcell.dparam.items():
             netParams.popParams[ty][k] = v
         else:  # FS
-          for k, v in intf7.INTF7I.dparam.items():
+          for k, v in icell.dparam.items():
             netParams.popParams[ty][k] = v
 
 
@@ -279,7 +284,7 @@ def getWeightIndex(synmech, cellModel):
 
 
 def setupStimMod():
-  # setup variable rate NetStim sources (send spikes based on image contents)
+  # setup variable rate NetStim sources (send spikes based on input contents)
   lstimty = []
   stimModW = dconf['net']['stimModW']
   if ECellModel == 'IntFire4' or ECellModel == 'INTF7':
@@ -501,7 +506,6 @@ dSTDPmech = {}  # dictionary of list of STDP mechanisms
 
 def InitializeNoiseRates():
   # initialize the noise firing rates for the primary visual neuron populations (location V1 and direction sensitive)
-  # based on image contents
   if ECellModel == 'IntFire4' or ECellModel == 'INTF7':
     # np.random.seed(1234)
     for pop in sim.lnoisety:
@@ -514,7 +518,6 @@ def InitializeNoiseRates():
 
 def InitializeInputRates():
   # initialize the source firing rates for the primary visual neuron populations (location V1 and direction sensitive)
-  # based on image contents
   if ECellModel == 'IntFire4' or ECellModel == 'INTF7':
     np.random.seed(1234)
     for pop in sim.lstimty:
@@ -718,16 +721,10 @@ def getAllSTDPObjects(sim):
 # create network object and set cfg and net params; pass simulation config and network params as arguments
 sim.initialize(simConfig=simConfig, netParams=netParams)
 
-if sim.rank == 0:  # sim rank 0 specific init and backup of config file
+if sim.rank == 0:  # sim rank 0 specific init
   from aigame import AIGame
   sim.AIGame = AIGame(dconf)  # only create AIGame on node 0
   sim.GameInterface = GameInterface(sim.AIGame, dconf)
-  # node 0 saves the json config file
-  # this is just a precaution since simConfig pkl file has MOST of the info; ideally should adjust simConfig to contain
-  # ALL of the required info
-  from utils import backupcfg
-  backupcfg(dconf['sim']['name'])
-  os.makedirs('data', exist_ok=True)
 
 
 # instantiate network populations
@@ -740,7 +737,7 @@ conns = sim.net.connectCells()
 sim.net.addStims()
 
 if sim.rank == 0:
-  fconn = 'data/'+dconf['sim']['name']+'_sim'
+  fconn = outpath('sim')
   sim.saveData(filename=fconn)
 
 
@@ -836,9 +833,6 @@ sim.analysis.plotConn(saveFig='data/connsPops.png', showFig=False,
   includePre=includePre, includePost=includePre, feature='probability')
 
 
-recordAdjustableWeights(sim, 0, dconf['pop_to_move'].keys())
-# exit()
-
 # has periodic callback to adjust STDP weights based on RL signal
 sim.runSimWithIntervalFunc(tPerPlay, trainAgent)
 if sim.rank == 0 and fid4 is not None:
@@ -847,27 +841,6 @@ if ECellModel == 'INTF7' or ICellModel == 'INTF7':
   intf7.insertSpikes(sim, simConfig.recordStep)
 sim.gatherData()  # gather data from different nodes
 sim.saveData()  # save data to disk
-
-
-# print(sim.simData)
-# print(dir(sim.simData))
-# print(sim.simData['spkt'])
-# print(sim.simData['spkid'])
-# print(len(sim.simData['spkid']))
-# print(sim.simData['spkt'].size())
-# print(sim.simData['spkid'].size())
-# for c,v in sim.simData['V_soma'].items():
-#   print(c, v, v.size(), [v.get(idx) for idx in range(v.size())])
-
-# if sim.simData['spkt'].size() == sim.simData['spkid'].size():
-#   print('same size')
-#   kt = sim.simData['spkt']
-#   kid = sim.simData['spkid']
-#   # print([(kt.get(idx), kid.get(idx)) for idx in range(kt.size())])
-#   # Check what was stimulated:
-#   for idx in range(kt.size()):
-#     if kid.get(idx) < 62:
-#       print(kt.get(idx), kid.get(idx))
 
 
 def LSynWeightToD(L):
@@ -893,7 +866,7 @@ def LSynWeightToD(L):
 
 def saveSynWeights():
   # save synaptic weights
-  fn = 'data/'+dconf['sim']['name']+'synWeights_'+str(sim.rank)+'.pkl'
+  fn = outpath('synWeights_'+str(sim.rank)+'.pkl')
   # save synaptic weights to disk for this node
   with open(fn, 'wb') as f:
     pickle.dump(lsynweights, f)
@@ -901,7 +874,7 @@ def saveSynWeights():
   if sim.rank == 0:  # rank 0 reads and assembles the synaptic weights into a single output file
     L = []
     for i in range(sim.nhosts):
-      fn = 'data/'+dconf['sim']['name']+'synWeights_'+str(i)+'.pkl'
+      fn = outpath('synWeights_'+str(i)+'.pkl')
       while not os.path.isfile(fn):  # wait until the file is written/available
         print('saveSynWeights: waiting for finish write of', fn)
         time.sleep(1)
@@ -909,13 +882,13 @@ def saveSynWeights():
         lw = pickle.load(f)
         print(fn, 'len(lw)=', len(lw), type(lw))
       L = L + lw  # concatenate to the list L
-    # pickle.dump(L,open('data/'+dconf['sim']['name']+'synWeights.pkl', 'wb')) # this would save as a List
+    # pickle.dump(L,open(outpath('synWeights.pkl', 'wb')) # this would save as a List
     # now convert the list to a dictionary to save space, and save it to disk
     dout, doutfinal = LSynWeightToD(L)
     pickle.dump(dout, open(
-        'data/'+dconf['sim']['name']+'synWeights.pkl', 'wb'))
+        outpath('synWeights.pkl'), 'wb'))
     pickle.dump(doutfinal, open(
-        'data/'+dconf['sim']['name']+'synWeights_final.pkl', 'wb'))
+        outpath('synWeights_final.pkl'), 'wb'))
 
 
 if sim.saveWeights:
@@ -925,7 +898,7 @@ if sim.saveWeights:
 def saveAssignedFiringRates(dAllFiringRates):
   pickle.dump(
       dAllFiringRates,
-      open('data/'+dconf['sim']['name']+'AssignedFiringRates.pkl', 'wb'))
+      open(outpath('AssignedFiringRates.pkl'), 'wb'))
 
 def prepraster(lpops):
   # lpops = dnumc
@@ -944,24 +917,15 @@ def prepraster(lpops):
   return dspkID, dspkT
 
 
-if sim.rank == 0:  # only rank 0 should save. otherwise all the other nodes could over-write the output or quit first; rank 0 plots
-  if dconf['sim']['doplot']:
-    print('plot raster:')
-    # sim.analysis.plotData(saveFig='data/data.png')
-    # sim.analysis.plotData()
-    # sim.analysis.spikes.plotRaster(saveFig='data/raster.png')
+# only rank 0 should save. otherwise all the other nodes could over-write the output or quit first; rank 0 plots
+if sim.rank == 0: 
   if sim.plotWeights:
     plotWeights()
   saveGameBehavior(sim)
-  with open('data/'+dconf['sim']['name']+'ActionsPerEpisode.txt', 'w') as fid5:
+  with open(outpath('ActionsPerEpisode.txt'), 'w') as fid5:
     for i in range(len(epCount)):
       fid5.write('\t%0.1f' % epCount[i])
       fid5.write('\n')
-  # if sim.saveInputImages: saveInputImages(sim.AIGame.ReducedImages)
-  # #anim.savemp4('/tmp/*.png','data/'+dconf['sim']['name']+'randGameBehavior.mp4',10)
-  # if sim.saveMotionFields: saveMotionFields(sim.AIGame.ldflow)
-  # if sim.saveObjPos: saveObjPos(sim.AIGame.dObjPos)
-  # if sim.saveAssignedFiringRates: saveAssignedFiringRates(sim.AIGame.dAllFiringRates)
 
   lpops = dict([(k,v) for k,v in dconf['net']['allpops'].items() if v > 0])
   for ty in sim.lstimty:
@@ -970,7 +934,7 @@ if sim.rank == 0:  # only rank 0 should save. otherwise all the other nodes coul
   drawraster(
     [k for k,v in lpops.items() if v > 0],
     dspkT, dspkID, dnumc, totalDur=dconf['sim']['duration'],
-    figname='data/{}_raster.png'.format(dconf['sim']['name']))
+    figname=outpath('raster.png'))
 
   if dconf['sim']['doquit']:
     quit()

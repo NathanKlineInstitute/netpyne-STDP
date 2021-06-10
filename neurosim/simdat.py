@@ -1,15 +1,8 @@
-import numpy as np
-from pylab import *
-import pickle
-import pandas as pd
-import conf
-from conf import dconf
 import os
 import sys
-import anim
+from pylab import *
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
-from scipy.stats import pearsonr
 
 
 def getrate(dspkT, dspkID, pop, dnumc, totalDur=None, tlim=None):

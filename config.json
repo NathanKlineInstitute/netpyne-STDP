@@ -38,7 +38,6 @@
         "RLFakeUpRule": 0,
         "RLFakeDownRule": 0,
         "RLFakeStayRule": 0,
-        "name": "21may_NetPyNE_project",
         "doquit": 1,
         "doplot": 0,
         "saveCellSecs": 0,

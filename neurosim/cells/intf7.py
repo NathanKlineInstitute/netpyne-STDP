@@ -1,5 +1,4 @@
 from neuron import h
-from conf import dconf
 
 # synaptic indices used in intf7.mod NET_RECEIVE
 dsyn = {'AM': 0, 'NM': 1, 'GA': 2, 'AM2': 3, 'NM2': 4, 'GA2': 5}
@@ -10,25 +9,22 @@ dsyn['GABA'] = dsyn['GA']
 
 class INTF7E():
   # parameters for excitatory neurons
-  dparam = dconf['cell']['E']
-
-  def __init__(self):
+  def __init__(self, dconf):
+    self.dparam = dconf['cell']['E']
     cell = self.intf = h.INTF7()
 
 
 class INTF7I():
   # parameters for fast-spiking interneurons
-  dparam = dconf['cell']['I']
-
-  def __init__(self):
+  def __init__(self, dconf):
+    self.dparam = dconf['cell']['I']
     cell = self.intf = h.INTF7()
 
 
 class INTF7IL():
   # parameters for low-threshold firing interneurons
-  dparam = dconf['cell']['IL']
-
-  def __init__(self):
+  def __init__(self, dconf):
+    self.dparam = dconf['cell']['IL']
     cell = self.intf = h.INTF7()
 
 

@@ -1,7 +1,6 @@
 venv/
 __pycache__/
 x86_64/
-data/
-backupcfg/
+results/
 .ipynb_checkpoints/
 .DS_Store
