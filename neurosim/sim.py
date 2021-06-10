@@ -837,7 +837,7 @@ sim.analysis.plotConn(saveFig='data/connsPops.png', showFig=False,
 
 
 recordAdjustableWeights(sim, 0, dconf['pop_to_move'].keys())
-exit()
+# exit()
 
 # has periodic callback to adjust STDP weights based on RL signal
 sim.runSimWithIntervalFunc(tPerPlay, trainAgent)

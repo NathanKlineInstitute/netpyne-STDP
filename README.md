@@ -31,7 +31,7 @@ Compile mod files
 
 ### run 
 
-    python3 sim.py
+    python3 neurosim/sim.py
 
 Check notebooks:
 

@@ -3,7 +3,7 @@ import os
 import sys
 
 import gym
-from game_interface import GameInterface
+from neurosim.game_interface import GameInterface
 
 class MockAIGame:
   observations = []
