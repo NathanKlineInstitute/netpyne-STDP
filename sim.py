@@ -356,6 +356,7 @@ synToMech = dconf['net']['synToMech']
 sytypes = dconf['net']['synToMech'].keys()
 
 # Setup cmat connections
+stdpConns = dconf['net']['STDPconns']
 for prety, dprety in cmat.items():
   if dnumc[prety] <= 0:
     continue
@@ -381,7 +382,8 @@ for prety, dprety in cmat.items():
                 sy, ICellModel if isInh(poty) else ECellModel)
         }
         # Setup STDP plasticity rules
-        if ct in dconf['STDP'] and dconf['STDP'][ct] and dSTDPparams[synToMech[sy]]['STDPon']:
+        if ct in stdpConns and stdpConns[ct] and dSTDPparams[synToMech[sy]]['STDPon']:
+          print('Setting STDP ', k)
           netParams.connParams[k]['plast'] = {
               'mech': 'STDP', 'params': dSTDPparams[synToMech[sy]]}
           netParams.connParams[k]['weight'] = getInitWeight(weight)
@@ -395,38 +397,10 @@ lsynweights = []  # list of syn weights, per node
 dsumWInit = {}
 
 
-def getSumAdjustableWeights(sim):
-  dout = {}
-  for cell in sim.net.cells:
-    W = N = 0.0
-    for conn in cell.conns:
-      if 'hSTDP' in conn:
-        W += float(conn['hObj'].weight[PlastWeightIndex])
-        N += 1
-    if N > 0:
-      dout[cell.gid] = W / N
-  # print('getSumAdjustableWeights len=',len(dout))
-  return dout
-
-
-def sumAdjustableWeightsPop(sim, popname):
-  # record the plastic weights for specified popname
-  # this is the set of MR cells
-  lcell = [c for c in sim.net.cells if c.gid in sim.net.pops[popname].cellGids]
-  W = N = 0
-  for cell in lcell:
-    for conn in cell.conns:
-      if 'hSTDP' in conn:
-        W += float(conn['hObj'].weight[PlastWeightIndex])
-        N += 1
-  return W, N
-
-
 def recordAdjustableWeights(sim, t, lpop):
   global lsynweights
   """ record the STDP weights during the simulation
   """
-
   for popname in lpop:
     # record the plastic weights for specified popname
     # this is the set of popname cells
@@ -460,32 +434,6 @@ def recordWeights(sim, t):
               float(conn['hObj'].weight[PlastWeightIndex]))
 
 
-def saveWeights(sim, downSampleCells):
-  ''' Save the weights for each plastic synapse '''
-  with open(sim.RLweightsfilename, 'w') as fid1:
-    count1 = 0
-    for weightdata in sim.allRLWeights:
-      # fid.write('%0.0f' % weightdata[0]) # Time
-      # print(len(weightdata))
-      fid1.write('%0.1f' % sim.WeightsRecordingTimes[count1])
-      count1 = count1+1
-      for i in range(0, len(weightdata), downSampleCells):
-        fid1.write('\t%0.8f' % weightdata[i])
-      fid1.write('\n')
-  print(('Saved RL weights as %s' % sim.RLweightsfilename))
-  with open(sim.NonRLweightsfilename, 'w') as fid2:
-    count2 = 0
-    for weightdata in sim.allNonRLWeights:
-      # fid.write('%0.0f' % weightdata[0]) # Time
-      # print(len(weightdata))
-      fid2.write('%0.1f' % sim.WeightsRecordingTimes[count2])
-      count2 = count2+1
-      for i in range(0, len(weightdata), downSampleCells):
-        fid2.write('\t%0.8f' % weightdata[i])
-      fid2.write('\n')
-  print(('Saved Non-RL weights as %s' % sim.NonRLweightsfilename))
-
-
 def plotWeights():
   from pylab import figure, loadtxt, xlabel, ylabel, xlim, ylim, show, pcolor, array, colorbar
   figure()
@@ -501,30 +449,6 @@ def plotWeights():
   colorbar()
   show()
 
-
-def getAverageAdjustableWeights(sim, lpop=EMotorPops):
-  # get average adjustable weights on a target population
-  davg = {pop: 0.0 for pop in lpop}
-  for pop in lpop:
-    WSum = 0
-    NSum = 0
-    W, N = sumAdjustableWeightsPop(sim, pop)
-    # destlist_on_root = pc.py_gather(srcitem, root)
-    lw = sim.pc.py_gather(W, 0)
-    ln = sim.pc.py_gather(N, 0)
-    if sim.rank == 0:
-      WSum = W + np.sum(lw)
-      NSum = N + np.sum(ln)
-      #print('rank= 0, pop=',pop,'W=',W,'N=',N,'wsum=',WSum,'NSum=',NSum)
-      if NSum > 0:
-        davg[pop] = WSum / NSum
-    else:
-      #destitem_from_root = sim.pc.py_scatter(srclist, root)
-      pass
-      # print('rank=',sim.rank,'pop=',pop,'Wm=',W,'N=',N)
-  lsrc = [davg for i in range(sim.nhosts)] if sim.rank == 0 else None
-  dest = sim.pc.py_scatter(lsrc, 0)
-  return dest
 
 
 def mulAdjustableWeights(sim, dfctr):
@@ -767,8 +691,8 @@ def trainAgent(t):
     recordWeights(sim, t)
 
   t5 = datetime.now() - t5
-  # if random.random() < 0.005:
-  #   print([round(tk.microseconds / 1000, 0) for tk in [t1,t2,t3,t4,t5]])
+  if random.random() < 0.005:
+    print([round(tk.microseconds / 1000, 0) for tk in [t1,t2,t3,t4,t5]])
 
 def getAllSTDPObjects(sim):
   # get all the STDP objects from the simulation's cells
@@ -911,6 +835,10 @@ includePre = list(dconf['net']['allpops'].keys())
 sim.analysis.plotConn(saveFig='data/connsPops.png', showFig=False,
   includePre=includePre, includePost=includePre, feature='probability')
 
+
+recordAdjustableWeights(sim, 0, dconf['pop_to_move'].keys())
+exit()
+
 # has periodic callback to adjust STDP weights based on RL signal
 sim.runSimWithIntervalFunc(tPerPlay, trainAgent)
 if sim.rank == 0 and fid4 is not None:
@@ -956,7 +884,6 @@ def LSynWeightToD(L):
     if poID not in dout[preID]:
       dout[preID][poID] = []
       doutfinal[preID][poID] = []
-    # dout[preID][poID].append([t,w,cumreward])
     dout[preID][poID].append([t, w])
   for preID in doutfinal.keys():
     for poID in doutfinal[preID].keys():
@@ -968,9 +895,9 @@ def saveSynWeights():
   # save synaptic weights
   fn = 'data/'+dconf['sim']['name']+'synWeights_'+str(sim.rank)+'.pkl'
   # save synaptic weights to disk for this node
-  pickle.dump(lsynweights, open(fn, 'wb'))
+  with open(fn, 'wb') as f:
+    pickle.dump(lsynweights, f)
   sim.pc.barrier()  # wait for other nodes
-  time.sleep(1)
   if sim.rank == 0:  # rank 0 reads and assembles the synaptic weights into a single output file
     L = []
     for i in range(sim.nhosts):
@@ -978,9 +905,9 @@ def saveSynWeights():
       while not os.path.isfile(fn):  # wait until the file is written/available
         print('saveSynWeights: waiting for finish write of', fn)
         time.sleep(1)
-      lw = pickle.load(open(fn, 'rb'))
-      print(fn, 'len(lw)=', len(lw), type(lw))
-      os.unlink(fn)  # remove the temporary file
+      with open(fn, 'rb') as f:
+        lw = pickle.load(f)
+        print(fn, 'len(lw)=', len(lw), type(lw))
       L = L + lw  # concatenate to the list L
     # pickle.dump(L,open('data/'+dconf['sim']['name']+'synWeights.pkl', 'wb')) # this would save as a List
     # now convert the list to a dictionary to save space, and save it to disk
