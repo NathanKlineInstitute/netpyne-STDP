@@ -1,8 +1,12 @@
 import sys
 import os
 import json
+import datetime
 
-from utils import now_str
+
+def now_str(diplay_time=False):
+  now = datetime.datetime.now()
+  return now.strftime("%Y%m%d_%H%M%S" if diplay_time else "%Y%m%d")
 
 
 def _get_conf_file():

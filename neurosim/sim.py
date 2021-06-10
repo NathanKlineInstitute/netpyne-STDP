@@ -13,14 +13,16 @@ from matplotlib import pyplot as plt
 
 from conf import read_conf
 from cells import intf7
-from connUtils import getconv
 from game_interface import GameInterface
-from utils import syncdata_alltoall
-from simdat import drawraster
+from utils.conns import getconv
+from utils.plots import plotRaster, plotWeights, saveGameBehavior, saveActionsPerEpisode
+from utils.sync import syncdata_alltoall
+from utils.weights import saveSynWeights
 
 
 dconf = read_conf()
 outpath = lambda fname: os.path.join(dconf['sim']['outdir'], fname)
+sim.outpath = outpath
 
 # this will not work properly across runs with different number of nodes
 random.seed(1234)
@@ -45,7 +47,6 @@ if 'saveWeights' in dconf['sim']:
 # whether to save the motion fields
 sim.saveMotionFields = dconf['sim']['saveMotionFields']
 sim.saveObjPos = 1  # save ball and paddle position to file
-sim.saveAssignedFiringRates = dconf['sim']['saveAssignedFiringRates']
 recordWeightStepSize = dconf['sim']['recordWeightStepSize']
 # recordWeightDT = 1000 # interval for recording synaptic weights (change later)
 recordWeightDCells = 1  # to record weights for sub samples of neurons
@@ -99,13 +100,6 @@ simConfig.createPyStruct = True
 simConfig.analysis['plotTraces'] = {
     'include': [(pop, 0) for pop in dconf['net']['allpops'].keys()]
 }
-# simConfig.analysis['plotRaster'] = {
-#   'popRates': 'overlay',
-#   'showFig': dconf['sim']['doplot']
-# }
-#simConfig.analysis['plot2Dnet'] = True
-# simConfig.analysis['plotConn'] = True           # plot connectivity matrix
-# simConfig.coreneuron = True
 # synaptic weight gain (based on E, I types)
 cfg = simConfig
 cfg.Gain = dconf['net']['Gain']
@@ -438,24 +432,6 @@ def recordWeights(sim, t):
           sim.allNonRLWeights[-1].append(
               float(conn['hObj'].weight[PlastWeightIndex]))
 
-
-def plotWeights():
-  from pylab import figure, loadtxt, xlabel, ylabel, xlim, ylim, show, pcolor, array, colorbar
-  figure()
-  weightdata = loadtxt(sim.weightsfilename)
-  weightdataT = list(map(list, list(zip(*weightdata))))
-  vmax = max([max(row) for row in weightdata])
-  vmin = min([min(row) for row in weightdata])
-  pcolor(array(weightdataT), cmap='hot_r', vmin=vmin, vmax=vmax)
-  xlim((0, len(weightdata)))
-  ylim((0, len(weightdata[0])))
-  xlabel('Time (weight updates)')
-  ylabel('Synaptic connection id')
-  colorbar()
-  show()
-
-
-
 def mulAdjustableWeights(sim, dfctr):
   # multiply adjustable STDP/RL weights by dfctr[pop] value for each population keyed in dfctr
   for pop in dfctr.keys():
@@ -468,14 +444,6 @@ def mulAdjustableWeights(sim, dfctr):
         if 'hSTDP' in conn:
           conn['hObj'].weight[PlastWeightIndex] *= dfctr[pop]
 
-
-def saveGameBehavior(sim):
-  with open(sim.ActionsRewardsfilename, 'w') as fid3:
-    for i in range(len(sim.allActions)):
-      fid3.write('%0.1f' % sim.allTimes[i])
-      fid3.write('\t%0.1f' % sim.allActions[i])
-      fid3.write('\t%0.5f' % sim.allRewards[i])
-      fid3.write('\n')
 
 ######################################################################################
 
@@ -826,10 +794,10 @@ InitializeNoiseRates()
 # Plot 2d net
 # sim.analysis.plot2Dnet(saveFig='data/net.png', showFig=False)
 sim.analysis.plotConn(
-          saveFig='data/connsCells.png', showFig=False,
+          saveFig=outpath('connsCells.png'), showFig=False,
           groupBy='cell', feature='weight')
 includePre = list(dconf['net']['allpops'].keys())
-sim.analysis.plotConn(saveFig='data/connsPops.png', showFig=False,
+sim.analysis.plotConn(saveFig=outpath('connsPops.png'), showFig=False,
   includePre=includePre, includePost=includePre, feature='probability')
 
 
@@ -843,98 +811,16 @@ sim.gatherData()  # gather data from different nodes
 sim.saveData()  # save data to disk
 
 
-def LSynWeightToD(L):
-  # convert list of synaptic weights to dictionary to save disk space
-  print('converting synaptic weight list to dictionary...')
-  dout = {}
-  doutfinal = {}
-  for row in L:
-    #t,preID,poID,w,cumreward = row
-    t, preID, poID, w = row
-    if preID not in dout:
-      dout[preID] = {}
-      doutfinal[preID] = {}
-    if poID not in dout[preID]:
-      dout[preID][poID] = []
-      doutfinal[preID][poID] = []
-    dout[preID][poID].append([t, w])
-  for preID in doutfinal.keys():
-    for poID in doutfinal[preID].keys():
-      doutfinal[preID][poID].append(dout[preID][poID][-1])
-  return dout, doutfinal
-
-
-def saveSynWeights():
-  # save synaptic weights
-  fn = outpath('synWeights_'+str(sim.rank)+'.pkl')
-  # save synaptic weights to disk for this node
-  with open(fn, 'wb') as f:
-    pickle.dump(lsynweights, f)
-  sim.pc.barrier()  # wait for other nodes
-  if sim.rank == 0:  # rank 0 reads and assembles the synaptic weights into a single output file
-    L = []
-    for i in range(sim.nhosts):
-      fn = outpath('synWeights_'+str(i)+'.pkl')
-      while not os.path.isfile(fn):  # wait until the file is written/available
-        print('saveSynWeights: waiting for finish write of', fn)
-        time.sleep(1)
-      with open(fn, 'rb') as f:
-        lw = pickle.load(f)
-        print(fn, 'len(lw)=', len(lw), type(lw))
-      L = L + lw  # concatenate to the list L
-    # pickle.dump(L,open(outpath('synWeights.pkl', 'wb')) # this would save as a List
-    # now convert the list to a dictionary to save space, and save it to disk
-    dout, doutfinal = LSynWeightToD(L)
-    pickle.dump(dout, open(
-        outpath('synWeights.pkl'), 'wb'))
-    pickle.dump(doutfinal, open(
-        outpath('synWeights_final.pkl'), 'wb'))
-
-
 if sim.saveWeights:
-  saveSynWeights()
-
-
-def saveAssignedFiringRates(dAllFiringRates):
-  pickle.dump(
-      dAllFiringRates,
-      open(outpath('AssignedFiringRates.pkl'), 'wb'))
-
-def prepraster(lpops):
-  # lpops = dnumc
-  dstartidx,dendidx={},{} # starting,ending indices for each population
-  for p in lpops.keys():
-    if lpops[p] > 0:
-      dstartidx[p] = sim.simData['dminID'][p]
-      dendidx[p] = sim.simData['dminID'][p] + lpops[p] - 1
-  spkID= np.array(sim.simData['spkid'])
-  spkT = np.array(sim.simData['spkt'])
-  dspkID,dspkT = {},{}
-  for pop in lpops.keys():
-    # if dnumc[pop] > 0:
-      dspkID[pop] = spkID[(spkID >= dstartidx[pop]) & (spkID <= dendidx[pop])]
-      dspkT[pop] = spkT[(spkID >= dstartidx[pop]) & (spkID <= dendidx[pop])]
-  return dspkID, dspkT
+  saveSynWeights(sim, lsynweights)
 
 
 # only rank 0 should save. otherwise all the other nodes could over-write the output or quit first; rank 0 plots
-if sim.rank == 0: 
+if sim.rank == 0:
   if sim.plotWeights:
     plotWeights()
   saveGameBehavior(sim)
-  with open(outpath('ActionsPerEpisode.txt'), 'w') as fid5:
-    for i in range(len(epCount)):
-      fid5.write('\t%0.1f' % epCount[i])
-      fid5.write('\n')
-
-  lpops = dict([(k,v) for k,v in dconf['net']['allpops'].items() if v > 0])
-  for ty in sim.lstimty:
-    lpops[ty] = dconf['net']['allpops'][dconf['net']['inputPop']]
-  dspkID, dspkT = prepraster(lpops)
-  drawraster(
-    [k for k,v in lpops.items() if v > 0],
-    dspkT, dspkID, dnumc, totalDur=dconf['sim']['duration'],
-    figname=outpath('raster.png'))
-
+  saveActionsPerEpisode(sim, epCount)
+  plotRaster(sim, dconf, dnumc)
   if dconf['sim']['doquit']:
     quit()
