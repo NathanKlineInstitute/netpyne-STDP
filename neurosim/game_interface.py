@@ -74,7 +74,7 @@ def _parse_rf_map(obs):
     step = (imax - imin) / bins
     _func = _evensplit_bin_f(imin, step)
   elif obs['type'] == 'rf_normal':
-    EPS = 1e-10
+    EPS = 1e-16
     fields_intervals = norm.ppf(np.linspace(EPS, 1.0 - EPS, bins + 1))
     _func = _intervals_bin_f(bins, fields_intervals, obs['mean'], obs['std'])
   elif obs['type'] == 'rf_intervals':
