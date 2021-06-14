@@ -74,8 +74,8 @@ netParams.defaultThreshold = 0.0
 # object of class SimConfig to store simulation configuration
 simConfig = specs.SimConfig()
 # Simulation options
-# Duration of the simulation, in ms
-simConfig.duration = dconf['sim']['duration']
+# Duration of the simulation, in seconds
+simConfig.duration = dconf['sim']['duration'] * 1000
 # Internal integration timestep to use
 simConfig.dt = dconf['sim']['dt']
 # make sure temperature is set. otherwise we're at squid temperature
@@ -120,7 +120,7 @@ def isInh(ty): return ty.startswith('I')
 def connType(prety, poty): return prety[0] + poty[0]
 
 
-def getInitWeight(weight):
+def getInitSTDPWeight(weight):
   """get initial weight for a connection
      checks if weightVar is non-zero, if so will use a uniform distribution
      with range on interval: (1-var)*weight, (1+var)*weight
@@ -385,7 +385,7 @@ for prety, dprety in cmat.items():
           print('Setting STDP ', k)
           netParams.connParams[k]['plast'] = {
               'mech': 'STDP', 'params': dSTDPparams[synToMech[sy]]}
-          netParams.connParams[k]['weight'] = getInitWeight(weight)
+          netParams.connParams[k]['weight'] = getInitSTDPWeight(weight)
 
 ###################################################################################################################################
 

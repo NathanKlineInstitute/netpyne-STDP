@@ -106,5 +106,5 @@ def plotRaster(sim, dconf, dnumc):
   dspkID, dspkT = _prepraster(sim, lpops)
   drawraster(
       [k for k, v in lpops.items() if v > 0],
-      dspkT, dspkID, dnumc, totalDur=dconf['sim']['duration'],
+      dspkT, dspkID, dnumc, totalDur=dconf['sim']['duration'] * 1000,
       figname=sim.outpath('raster.png'))
