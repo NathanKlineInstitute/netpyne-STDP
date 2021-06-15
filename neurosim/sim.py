@@ -611,10 +611,14 @@ def trainAgent(t):
     if len(sim.AIGame.observations) == 0:
       raise Exception('Failed to get an observation from the Game')
     elif len(sim.AIGame.observations) == 1:
-      critic = abs(sim.AIGame.observations[-1][2]) * 100
+      critic = abs(sim.AIGame.observations[-1][3]) * 100
     else:
-      critic = (sim.AIGame.observations[-1][2] -
-                sim.AIGame.observations[-2][2]) * 100
+      if sim.AIGame.observations[-2][3] < 0: #tilting left
+        critic = (sim.AIGame.observations[-1][3] -
+                  sim.AIGame.observations[-2][3]) * 100
+      else: #tilting right
+        critic = (sim.AIGame.observations[-1][3] -
+                  sim.AIGame.observations[-2][3]) * -100
 
     # use py_broadcast to avoid converting to/from Vector
     sim.pc.py_broadcast(critic, 0)  # broadcast critic value to other nodes
