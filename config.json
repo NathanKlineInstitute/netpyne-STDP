@@ -4,10 +4,10 @@
         "savemp4": 0,
         "render": 0,
         "observation_map": [
-            {"type": "rf_normal", "bins": 20, "mean": -0.00645789, "std": 0.06894682},
-            {"type": "rf_normal", "bins": 20, "mean": -0.03634136, "std": 0.53989509},
-            {"type": "rf_normal", "bins": 20, "mean": 0.00529333, "std": 0.09129902},
-            {"type": "rf_normal", "bins": 20, "mean": 0.04752025, "std": 0.82070579}
+            {"type": "rf_normal", "bins": 10, "mean": -0.00645789, "std": 0.06894682},
+            {"type": "rf_normal", "bins": 10, "mean": -0.03634136, "std": 0.53989509},
+            {"type": "rf_normal", "bins": 10, "mean": 0.00529333, "std": 0.09129902},
+            {"type": "rf_normal", "bins": 10, "mean": 0.04752025, "std": 0.82070579}
         ],
         "episodes": 21
     },
@@ -29,7 +29,7 @@
         "ResumeSimFromFile": "data/21may5_TARG0_S_gcp__step_15_synWeights_final.pkl"
     },
     "sim": {
-        "duration": 2,
+        "duration": 100,
         "dt": 0.6,
         "verbose": 0,
         "recordStep": 1.0,
@@ -94,10 +94,10 @@
     },
     "net": {
         "Gain": {
-            "EE": 7.0,
-            "EI": 6.0,
-            "IE": 4.0,
-            "II": 6.0
+            "EE": 1.0,
+            "EI": 1.0,
+            "IE": 1.0,
+            "II": 1.0
         },
         "ECellModel": "INTF7",
         "ICellModel": "INTF7",
@@ -107,11 +107,11 @@
             "I": 0.7
         },
         "allpops": {
-            "ES": 80,
+            "ES": 40,
 
-            "EA": 80,
-            "IA": 40,
-            "IAL": 20,
+            "EA": 40,
+            "IA": 15,
+            "IAL": 15,
 
             "EMLEFT": 20,
             "EMRIGHT": 20
@@ -141,21 +141,22 @@
             "GA2": "GABA"
         },
         "cmat": {
-            "ES":{"EA":{"AM2": 1.0,"NM2": 0.0, "p": 0.8},
-                  "IA":{"AM2": 1.5,"NM2": 0.0, "p": 0.3},
-                  "EMLEFT":{"AM2": 1.0,"NM2": 0.0, "p": 0.1},
-                  "EMRIGHT":{"AM2": 1.0,"NM2": 0.0, "p": 0.1}},
-            "EA":{"EA":{"AM2": 0.1,"NM2": 0.0, "p": 0.2},
-                  "IA":{"AM2": 1.0,"NM2":1.1, "p": 0.2},
-                  "IAL":{"AM2": 1.0,"NM2":0.0, "p": 0.2},
-                  "EMLEFT":{"AM2": 1.0,"NM2": 0.0, "p": 0.6},
-                  "EMRIGHT":{"AM2": 1.0,"NM2": 0.0, "p": 0.6}},
-            "IA":{"EA":{"GA": 0.90,"p": 0.25},
-                  "IA":{"GA": 0.45,"p": 0.25},
-                  "IAL":{"GA": 0.45,"p": 0.25}},
-            "IAL":{"EA":{"GA2": 0.25,"p": 0.25},
-                   "IA":{"GA2": 0.225,"p": 0.25},
-                   "IAL":{"GA2": 0.45,"p": 0.25}}
+            "ES":{
+                "EA":{"AM2": 12.5, "NM2": 1, "conv": 4}},
+            "EA":{
+                "EA":{"AM2": 0.05,"NM2": 0.005, "conv": 4},
+                "IA":{"AM2": 1.95,"NM2":0.0195, "conv": 8},
+                "IAL":{"AM2": 0.98,"NM2":0.098, "conv": 10},
+                "EMLEFT":{"AM2": 0.9,"NM2": 0.01,"conv": 20},
+                "EMRIGHT":{"AM2": 0.9,"NM2": 0.01,"conv": 20}},
+            "IA":{
+                "EA":{"GA": 9.0,"p": 0.2},
+                "IA":{"GA": 4.5,"p": 0.1},
+                "IAL":{"GA": 4.5,"p": 0.2}},
+            "IAL":{
+                "EA":{"GA2": 2.5,"p": 0.2},
+                "IA":{"GA2": 2.25,"p": 0.2},
+                "IAL":{"GA2": 5.5,"p": 0.1}}
         },
         "weightVar": 0.5,
         "delays": {
