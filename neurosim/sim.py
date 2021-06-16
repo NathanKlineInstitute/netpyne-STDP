@@ -74,8 +74,8 @@ netParams.defaultThreshold = 0.0
 # object of class SimConfig to store simulation configuration
 simConfig = specs.SimConfig()
 # Simulation options
-# Duration of the simulation, in ms
-simConfig.duration = dconf['sim']['duration']
+# Duration of the simulation, in seconds
+simConfig.duration = dconf['sim']['duration'] * 1000
 # Internal integration timestep to use
 simConfig.dt = dconf['sim']['dt']
 # make sure temperature is set. otherwise we're at squid temperature
@@ -120,7 +120,7 @@ def isInh(ty): return ty.startswith('I')
 def connType(prety, poty): return prety[0] + poty[0]
 
 
-def getInitWeight(weight):
+def getInitSTDPWeight(weight):
   """get initial weight for a connection
      checks if weightVar is non-zero, if so will use a uniform distribution
      with range on interval: (1-var)*weight, (1+var)*weight
@@ -382,10 +382,10 @@ for prety, dprety in cmat.items():
         }
         # Setup STDP plasticity rules
         if ct in stdpConns and stdpConns[ct] and dSTDPparams[synToMech[sy]]['STDPon']:
-          print('Setting STDP ', k)
+          print('Setting STDP on', k)
           netParams.connParams[k]['plast'] = {
               'mech': 'STDP', 'params': dSTDPparams[synToMech[sy]]}
-          netParams.connParams[k]['weight'] = getInitWeight(weight)
+          netParams.connParams[k]['weight'] = getInitSTDPWeight(weight)
 
 ###################################################################################################################################
 
@@ -487,7 +487,7 @@ def InitializeNoiseRates():
 def InitializeInputRates():
   # initialize the source firing rates for the primary visual neuron populations (location V1 and direction sensitive)
   if ECellModel == 'IntFire4' or ECellModel == 'INTF7':
-    np.random.seed(1234)
+    # np.random.seed(1234)
     for pop in sim.lstimty:
       if pop in sim.net.pops:
         for cell in sim.net.cells:
@@ -513,8 +513,9 @@ def updateInputRates():
         offset = sim.simData['dminID'][pop]
         for cell in lCell:
           rate = input_rates[int(cell.gid-offset)]
-          interval = 1000 / rate if rate != 0 else tstepPerAction
-          cell.hPointp.interval = interval
+          interval = 1000 / rate if rate != 0 else 1e12
+          if cell.hPointp.interval != interval:
+            cell.hPointp.interval = interval
 
 
 def getActions(t, moves, pop_to_move):

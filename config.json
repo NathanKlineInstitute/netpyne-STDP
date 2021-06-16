@@ -4,10 +4,10 @@
         "savemp4": 0,
         "render": 0,
         "observation_map": [
-            {"type": "linear", "min": -0.7, "max": 0.7},
-            {"type": "linear", "min": -2, "max": 2},
-            {"type": "linear", "min": -0.2, "max": 0.2},
-            {"type": "linear", "min": -2.5, "max": 2.5}
+            {"type": "rf_normal", "bins": 20, "mean": -0.00645789, "std": 0.06894682},
+            {"type": "rf_normal", "bins": 20, "mean": -0.03634136, "std": 0.53989509},
+            {"type": "rf_normal", "bins": 20, "mean": 0.00529333, "std": 0.09129902},
+            {"type": "rf_normal", "bins": 20, "mean": 0.04752025, "std": 0.82070579}
         ],
         "episodes": 21
     },
@@ -29,7 +29,7 @@
         "ResumeSimFromFile": "data/21may5_TARG0_S_gcp__step_15_synWeights_final.pkl"
     },
     "sim": {
-        "duration": 200000,
+        "duration": 2,
         "dt": 0.6,
         "verbose": 0,
         "recordStep": 1.0,
@@ -95,7 +95,7 @@
     "net": {
         "Gain": {
             "EE": 7.0,
-            "EI": 5.0,
+            "EI": 6.0,
             "IE": 4.0,
             "II": 6.0
         },
@@ -104,17 +104,17 @@
         "scale": 1,
         "noiseDamping": {
             "E": 1.0,
-            "I": 0.5
+            "I": 0.7
         },
         "allpops": {
-            "ES": 4,
+            "ES": 80,
 
-            "EA": 20,
+            "EA": 80,
             "IA": 40,
-            "IAL": 10,
+            "IAL": 20,
 
-            "EMLEFT": 10,
-            "EMRIGHT": 10
+            "EMLEFT": 20,
+            "EMRIGHT": 20
         },
         "inputPop": "ES",
         "EMotorPops": [
@@ -141,7 +141,7 @@
             "GA2": "GABA"
         },
         "cmat": {
-            "ES":{"EA":{"AM2": 2.0,"NM2": 0.0, "p": 0.8},
+            "ES":{"EA":{"AM2": 1.0,"NM2": 0.0, "p": 0.8},
                   "IA":{"AM2": 1.5,"NM2": 0.0, "p": 0.3},
                   "EMLEFT":{"AM2": 1.0,"NM2": 0.0, "p": 0.1},
                   "EMRIGHT":{"AM2": 1.0,"NM2": 0.0, "p": 0.1}},
