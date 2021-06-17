@@ -20,16 +20,16 @@
         "EMRIGHT": "RIGHT"
     },
     "actionsPerPlay": 1,
-    "observationsToKeep": 10,
-    "rewardsToKeep": 10,
+    "observationsToKeep": 100,
+    "rewardsToKeep": 100,
     "verbose": 0,
     "stayStepLim": 0,
     "simtype": {
         "ResumeSim": 0,
-        "ResumeSimFromFile": "data/21may5_TARG0_S_gcp__step_15_synWeights_final.pkl"
+        "ResumeSimFromFile": "...pkl"
     },
     "sim": {
-        "duration": 100,
+        "duration": 1800,
         "dt": 0.6,
         "verbose": 0,
         "recordStep": 1.0,

@@ -664,7 +664,7 @@ def trainAgent(t):
 
   t5 = datetime.now() - t5
   if random.random() < 0.005:
-    print([round(tk.microseconds / 1000, 0) for tk in [t1,t2,t3,t4,t5]])
+    print(t, [round(tk.microseconds / 1000, 0) for tk in [t1,t2,t3,t4,t5]])
 
 def getAllSTDPObjects(sim):
   # get all the STDP objects from the simulation's cells
