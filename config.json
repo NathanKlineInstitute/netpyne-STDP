@@ -2,7 +2,7 @@
     "env": {
         "name": "CartPole-v1",
         "savemp4": 0,
-        "render": 0,
+        "render": 1,
         "observation_map": [
             {"type": "linear", "min": -0.7, "max": 0.7},
             {"type": "linear", "min": -2, "max": 2},
@@ -29,7 +29,7 @@
         "ResumeSimFromFile": "data/21may5_TARG0_S_gcp__step_15_synWeights_final.pkl"
     },
     "sim": {
-        "duration": 200000,
+        "duration": 2000,
         "dt": 0.6,
         "verbose": 0,
         "recordStep": 1.0,
@@ -114,7 +114,8 @@
             "IAL": 10,
 
             "EMLEFT": 10,
-            "EMRIGHT": 10
+            "EMRIGHT": 10,
+            "IM": 10
         },
         "inputPop": "ES",
         "EMotorPops": [
@@ -155,7 +156,12 @@
                   "IAL":{"GA": 0.45,"p": 0.25}},
             "IAL":{"EA":{"GA2": 0.25,"p": 0.25},
                    "IA":{"GA2": 0.225,"p": 0.25},
-                   "IAL":{"GA2": 0.45,"p": 0.25}}
+                   "IAL":{"GA2": 0.45,"p": 0.25}},
+            "EMLEFT":{"IM":{"AM2": 1.0,"NM2":1.1, "p": 0.2}},
+            "EMRIGHT":{"IM":{"AM2": 1.0,"NM2":1.1, "p": 0.2}},
+            "IM":{"EMLEFT":{"GA": 0.45,"p": 0.25},
+                  "EMRIGHT":{"GA": 0.45,"p": 0.25},
+                  "IM":{"GA": 0.45,"p": 0.25}}
         },
         "weightVar": 0.5,
         "delays": {
@@ -235,6 +241,12 @@
                 "NM": {"w":0, "rate":0},
                 "GA": {"w":1.875, "rate": 100},
                 "AM2": {"w": 3.938, "rate": 200},
+                "NM2": {"w": 0, "rate": 0},
+                "GA2": {"w": 1.875, "rate": 100}},
+        "IM": {"AM": {"w":1.875, "rate": 100},
+                "NM": {"w":0, "rate":0},
+                "GA": {"w":0, "rate":0},
+                "AM2": {"w": 4.125, "rate": 200},
                 "NM2": {"w": 0, "rate": 0},
                 "GA2": {"w": 1.875, "rate": 100}},
         "EA": {"AM": {"w":0, "rate":0},
