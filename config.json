@@ -29,7 +29,7 @@
         "ResumeSimFromFile": "...pkl"
     },
     "sim": {
-        "duration": 1700,
+        "duration": 10,
         "dt": 0.6,
         "verbose": 0,
         "recordStep": 1.0,
@@ -114,7 +114,8 @@
             "IAL": 15,
 
             "EMLEFT": 20,
-            "EMRIGHT": 20
+            "EMRIGHT": 20,
+            "IM":10
         },
         "inputPop": "ES",
         "EMotorPops": [
@@ -147,16 +148,23 @@
                 "EA":{"AM2": 0.05,"NM2": 0.005, "conv": 4},
                 "IA":{"AM2": 1.95,"NM2":0.0195, "conv": 8},
                 "IAL":{"AM2": 0.98,"NM2":0.098, "conv": 10},
-                "EMLEFT":{"AM2": 0.9,"NM2": 0.01,"conv": 20},
-                "EMRIGHT":{"AM2": 0.9,"NM2": 0.01,"conv": 20}},
+                "EMLEFT":{"AM2": 1.95,"NM2": 0.01,"conv": 20},
+                "EMRIGHT":{"AM2": 1.95,"NM2": 0.01,"conv": 20}},
             "IA":{
-                "EA":{"GA": 9.0,"p": 0.2},
+                "EA":{"GA": 5.0,"p": 0.2},
                 "IA":{"GA": 4.5,"p": 0.1},
                 "IAL":{"GA": 4.5,"p": 0.2}},
             "IAL":{
                 "EA":{"GA2": 2.5,"p": 0.2},
                 "IA":{"GA2": 2.25,"p": 0.2},
-                "IAL":{"GA2": 5.5,"p": 0.1}}
+                "IAL":{"GA2": 5.5,"p": 0.1}},
+            "EMLEFT":{
+                "IM":{"AM2": 0.98,"NM2":0.098, "conv": 6}},
+            "EMRIGHT":{
+                "IM":{"AM2": 0.98,"NM2":0.098, "conv": 6}},
+            "IM":{
+                "EMLEFT":{"GA": 9.0,"conv": 3},
+                "EMRIGHT":{"GA": 9.0,"conv": 3}}
         },
         "weightVar": 0.5,
         "delays": {
@@ -238,12 +246,18 @@
                 "AM2": {"w": 3.938, "rate": 200},
                 "NM2": {"w": 0, "rate": 0},
                 "GA2": {"w": 1.875, "rate": 100}},
-        "EA": {"AM": {"w":0, "rate":0},
+        "IM": {"AM": {"w":0, "rate":0},
                 "NM": {"w":0, "rate":0},
                 "GA": {"w":1.875, "rate": 100},
                 "AM2": {"w": 3.938, "rate": 200},
                 "NM2": {"w": 0, "rate": 0},
                 "GA2": {"w": 1.875, "rate": 100}},
+        "EA": {"AM": {"w":1.875, "rate":0},
+                "NM": {"w":0, "rate":0},
+                "GA": {"w":0.875, "rate": 100},
+                "AM2": {"w": 3.938, "rate": 200},
+                "NM2": {"w": 0, "rate": 0},
+                "GA2": {"w": 0.875, "rate": 100}},
         "IA": {"AM": {"w":1.875, "rate": 100},
                 "NM": {"w":0, "rate":0},
                 "GA": {"w":0, "rate":0},
