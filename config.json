@@ -29,7 +29,7 @@
         "ResumeSimFromFile": "...pkl"
     },
     "sim": {
-        "duration": 1800,
+        "duration": 10,
         "dt": 0.6,
         "verbose": 0,
         "recordStep": 1.0,
@@ -94,8 +94,8 @@
     },
     "net": {
         "Gain": {
-            "EE": 1.0,
-            "EI": 1.0,
+            "EE": 2.0,
+            "EI": 4.0,
             "IE": 1.0,
             "II": 1.0
         },
@@ -103,8 +103,8 @@
         "ICellModel": "INTF7",
         "scale": 1,
         "noiseDamping": {
-            "E": 1.0,
-            "I": 0.7
+            "E": 0.0,
+            "I": 0.0
         },
         "allpops": {
             "ES": 40,
@@ -142,13 +142,13 @@
         },
         "cmat": {
             "ES":{
-                "EA":{"AM2": 12.5, "NM2": 1, "conv": 4}},
+                "EA":{"AM2": 14.5, "NM2": 1, "conv": 4}},
             "EA":{
                 "EA":{"AM2": 0.05,"NM2": 0.005, "conv": 4},
                 "IA":{"AM2": 1.95,"NM2":0.0195, "conv": 8},
                 "IAL":{"AM2": 0.98,"NM2":0.098, "conv": 10},
-                "EMLEFT":{"AM2": 0.9,"NM2": 0.01,"conv": 20},
-                "EMRIGHT":{"AM2": 0.9,"NM2": 0.01,"conv": 20}},
+                "EMLEFT":{"AM2": 2.0,"NM2": 0.01,"conv": 25},
+                "EMRIGHT":{"AM2": 2.0,"NM2": 0.01,"conv": 25}},
             "IA":{
                 "EA":{"GA": 9.0,"p": 0.2},
                 "IA":{"GA": 4.5,"p": 0.1},
@@ -166,14 +166,14 @@
             "STIMMOD": [0.8, 1.2]
         }
     },
-    "STDP": {
+    "STDP-RL": {
         "AMPAI": {
             "wbase": 0.4,
             "wmax": 30,
             "RLon": 1,
             "STDPon": 1,
-            "RLlenhebb": 1000,
-            "RLlenanti": 1000,
+            "RLlenhebb": 75,
+            "RLlenanti": 60,
             "useRLexp": 1,
             "RLhebbwt": 0.01,
             "RLantiwt": 0.0,
@@ -191,8 +191,8 @@
             "wmax": 30,
             "RLon": 1,
             "STDPon": 1,
-            "RLlenhebb": 10000,
-            "RLlenanti": 500,
+            "RLlenhebb": 75,
+            "RLlenanti": 60,
             "useRLexp": 1,
             "RLhebbwt": 0.0025,
             "RLantiwt": 0.0,

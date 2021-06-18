@@ -5,6 +5,7 @@ import random
 import pickle
 import os
 import time
+import math
 import numpy as np
 import pandas as pd
 from datetime import datetime
@@ -257,7 +258,9 @@ def readSTDPParams():
   dSTDPparams = {}  # STDP-RL/STDPL parameters for AMPA,NMDA synapses;
   # generally uses shorter,longer eligibility traces
   for sy, gain in zip(lsy, gains):
-    dSTDPparams[sy] = dconf['STDP'][sy]
+    # Parameters defined at:
+    # https://github.com/Neurosim-lab/netpyne/blob/development/examples/RL_arm/stdp.mod
+    dSTDPparams[sy] = dconf['STDP-RL'][sy]
     for k in dSTDPparams[sy].keys():
       if k.count('wt') or k.count('wbase') or k.count('wmax'):
         dSTDPparams[sy][k] *= gain
@@ -570,6 +573,17 @@ def getActions(t, moves, pop_to_move):
 
   return actions
 
+def calc_reward(obs1, obs2):
+  _, _, ang1, angv1 = obs1
+  _, _, ang2, angv2 = obs2
+  angv_gain = 64.0
+
+  # L2 distance to 0 of ang and angv
+  d1 = math.sqrt(ang1*ang1 + angv_gain*angv1*angv1)
+  d2 = math.sqrt(ang2*ang2 + angv_gain*angv2*angv2)
+  dist_diff = d1 - d2
+  reward = -dist_diff
+  return reward
 
 def trainAgent(t):
   """ training interface between simulation and game environment
@@ -612,10 +626,9 @@ def trainAgent(t):
     if len(sim.AIGame.observations) == 0:
       raise Exception('Failed to get an observation from the Game')
     elif len(sim.AIGame.observations) == 1:
-      critic = abs(sim.AIGame.observations[-1][2]) * 100
+      critic = abs(sim.AIGame.observations[-1][2])
     else:
-      critic = (sim.AIGame.observations[-1][2] -
-                sim.AIGame.observations[-2][2]) * 100
+      critic = calc_reward(sim.AIGame.observations[-1], sim.AIGame.observations[-2])
 
     # use py_broadcast to avoid converting to/from Vector
     sim.pc.py_broadcast(critic, 0)  # broadcast critic value to other nodes
@@ -640,7 +653,7 @@ def trainAgent(t):
 
   if sim.rank == 0:
     sim.allActions.extend(actions)
-    sim.allRewards.extend(rewards)
+    sim.allRewards.append(critic)
     tvec_actions = []
     for ts in range(len(actions)):
       tvec_actions.append(t-tstepPerAction*(len(actions)-ts-1))
