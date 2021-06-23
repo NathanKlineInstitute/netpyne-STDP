@@ -15,6 +15,7 @@ from matplotlib import pyplot as plt
 from conf import read_conf
 from cells import intf7
 from game_interface import GameInterface
+from critic import calc_reward
 from utils.conns import getconv
 from utils.plots import plotRaster, plotWeights, saveGameBehavior, saveActionsPerEpisode
 from utils.sync import syncdata_alltoall
@@ -573,17 +574,6 @@ def getActions(t, moves, pop_to_move):
 
   return actions
 
-def calc_reward(obs1, obs2):
-  _, _, ang1, angv1 = obs1
-  _, _, ang2, angv2 = obs2
-  angv_gain = 64.0
-
-  # L2 distance to 0 of ang and angv
-  d1 = math.sqrt(ang1*ang1 + angv_gain*angv1*angv1)
-  d2 = math.sqrt(ang2*ang2 + angv_gain*angv2*angv2)
-  dist_diff = d1 - d2
-  reward = -dist_diff
-  return reward
 
 def trainAgent(t):
   """ training interface between simulation and game environment
@@ -625,10 +615,13 @@ def trainAgent(t):
     # specific for CartPole-v1. TODO: move to a diff file
     if len(sim.AIGame.observations) == 0:
       raise Exception('Failed to get an observation from the Game')
-    elif len(sim.AIGame.observations) == 1:
-      critic = abs(sim.AIGame.observations[-1][2])
     else:
-      critic = calc_reward(sim.AIGame.observations[-1], sim.AIGame.observations[-2])
+      critic = calc_reward(
+        sim.AIGame.observations[-1],
+        sim.AIGame.observations[-2] if len(sim.AIGame.observations) > 1 else None)
+      if 'posRewardBias' in dconf['net'] and dconf['net']['posRewardBias'] != 1.0:
+        if critic > 0:
+          critic *= dconf['net']['posRewardBias']
 
     # use py_broadcast to avoid converting to/from Vector
     sim.pc.py_broadcast(critic, 0)  # broadcast critic value to other nodes
