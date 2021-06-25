@@ -58,7 +58,6 @@ fid4 = None  # only used by rank 0
 
 allpops = list(dconf['net']['allpops'].keys())
 inputPop = dconf['net']['inputPop']
-EMotorPops = dconf['net']['EMotorPops']  # excitatory neuron motor populations
 # number of neurons of a given type: dnumc
 # scales the size of the network (only number of neurons)
 scale = dconf['net']['scale']
@@ -522,7 +521,7 @@ def updateInputRates():
             cell.hPointp.interval = interval
 
 
-def getActions(t, moves, pop_to_move):
+def getActions(t, moves, pop_to_moves):
   global fid4, tstepPerAction
 
   # Get move frequencies
@@ -533,10 +532,11 @@ def getActions(t, moves, pop_to_move):
     ts_beg = t-tstepPerAction*(dconf['actionsPerPlay']-ts-1)
     ts_end = t-tstepPerAction*(dconf['actionsPerPlay']-ts)
     cgids_map = {}
-    for move in moves:
-      pop_name = [p for p, m in pop_to_move.items() if m == move][0]
-      for cgid in sim.net.pops[pop_name].cellGids:
-        cgids_map[cgid] = move
+    for p, pop_moves in pop_to_moves.items():
+      cells_per_move = math.floor(len(sim.net.pops[p].cellGids) / len(pop_moves))
+      for idx, cgid in enumerate(sim.net.pops[p].cellGids):
+        cgids_map[cgid] = pop_moves[math.floor(idx / cells_per_move)]
+
     freq.append(getSpikesWithInterval([ts_end, ts_beg], cgids_map))
   for move in moves:
     freq_move = [q[move] for q in freq]
@@ -591,7 +591,7 @@ def trainAgent(t):
       actions.append(action)
   # the actions should be based on the activity of motor cortex (EMRIGHT, EMLEFT)
   else:
-    actions = getActions(t, dconf['moves'], dconf['pop_to_move'])
+    actions = getActions(t, dconf['moves'], dconf['pop_to_moves'])
 
   t1 = datetime.now() - t1
   t2 = datetime.now()
@@ -665,7 +665,7 @@ def trainAgent(t):
     if dconf['verbose'] > 0 and sim.rank == 0:
       print('Weights Recording Time:', t, 'NBsteps:', NBsteps,
             'recordWeightStepSize:', recordWeightStepSize)
-    recordAdjustableWeights(sim, t, dconf['pop_to_move'].keys())
+    recordAdjustableWeights(sim, t, dconf['pop_to_moves'].keys())
     recordWeights(sim, t)
 
   t5 = datetime.now() - t5
@@ -676,7 +676,7 @@ def getAllSTDPObjects(sim):
   # get all the STDP objects from the simulation's cells
   # dictionary of STDP objects keyed by type (all, for EMRIGHT, EMLEFT populations)
   dSTDPmech = {'all': []}
-  for pop in dconf['pop_to_move'].keys():
+  for pop in dconf['pop_to_moves'].keys():
     dSTDPmech[pop] = []
 
   for cell in sim.net.cells:
@@ -686,7 +686,7 @@ def getAllSTDPObjects(sim):
       STDPmech = conn.get('hSTDP')
       if STDPmech:
         dSTDPmech['all'].append(STDPmech)
-        for pop in dconf['pop_to_move'].keys():
+        for pop in dconf['pop_to_moves'].keys():
           if cell.gid in sim.net.pops[pop].cellGids:
             dSTDPmech[pop].append(STDPmech)
   return dSTDPmech

@@ -15,9 +15,8 @@
         "LEFT": 0,
         "RIGHT": 1
     },
-    "pop_to_move": {
-        "EMLEFT": "LEFT",
-        "EMRIGHT": "RIGHT"
+    "pop_to_moves": {
+        "EM": ["LEFT", "RIGHT"]
     },
     "actionsPerPlay": 1,
     "observationsToKeep": 100,
@@ -29,7 +28,7 @@
         "ResumeSimFromFile": "...pkl"
     },
     "sim": {
-        "duration": 1000,
+        "duration": 10,
         "dt": 0.6,
         "verbose": 0,
         "recordStep": 1.0,
@@ -95,7 +94,7 @@
     "net": {
         "Gain": {
             "EE": 2.0,
-            "EI": 4.0,
+            "EI": 3.0,
             "IE": 1.0,
             "II": 1.0
         },
@@ -110,17 +109,14 @@
             "ES": 40,
 
             "EA": 40,
-            "IA": 15,
-            "IAL": 15,
+            "IA": 10,
+            "IAL": 10,
 
-            "EMLEFT": 20,
-            "EMRIGHT": 20
+            "EM": 40,
+            "IM": 10,
+            "IML": 10
         },
         "inputPop": "ES",
-        "EMotorPops": [
-            "EMLEFT",
-            "EMRIGHT"
-        ],
         "STDPconns": {
             "EE": 1
         },
@@ -143,13 +139,12 @@
         },
         "cmat": {
             "ES":{
-                "EA":{"AM2": 14.5, "NM2": 1, "conv": 8}},
+                "EA":{"AM2": 12.5, "NM2": 1, "conv": 8}},
             "EA":{
                 "EA":{"AM2": 0.05,"NM2": 0.005, "conv": 4},
                 "IA":{"AM2": 1.95,"NM2":0.0195, "conv": 8},
                 "IAL":{"AM2": 0.98,"NM2":0.098, "conv": 10},
-                "EMLEFT":{"AM2": 2.0,"NM2": 0.01,"conv": 25},
-                "EMRIGHT":{"AM2": 2.0,"NM2": 0.01,"conv": 25}},
+                "EM":{"AM2": 1.45,"NM2": 0.01,"conv": 25}},
             "IA":{
                 "EA":{"GA": 9.0,"p": 0.2},
                 "IA":{"GA": 4.5,"p": 0.1},
@@ -157,7 +152,20 @@
             "IAL":{
                 "EA":{"GA2": 2.5,"p": 0.2},
                 "IA":{"GA2": 2.25,"p": 0.2},
-                "IAL":{"GA2": 5.5,"p": 0.1}}
+                "IAL":{"GA2": 5.5,"p": 0.1}},
+            "EM":{
+                "EM":{"AM2": 0.05,"NM2": 0.005, "conv": 4},
+                "IM":{"AM2": 1.95,"NM2":0.0195, "conv": 8},
+                "IML":{"AM2": 0.98,"NM2":0.098, "conv": 8},
+                "EA":{"AM2": 0.5,"NM2": 0.01,"conv": 4}},
+            "IM":{
+                "EM":{"GA": 9.0,"p": 0.2},
+                "IM":{"GA": 4.5,"p": 0.1},
+                "IML":{"GA": 4.5,"p": 0.2}},
+            "IML":{
+                "EM":{"GA2": 2.5,"p": 0.2},
+                "IM":{"GA2": 2.25,"p": 0.2},
+                "IML":{"GA2": 5.5,"p": 0.1}}
         },
         "weightVar": 0.5,
         "delays": {
