@@ -533,6 +533,8 @@ def getActions(t, moves, pop_to_moves):
     ts_end = t-tstepPerAction*(dconf['actionsPerPlay']-ts)
     cgids_map = {}
     for p, pop_moves in pop_to_moves.items():
+      if type(pop_moves) == str:
+        pop_moves = [pop_moves]
       cells_per_move = math.floor(len(sim.net.pops[p].cellGids) / len(pop_moves))
       for idx, cgid in enumerate(sim.net.pops[p].cellGids):
         cgids_map[cgid] = pop_moves[math.floor(idx / cells_per_move)]

@@ -40,3 +40,12 @@ Check notebooks:
 Run tests:
 
     pytest tests
+
+Frequency analysis tool:
+
+    py neurosim/tools/evaluate.py frequency \
+        results/20210624/sim.json \
+        --outputfile results/20210624/frequency.png \
+        --timestep 10000
+
+outputs the frequency file
