@@ -42,8 +42,8 @@ def saveGameBehavior(sim):
       fid3.write('\t%0.5f' % sim.allRewards[i])
       fid3.write('\n')
 
-def saveActionsPerEpisode(sim, epCount):
-  with open(sim.outpath('ActionsPerEpisode.txt'), 'w') as fid5:
+def saveActionsPerEpisode(sim, epCount, output_filename):
+  with open(output_filename, 'w') as fid5:
     for i in range(len(epCount)):
       fid5.write('\t%0.1f' % epCount[i])
       fid5.write('\n')
@@ -99,7 +99,7 @@ def _prepraster(sim, lpops):
   return dspkID, dspkT
 
 
-def plotRaster(sim, dconf, dnumc):
+def plotRaster(sim, dconf, dnumc, output_filename):
   lpops = dict([(k, v) for k, v in dconf['net']['allpops'].items() if v > 0])
   for ty in sim.lstimty:
     lpops[ty] = dconf['net']['allpops'][dconf['net']['inputPop']]
@@ -107,4 +107,4 @@ def plotRaster(sim, dconf, dnumc):
   drawraster(
       [k for k, v in lpops.items() if v > 0],
       dspkT, dspkID, dnumc, totalDur=dconf['sim']['duration'] * 1000,
-      figname=sim.outpath('raster.png'))
+      figname=output_filename)

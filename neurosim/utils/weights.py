@@ -1,6 +1,7 @@
 import os
 import pickle
 import time
+import pandas as pd
 
 
 def _LSynWeightToD(L):
@@ -24,15 +25,15 @@ def _LSynWeightToD(L):
   return dout, doutfinal
 
 
-def saveSynWeights(sim, lsynweights):
+def saveSynWeights(sim, lsynweights, outpath=lambda x:x):
   # save synaptic weights to disk for this node
-  with open(sim.outpath(f'synWeights_{str(sim.rank)}.pkl'), 'wb') as f:
+  with open(outpath(f'synWeights_{str(sim.rank)}.pkl'), 'wb') as f:
     pickle.dump(lsynweights, f)
   sim.pc.barrier()  # wait for other nodes
   if sim.rank == 0:  # rank 0 reads and assembles the synaptic weights into a single output file
     L = []
     for i in range(sim.nhosts):
-      fn = sim.outpath(f'synWeights_{str(i)}.pkl')
+      fn = outpath(f'synWeights_{str(i)}.pkl')
       while not os.path.isfile(fn):  # wait until the file is written/available
         print('saveSynWeights: waiting for finish write of', fn)
         time.sleep(1)
@@ -42,7 +43,19 @@ def saveSynWeights(sim, lsynweights):
       L = L + lw  # concatenate to the list L
     # now convert the list to a dictionary to save space, and save it to disk
     dout, doutfinal = _LSynWeightToD(L)
-    with open(sim.outpath('synWeights.pkl'), 'wb') as f:
+    with open(outpath('synWeights.pkl'), 'wb') as f:
       pickle.dump(dout, f)
-    with open(sim.outpath('synWeights_final.pkl'), 'wb') as f:
+    with open(outpath('synWeights_final.pkl'), 'wb') as f:
       pickle.dump(doutfinal, f)
+
+
+def readWeights(filename):
+  # read the synaptic plasticity weights saved as a dictionary into a pandas dataframe
+  with open(filename, 'rb') as f:
+    D = pickle.load(f)
+  A = []
+  for preID in D.keys():
+    for poID in D[preID].keys():
+      for row in D[preID][poID]:
+        A.append([row[0], preID, poID, row[1]])
+  return pd.DataFrame(A, columns=['time', 'preid', 'postid', 'weight'])
