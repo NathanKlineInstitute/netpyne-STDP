@@ -17,10 +17,10 @@ from conf import read_conf
 from cells import intf7
 from game_interface import GameInterface
 from critic import calc_reward
-from utils.conns import getconv
+from utils.conns import getconv, getSec, getInitDelay, getDelay, setdminID, setrecspikes
 from utils.plots import plotRaster, plotWeights, saveGameBehavior, saveActionsPerEpisode
 from utils.sync import syncdata_alltoall
-from utils.weights import saveSynWeights, readWeights
+from utils.weights import saveSynWeights, readWeights, getWeightIndex, getInitSTDPWeight
 
 # this will not work properly across runs with different number of nodes
 random.seed(1234)
@@ -31,75 +31,7 @@ def isInh(ty): return ty.startswith('I')
 def connType(prety, poty): return prety[0] + poty[0]
 
 
-def getWeightIndex(synmech, cellModel):
-  # get weight index for connParams
-  if cellModel == 'INTF7':
-    return intf7.dsyn[synmech]
-  return 0
-
-
-def getInitSTDPWeight(cfg, weight):
-  """get initial weight for a connection
-     checks if weightVar is non-zero, if so will use a uniform distribution
-     with range on interval: (1-var)*weight, (1+var)*weight
-  """
-  if cfg.weightVar == 0.0:
-    return weight
-  elif weight <= 0.0:
-    return 0.0
-  else:
-    return 'uniform(%g,%g)' % (max(0, weight*(1.0-cfg.weightVar)), weight*(1.0+cfg.weightVar))
-
-
-def getInitDelay(dconf, sec):
-  dmin, dmax = dconf['net']['delays'][sec]
-  if dmin == dmax:
-    return dmin
-  else:
-    return 'uniform(%g,%g)' % (dmin, dmax)
-
-
-def getSec(prety, poty, sy):
-  # Make it more detailed if needed
-  return 'soma'
-
-
-def getDelay(dconf, prety, poty, sy, sec=None):
-  if sec == None:
-    sec = getSec(prety, poty, sy)
-  if sy == 'GA2':
-    # longer delay for GA2 only
-    return getInitDelay(dconf, sec + '2')
-  return getInitDelay(dconf, sec)
-
-
-def setdminID(sim, lpop):
-  # setup min ID for each population in lpop
-  # gather cell tags; see https://github.com/Neurosim-lab/netpyne/blob/development/netpyne/sim/gather.py
-  alltags = sim._gatherAllCellTags()
-  dGIDs = {pop: [] for pop in lpop}
-  for tinds in range(len(alltags)):
-    if alltags[tinds]['pop'] in lpop:
-      dGIDs[alltags[tinds]['pop']].append(tinds)
-  sim.simData['dminID'] = {pop: np.amin(
-      dGIDs[pop]) for pop in lpop if len(dGIDs[pop]) > 0}
-
-
-def setrecspikes(dconf, sim):
-  if dconf['sim']['recordStim']:
-    sim.cfg.recordCellsSpikes = [-1]  # record from all spikes
-  else:
-    # make sure to record only from the neurons, not the stimuli - which requires a lot of storage/memory
-    sim.cfg.recordCellsSpikes = []
-    for pop in sim.net.pops.keys():
-      if pop.count('stim') > 0 or pop.count('Noise') > 0:
-        continue
-      for gid in sim.net.pops[pop].cellGids:
-        sim.cfg.recordCellsSpikes.append(gid)
-
-
 class NeuroSim:
-
   def __init__(self, dconf):
     self.dconf = dconf
 
@@ -192,10 +124,6 @@ class NeuroSim:
     cfg.weightVar = dconf['net']['weightVar']
     self.cfg = cfg
 
-    ############
-    # setup
-    ############
-
     self.ECellModel = dconf['net']['ECellModel']
     self.ICellModel = dconf['net']['ICellModel']
 
@@ -227,12 +155,15 @@ class NeuroSim:
     for ty in sim.lnoisety:
       self.allpops.append(ty)
 
-    self.setupSTDPConns()
-
+    self.setupSTDPWeights()
 
     # Alternate to create network and run simulation
     # create network object and set cfg and net params; pass simulation config and network params as arguments
     sim.initialize(simConfig=self.simConfig, netParams=self.netParams)
+
+    ################################
+    ######### End __init__ #########
+    ################################
 
   def makeECellModel(self):
     # create rules for excitatory neuron models
@@ -369,7 +300,7 @@ class NeuroSim:
   ######################################################################################
   #####################################################################################
 
-  def setupSTDPConns(self):
+  def setupSTDPWeights(self):
     synToMech = self.dconf['net']['synToMech']
     sytypes = self.dconf['net']['synToMech'].keys()
 
@@ -751,8 +682,10 @@ class NeuroSim:
       if sim.plotWeights:
         plotWeights()
       saveGameBehavior(sim)
-      saveActionsPerEpisode(sim, self.epCount, self.outpath('ActionsPerEpisode.txt'))
+      saveActionsPerEpisode(
+          sim, self.epCount, self.outpath('ActionsPerEpisode.txt'))
       plotRaster(sim, self.dconf, self.dnumc, self.outpath('raster.png'))
+
 
 def main(dconf=None):
   if not dconf:
@@ -764,5 +697,5 @@ def main(dconf=None):
 
 if __name__ == '__main__':
   fire.Fire({
-    'run': main
+      'run': main
   })

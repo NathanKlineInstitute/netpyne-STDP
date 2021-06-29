@@ -3,6 +3,7 @@ import pickle
 import time
 import pandas as pd
 
+from cells import intf7
 
 def _LSynWeightToD(L):
   # convert list of synaptic weights to dictionary to save disk space
@@ -59,3 +60,23 @@ def readWeights(filename):
       for row in D[preID][poID]:
         A.append([row[0], preID, poID, row[1]])
   return pd.DataFrame(A, columns=['time', 'preid', 'postid', 'weight'])
+
+
+def getWeightIndex(synmech, cellModel):
+  # get weight index for connParams
+  if cellModel == 'INTF7':
+    return intf7.dsyn[synmech]
+  return 0
+
+
+def getInitSTDPWeight(cfg, weight):
+  """get initial weight for a connection
+     checks if weightVar is non-zero, if so will use a uniform distribution
+     with range on interval: (1-var)*weight, (1+var)*weight
+  """
+  if cfg.weightVar == 0.0:
+    return weight
+  elif weight <= 0.0:
+    return 0.0
+  else:
+    return 'uniform(%g,%g)' % (max(0, weight*(1.0-cfg.weightVar)), weight*(1.0+cfg.weightVar))
