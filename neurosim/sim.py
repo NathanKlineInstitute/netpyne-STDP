@@ -23,7 +23,9 @@ from utils.weights import saveSynWeights
 
 
 dconf = read_conf()
-outpath = lambda fname: os.path.join(dconf['sim']['outdir'], fname)
+def outpath(fname): return os.path.join(dconf['sim']['outdir'], fname)
+
+
 sim.outpath = outpath
 
 # this will not work properly across runs with different number of nodes
@@ -34,9 +36,7 @@ sim.allTimes = []
 sim.allRewards = []  # list to store all rewards
 sim.allActions = []  # list to store all actions
 sim.allMotorOutputs = []  # list to store firing rate of output motor neurons.
-sim.WeightsRecordingTimes = []
-sim.allRLWeights = []
-sim.allNonRLWeights = []
+sim.allSTDPWeights = []
 
 sim.ActionsRewardsfilename = outpath('ActionsRewards.txt')
 sim.MotorOutputsfilename = outpath('MotorOutputs.txt')
@@ -50,8 +50,6 @@ if 'saveWeights' in dconf['sim']:
 sim.saveMotionFields = dconf['sim']['saveMotionFields']
 sim.saveObjPos = 1  # save ball and paddle position to file
 recordWeightStepSize = dconf['sim']['recordWeightStepSize']
-# recordWeightDT = 1000 # interval for recording synaptic weights (change later)
-recordWeightDCells = 1  # to record weights for sub samples of neurons
 tstepPerAction = dconf['sim']['tstepPerAction']  # time step per action (in ms)
 
 fid4 = None  # only used by rank 0
@@ -316,6 +314,7 @@ for ty in sim.lstimty:
 
 # Stimulation parameters
 
+
 def setupNoiseStim():
   lnoisety = []
   dnoise = dconf['noise']
@@ -385,7 +384,7 @@ for prety, dprety in cmat.items():
         }
         # Setup STDP plasticity rules
         if ct in stdpConns and stdpConns[ct] and dSTDPparams[synToMech[sy]]['STDPon']:
-          print('Setting STDP on', k)
+          print('Setting STDP on {} ({})'.format(k, weight))
           netParams.connParams[k]['plast'] = {
               'mech': 'STDP', 'params': dSTDPparams[synToMech[sy]]}
           netParams.connParams[k]['weight'] = getInitSTDPWeight(weight)
@@ -394,58 +393,15 @@ for prety, dprety in cmat.items():
 
 sim.AIGame = None  # placeholder
 
-lsynweights = []  # list of syn weights, per node
-
-dsumWInit = {}
-
-
-def recordAdjustableWeights(sim, t, lpop):
-  global lsynweights
-  """ record the STDP weights during the simulation
-  """
-  for popname in lpop:
-    # record the plastic weights for specified popname
-    # this is the set of popname cells
-    lcell = [c for c in sim.net.cells if c.gid in sim.net.pops[popname].cellGids]
-    for cell in lcell:
-      for conn in cell.conns:
-        if 'hSTDP' in conn:
-          #hstdp = conn.get('hSTDP')
-          lsynweights.append(
-              [t, conn.preGid, cell.gid, float(conn['hObj'].weight[PlastWeightIndex])])
-    # return len(lcell)
-
 
 def recordWeights(sim, t):
-  """ record the STDP weights during the simulation
-  """
-  #lRcell = [c for c in sim.net.cells if c.gid in sim.net.pops['ER'].cellGids]
-  sim.WeightsRecordingTimes.append(t)
-  sim.allRLWeights.append([])  # Save this time
-  sim.allNonRLWeights.append([])
+  # record all weights during the simulation
   for cell in sim.net.cells:
     for conn in cell.conns:
       if 'hSTDP' in conn:
-        if conn.plast.params.RLon == 1:
-          # save weight only for Rl-STDP conns
-          sim.allRLWeights[-1].append(
-              float(conn['hObj'].weight[PlastWeightIndex]))
-        else:
-          # save weight only for nonRL-STDP conns
-          sim.allNonRLWeights[-1].append(
-              float(conn['hObj'].weight[PlastWeightIndex]))
-
-def mulAdjustableWeights(sim, dfctr):
-  # multiply adjustable STDP/RL weights by dfctr[pop] value for each population keyed in dfctr
-  for pop in dfctr.keys():
-    if dfctr[pop] == 1.0:
-      continue
-    # this is the set of cells
-    lcell = [c for c in sim.net.cells if c.gid in sim.net.pops[pop].cellGids]
-    for cell in lcell:
-      for conn in cell.conns:
-        if 'hSTDP' in conn:
-          conn['hObj'].weight[PlastWeightIndex] *= dfctr[pop]
+        weightItem = [t, conn.preGid, cell.gid, float(
+            conn['hObj'].weight[PlastWeightIndex])]
+        sim.allSTDPWeights.append(weightItem)
 
 
 ######################################################################################
@@ -456,7 +412,7 @@ def getSpikesWithInterval(trange=None, neuronal_pop=None):
     return 0.0
   spkts = sim.simData['spkt']
   spkids = sim.simData['spkid']
-  pop_spikes = dict([(v,0) for v in set(neuronal_pop.values())])
+  pop_spikes = dict([(v, 0) for v in set(neuronal_pop.values())])
   if len(spkts) > 0:
     # if random.random() < 0.005:
     #   print('length', len(spkts), spkts.buffer_size())
@@ -535,7 +491,8 @@ def getActions(t, moves, pop_to_moves):
     for p, pop_moves in pop_to_moves.items():
       if type(pop_moves) == str:
         pop_moves = [pop_moves]
-      cells_per_move = math.floor(len(sim.net.pops[p].cellGids) / len(pop_moves))
+      cells_per_move = math.floor(
+          len(sim.net.pops[p].cellGids) / len(pop_moves))
       for idx, cgid in enumerate(sim.net.pops[p].cellGids):
         cgids_map[cgid] = pop_moves[math.floor(idx / cells_per_move)]
 
@@ -552,7 +509,7 @@ def getActions(t, moves, pop_to_moves):
       fid4 = open(sim.MotorOutputsfilename, 'w')
     if dconf['verbose']:
       print('t={}: {} spikes: {}'.format(
-          round(t,2), ','.join(moves), ','.join([str(move_freq[m]) for m in moves])))
+          round(t, 2), ','.join(moves), ','.join([str(move_freq[m]) for m in moves])))
     fid4.write('%0.1f' % t)
     for ts in range(int(dconf['actionsPerPlay'])):
       fid4.write(
@@ -605,12 +562,13 @@ def trainAgent(t):
       eval_str = ''
       if len(sim.AIGame.count_steps) > ep_cnt:
         # take the steps of the latest `ep_cnt` episodes
-        counted = [steps_per_ep for steps_per_ep in sim.AIGame.count_steps if steps_per_ep > 0][-ep_cnt:]
+        counted = [
+            steps_per_ep for steps_per_ep in sim.AIGame.count_steps if steps_per_ep > 0][-ep_cnt:]
         # get the median
         eval_ep = np.median(counted)
         epCount.append(counted[-1])
         eval_str = '(median: {})'.format(eval_ep)
-      
+
       last_steps = [k for k in sim.AIGame.count_steps if k != 0][-1]
       print('Episode finished in {} steps {}!'.format(last_steps, eval_str))
 
@@ -619,8 +577,8 @@ def trainAgent(t):
       raise Exception('Failed to get an observation from the Game')
     else:
       critic = calc_reward(
-        sim.AIGame.observations[-1],
-        sim.AIGame.observations[-2] if len(sim.AIGame.observations) > 1 else None)
+          sim.AIGame.observations[-1],
+          sim.AIGame.observations[-2] if len(sim.AIGame.observations) > 1 else None)
       if 'posRewardBias' in dconf['net'] and dconf['net']['posRewardBias'] != 1.0:
         if critic > 0:
           critic *= dconf['net']['posRewardBias']
@@ -642,7 +600,6 @@ def trainAgent(t):
     for STDPmech in dSTDPmech['all']:
       STDPmech.reward_punish(critic)
 
-
   t3 = datetime.now() - t3
   t4 = datetime.now()
 
@@ -657,22 +614,20 @@ def trainAgent(t):
 
   updateInputRates()  # update firing rate of inputs to R population (based on game state)
 
-
   t4 = datetime.now() - t4
   t5 = datetime.now()
-
 
   NBsteps += 1
   if NBsteps % recordWeightStepSize == 0:
     if dconf['verbose'] > 0 and sim.rank == 0:
       print('Weights Recording Time:', t, 'NBsteps:', NBsteps,
             'recordWeightStepSize:', recordWeightStepSize)
-    recordAdjustableWeights(sim, t, dconf['pop_to_moves'].keys())
     recordWeights(sim, t)
 
   t5 = datetime.now() - t5
   if random.random() < 0.005:
-    print(t, [round(tk.microseconds / 1000, 0) for tk in [t1,t2,t3,t4,t5]])
+    print(t, [round(tk.microseconds / 1000, 0) for tk in [t1, t2, t3, t4, t5]])
+
 
 def getAllSTDPObjects(sim):
   # get all the STDP objects from the simulation's cells
@@ -803,11 +758,11 @@ InitializeNoiseRates()
 # Plot 2d net
 # sim.analysis.plot2Dnet(saveFig='data/net.png', showFig=False)
 sim.analysis.plotConn(
-          saveFig=outpath('connsCells.png'), showFig=False,
-          groupBy='cell', feature='weight')
+    saveFig=outpath('connsCells.png'), showFig=False,
+    groupBy='cell', feature='weight')
 includePre = list(dconf['net']['allpops'].keys())
 sim.analysis.plotConn(saveFig=outpath('connsPops.png'), showFig=False,
-  includePre=includePre, includePost=includePre, feature='probability')
+                      includePre=includePre, includePost=includePre, feature='probability')
 
 
 # has periodic callback to adjust STDP weights based on RL signal
@@ -821,7 +776,7 @@ sim.saveData()  # save data to disk
 
 
 if sim.saveWeights:
-  saveSynWeights(sim, lsynweights)
+  saveSynWeights(sim, sim.allSTDPWeights)
 
 
 # only rank 0 should save. otherwise all the other nodes could over-write the output or quit first; rank 0 plots

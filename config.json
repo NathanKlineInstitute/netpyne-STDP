@@ -28,12 +28,12 @@
         "ResumeSimFromFile": "...pkl"
     },
     "sim": {
-        "duration": 10,
+        "duration": 100,
         "dt": 0.6,
         "verbose": 0,
         "recordStep": 1.0,
         "recordStim": 0,
-        "recordWeightStepSize": 200,
+        "recordWeightStepSize": 100,
         "RLFakeUpRule": 0,
         "RLFakeDownRule": 0,
         "RLFakeStayRule": 0,
@@ -122,7 +122,7 @@
         },
         
         "InputMaxRate": 50.0,
-        "posRewardBias": 1.8,
+        "posRewardBias": 1.5,
         "stimModW": 35,
         "synMechParams": {
             "AMPA": {"mod": "Exp2Syn", "tau1": 0.05, "tau2": 5.3, "e": 0},
@@ -196,20 +196,19 @@
             "maxreward": 0.0
         },
         "AMPA": {
-            "wbase": 0.001,
             "wmax": 30,
             "RLon": 1,
             "STDPon": 1,
-            "RLlenhebb": 75,
+            "RLlenhebb": 60,
             "RLlenanti": 60,
-            "useRLexp": 1,
+            "useRLexp": 0,
             "RLhebbwt": 0.0025,
             "RLantiwt": 0.0,
             "hebbwt": 0.0,
             "antiwt": 0.0,
-            "tauhebb": 10,
-            "tauanti": 10,
-            "RLwindhebb": 50,
+            "tauhebb": 3,
+            "tauanti": 3,
+            "RLwindhebb": 5,
             "softthresh": 0,
             "verbose": 0,
             "maxreward": 0.0
