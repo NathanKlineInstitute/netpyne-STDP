@@ -28,7 +28,7 @@
         "ResumeSimFromFile": "...pkl"
     },
     "sim": {
-        "duration": 100,
+        "duration": 1000,
         "dt": 0.6,
         "verbose": 0,
         "recordStep": 1.0,
@@ -42,6 +42,7 @@
         "saveCellSecs": 0,
         "saveCellConns": 1,
         "saveMotionFields": 0,
+        "plotRaster": 1,
         "tstepPerAction": 50,
         "saveWeights": 1,
         "saveAssignedFiringRates": 0,

@@ -17,20 +17,25 @@ def _get_conf_file():
       print('reading', fnjson)
   return fnjson
 
+def backup_config(fnjson, conf):
+  # Copy the config as a backup
+  fout = os.path.join(conf['sim']['outdir'], 'backupcfg_sim.json')
+  with open(fout, 'w') as out:
+    out.write(json.dumps(conf, indent=4))
 
-def _init_conf(fnjson, conf):
+def _init_conf(fnjson, conf, outdir=None):
+  if outdir: 
+    conf['sim']['outdir'] = outdir
   if 'outdir' not in conf['sim'] or not conf['sim']['outdir']:
     conf['sim']['outdir'] = os.path.join('results', now_str())
   os.makedirs(conf['sim']['outdir'], exist_ok=True)
-  # Copy the config as a backup
-  fout = os.path.join(conf['sim']['outdir'], 'backupcfg_sim.json')
-  os.system('cp ' + fnjson + '  ' + fout)
+  backup_config(fnjson, conf)
 
-
-def read_conf(fnjson=None):
+def read_conf(fnjson=None, outdir=None):
   if not fnjson:
     fnjson = _get_conf_file()
   with open(fnjson, 'r') as fp:
     dconf = json.load(fp)
-  _init_conf(fnjson, dconf)
+  _init_conf(fnjson, dconf, outdir)
   return dconf
+

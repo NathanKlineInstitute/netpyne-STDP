@@ -29,9 +29,19 @@ Compile mod files
 
     nrnivmodl mod
 
-### run 
+### run
 
-    python3 neurosim/sim.py run
+    python3 neurosim/main.py run
+
+Evaluate example:
+
+    py neurosim/main.py eval results/20210629 --resume_tidx=0
+    py neurosim/main.py eval results/20210629 --resume_tidx=-1
+
+     for ((i=0;i<=200;i+=10)); do
+        echo "Evaluating at $i"
+        py neurosim/main.py eval results/20210629 --resume_tidx=$i
+    done
 
 Check notebooks:
 

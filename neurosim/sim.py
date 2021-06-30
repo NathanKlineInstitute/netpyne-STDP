@@ -6,14 +6,12 @@ import pickle
 import os
 import time
 import math
-import fire
 import numpy as np
 import pandas as pd
 from datetime import datetime
 from collections import OrderedDict
 from matplotlib import pyplot as plt
 
-from conf import read_conf
 from cells import intf7
 from game_interface import GameInterface
 from critic import calc_reward
@@ -51,6 +49,12 @@ class NeuroSim:
     # sim.NonRLweightsfilename = outpath('NonRLweights.txt')  # file to store weights
 
     sim.plotWeights = 0  # plot weights
+    sim.plotRaster = 1
+    if 'plotRaster' in dconf['sim']:
+      sim.plotRaster = dconf['sim']['plotRaster']
+    sim.doSaveData = 1
+    if 'doSaveData' in dconf['sim']:
+      sim.doSaveData = dconf['sim']['doSaveData']
     sim.saveWeights = 1  # save weights
     if 'saveWeights' in dconf['sim']:
       sim.saveWeights = dconf['sim']['saveWeights']
@@ -640,7 +644,10 @@ class NeuroSim:
       try:
         A = readWeights(self.dconf['simtype']['ResumeSimFromFile'])
         # take the latest weights saved
-        self.resumeSTDPWeights(sim, A[A.time == max(A.time)])
+        resume_ts = max(A.time)
+        if 'ResumeSimFromTs' in self.dconf['simtype'] and self.dconf['simtype']['ResumeSimFromTs']:
+          resume_ts = self.dconf['simtype']['ResumeSimFromTs']
+        self.resumeSTDPWeights(sim, A[A.time == resume_ts])
         sim.pc.barrier()  # wait for other nodes
         if sim.rank == 0:
           print('Updated STDP weights')
@@ -667,12 +674,15 @@ class NeuroSim:
     sim.analysis.plotConn(saveFig=self.outpath('connsPops.png'), showFig=False,
                           includePre=includePre, includePost=includePre, feature='probability')
 
+    # Record weights at time 0
+    self.recordWeights(sim, 0)
     # has periodic callback to adjust STDP weights based on RL signal
     sim.runSimWithIntervalFunc(tPerPlay, self.trainAgent)
     if self.ECellModel == 'INTF7' or self.ICellModel == 'INTF7':
       intf7.insertSpikes(sim, self.simConfig.recordStep)
     sim.gatherData()  # gather data from different nodes
-    sim.saveData()  # save data to disk
+    if sim.doSaveData:
+      sim.saveData()  # save data to disk
 
     if sim.saveWeights:
       saveSynWeights(sim, sim.allSTDPWeights, self.outpath)
@@ -684,18 +694,5 @@ class NeuroSim:
       saveGameBehavior(sim)
       saveActionsPerEpisode(
           sim, self.epCount, self.outpath('ActionsPerEpisode.txt'))
-      plotRaster(sim, self.dconf, self.dnumc, self.outpath('raster.png'))
-
-
-def main(dconf=None):
-  if not dconf:
-    dconf = read_conf()
-
-  runner = NeuroSim(dconf)
-  runner.run()
-
-
-if __name__ == '__main__':
-  fire.Fire({
-      'run': main
-  })
+      if sim.plotRaster:
+        plotRaster(sim, self.dconf, self.dnumc, self.outpath('raster.png'))
