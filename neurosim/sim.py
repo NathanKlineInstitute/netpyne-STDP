@@ -361,9 +361,9 @@ class NeuroSim:
         for idx in cConnW.index:
           cW = cConnW.at[idx, 'weight']
           conn['hObj'].weight[self.PlastWeightIndex] = cW
-          #hSTDP = conn.get('hSTDP')
+          # hSTDP = conn.get('hSTDP')
           #hSTDP.cumreward = cConnW.at[idx,'cumreward']
-          if self.dconf['verbose'] > 1:
+          if self.dconf['verbose'] != 0:
             print('weight updated:', cW)
 
   ###################################################################################################################################
@@ -627,14 +627,6 @@ class NeuroSim:
     # instantiate netStim
     sim.net.addStims()
 
-    if sim.rank == 0:
-      fconn = self.outpath('sim')
-      sim.saveData(filename=fconn)
-
-    setrecspikes(self.dconf, sim)
-    # setup variables to record for each cell (spikes, V traces, etc)
-    sim.setupRecording()
-
     # get all the STDP objects up-front
     self.dSTDPmech = self.getAllSTDPObjects(sim)
 
@@ -656,8 +648,17 @@ class NeuroSim:
         #     normalizeAdjustableWeights(sim, 0, lrecpop)
         #     print(sim.rank,'normalized adjustable weights at start')
         #     sim.pc.barrier() # wait for other nodes
-      except:
+      except Exception as err:
         print('Could not restore STDP weights from file.')
+        raise err
+
+    if sim.rank == 0:
+      fconn = self.outpath('sim')
+      sim.saveData(filename=fconn)
+
+    setrecspikes(self.dconf, sim)
+    # setup variables to record for each cell (spikes, V traces, etc)
+    sim.setupRecording()
 
     setdminID(sim, self.allpops)
     tPerPlay = self.tstepPerAction * self.dconf['actionsPerPlay']

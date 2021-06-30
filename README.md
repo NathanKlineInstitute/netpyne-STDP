@@ -38,9 +38,9 @@ Evaluate example:
     py neurosim/main.py eval results/20210629 --resume_tidx=0
     py neurosim/main.py eval results/20210629 --resume_tidx=-1
 
-     for ((i=0;i<=200;i+=10)); do
+    for ((i=2;i<=30;i+=2)); do
         echo "Evaluating at $i"
-        py neurosim/main.py eval results/20210629 --resume_tidx=$i
+        py neurosim/main.py eval results/20210629-longrun --resume_tidx=$i
     done
 
 Check notebooks:

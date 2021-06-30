@@ -31,13 +31,18 @@ def evaluate(eval_dir, duration=200, resume_tidx=-1):
   dconf['simtype']['ResumeSim'] = 1
   dconf['simtype']['ResumeSimFromFile'] = synWeights_file
   dconf['simtype']['ResumeSimFromTs'] = timesteps[resume_tidx]
-  dconf['net']['STDPconns'] = {}
   dconf['verbose'] = 0
   dconf['sim']['duration'] = duration
   dconf['sim']['saveWeights'] = 0
   dconf['sim']['doSaveData'] = 0
   dconf['sim']['plotRaster'] = 0
   dconf['sim']['verbose'] = 0
+
+  for stdp_param in ['STDP', 'STDP-RL']:
+    if stdp_param in dconf:
+      for k, stdp_map in dconf[stdp_param].items():
+        dconf[stdp_param][k]['RLhebbwt'] = 0
+
   backup_config(dconf_path, dconf)
 
   runner = NeuroSim(dconf)
