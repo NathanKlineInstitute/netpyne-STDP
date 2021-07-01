@@ -103,3 +103,16 @@ converting synaptic weight list to dictionary...
 
 py neurosim/main.py eval results/20210630 --resume_tidx=-1
 
+** check performance here http://localhost:8888/notebooks/notebooks/evaluate.ipynb
+
+once start jupyter notebook
+but have to make sure the WDIR (working dir is updated in the notebook)
+could move some of that code to a simdat.py ... 
+
+** STDPon vs RLon
+
+for RL based learning stdp.mod requires RLon to be set to 1 and STDPon to be set to 0
+otherwise both types of learning are turned on at the same time
+
+try adjusting that in sim.py and config.json ...
+

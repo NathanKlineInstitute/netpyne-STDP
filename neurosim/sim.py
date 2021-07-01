@@ -305,6 +305,7 @@ class NeuroSim:
   #####################################################################################
 
   def setupSTDPWeights(self):
+    # this function sets up the network wiring rules (and the RL-STDP plasticity rules)
     synToMech = self.dconf['net']['synToMech']
     sytypes = self.dconf['net']['synToMech'].keys()
 
@@ -335,8 +336,8 @@ class NeuroSim:
                     sy, self.ICellModel if isInh(poty) else self.ECellModel)
             }
             # Setup STDP plasticity rules
-            if ct in stdpConns and stdpConns[ct] and self.dSTDPparams[synToMech[sy]]['STDPon']:
-              print('Setting STDP on {} ({})'.format(k, weight))
+            if ct in stdpConns and stdpConns[ct] and self.dSTDPparams[synToMech[sy]]['RLon']:
+              print('Setting RL-STDP on {} ({})'.format(k, weight))
               self.netParams.connParams[k]['plast'] = {
                   'mech': 'STDP', 'params': self.dSTDPparams[synToMech[sy]]}
               self.netParams.connParams[k]['weight'] = getInitSTDPWeight(
