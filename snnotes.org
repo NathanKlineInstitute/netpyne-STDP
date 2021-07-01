@@ -9,7 +9,7 @@ python3 neurosim/sim.py
 may want to move some of the data loading into simdat.py
 although not everyone will want to use that over jupyter
 
-check README.md -- the github main page doesn't have up to date info
+check README.md 
 
 ** info from README.md (duplicated here)
 
