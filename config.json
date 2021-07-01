@@ -2,7 +2,7 @@
     "env": {
         "name": "CartPole-v1",
         "savemp4": 0,
-        "render": 0,
+        "render": 1,
         "observation_map": [
             {"type": "rf_normal", "bins": 5, "mean": -0.00645789, "std": 0.06894682},
             {"type": "rf_normal", "bins": 5, "mean": -0.03634136, "std": 0.53989509},
@@ -109,9 +109,9 @@
         "allpops": {
             "ES": 40,
 
-            "EA": 40,
-            "IA": 10,
-            "IAL": 10,
+            "EA": 80,
+            "IA": 20,
+            "IAL": 20,
 
             "EM": 40,
             "IM": 10,
@@ -204,7 +204,7 @@
             "RLlenhebb": 60,
             "RLlenanti": 60,
             "useRLexp": 0,
-            "RLhebbwt": 0.00125,
+            "RLhebbwt": 0.001,
             "RLantiwt": 0.0,
             "hebbwt": 0.0,
             "antiwt": 0.0,
