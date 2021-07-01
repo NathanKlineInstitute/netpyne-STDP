@@ -116,3 +116,28 @@ otherwise both types of learning are turned on at the same time
 
 try adjusting that in sim.py and config.json ...
 
+* 21jul1
+** output
+
+python -i neurosim/tools/evaluate.py
+frequency('results/20210630/sim.json')
+
+savefig('gif/21jun30_test0_freq.png')
+
+python -i neurosim/utils/plots.py
+plotRaster
+
+** test smaller RLhebbwt
+
+python3 neurosim/main.py run
+
+reduced RLhebbwt by 1/2 from 0.0025 to 0.00125 ... firing rates not as high
+
+python -i neurosim/tools/evaluate.py
+plt.ion()
+frequency('results/20210701/sim.json')
+plt.savefig('gif/21jul1_test1_freq.png') # [[./gif/21jul1_test1_freq.png]]
+[[./gif/21jul1_test0.png]]
+firing rates end somewhat lower; perf a little better? 
+
+** winning score for cartpole v1 = 500, for cartpole v0 = 200
