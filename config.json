@@ -197,6 +197,7 @@
             "maxreward": 0.0
         },
         "AMPA": {
+	    "wbase": 0.0,
             "wmax": 30,
             "RLon": 1,
             "STDPon": 1,

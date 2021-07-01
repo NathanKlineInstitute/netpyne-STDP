@@ -1,0 +1,105 @@
+* 21jun30
+** setting up test on laptop (ubuntu)
+
+jupyter notebook works using py3env
+
+was able to run the simulation ... ?
+python3 neurosim/sim.py
+
+may want to move some of the data loading into simdat.py
+although not everyone will want to use that over jupyter
+
+check README.md -- the github main page doesn't have up to date info
+
+** info from README.md (duplicated here)
+
+# SMARTAgent
+A closed-loop neuronal network model that senses dynamic visual information from the AIgame enviroment and learns to produce actions that maximize game reward through spike-timing dependent reinforcement learning.
+
+### Install on Mac
+
+install python
+
+install ffmpeg
+
+    brew install ffmpeg
+
+create a virtual environment
+
+    virtualenv -p python3 venv
+
+activate the environment
+
+    source ./venv/bin/activate
+
+install all dependencies:
+
+    pip install -r requirements.txt
+
+Add needed dirs
+
+    mkdir data
+
+Compile mod files
+
+    nrnivmodl mod
+
+### run
+
+    python3 neurosim/main.py run
+
+Evaluate example:
+
+    py neurosim/main.py eval results/20210629 --resume_tidx=0
+    py neurosim/main.py eval results/20210629 --resume_tidx=-1
+
+    for ((i=2;i<=30;i+=2)); do
+        echo "Evaluating at $i"
+        py neurosim/main.py eval results/20210629-longrun --resume_tidx=$i
+    done
+
+Check notebooks:
+
+    jupyter notebook
+
+Run tests:
+
+    pytest tests
+
+Frequency analysis tool:
+
+    py neurosim/tools/evaluate.py frequency \
+        results/20210624/sim.json \
+        --outputfile results/20210624/frequency.png \
+        --timestep 10000
+
+outputs the frequency file
+
+** run test
+
+python3 neurosim/main.py run
+
+Episode finished in 15 steps (median: 19.0)!
+  Done; run time = 350.89 s; real-time ratio: 2.85.
+
+Gathering data...
+  Done; gather time = 0.63 s.
+
+Analyzing...
+  Cells: 200
+  Connections: 2620 (13.10 per cell)
+  Synaptic contacts: 4760 (23.80 per cell)
+  Spikes: 6346585 (31.73 Hz)
+  Simulated time: 1000.0 s; 1 workers
+  Run time: 350.89 s
+fatal: No names found, cannot describe anything.
+Saving output as results/20210630/sim.pkl ... 
+Finished saving!
+Saving output as results/20210630/sim.json  ... 
+Finished saving!
+  Done; saving time = 26.21 s.
+results/20210630/synWeights_0.pkl len(lw)= 361800 <class 'list'>
+converting synaptic weight list to dictionary...
+
+py neurosim/main.py eval results/20210630 --resume_tidx=-1
+
