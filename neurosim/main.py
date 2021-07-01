@@ -10,6 +10,17 @@ def main(dconf=None):
   if not dconf:
     dconf = read_conf()
 
+  outdir = dconf['sim']['outdir']
+  if os.path.isdir(outdir):
+    evaluations = [fname
+      for fname in os.listdir(outdir)
+      if fname.startswith('evaluation_') and os.path.isdir(os.path.join(outdir, fname))]
+    if len(evaluations) > 0:
+      raise Exception(' '.join([
+          'You have run evaluations on {}: {}.'.format(outdir, evaluations),
+          'This will rewrite!', 
+          'Please delete to continue!']))
+
   runner = NeuroSim(dconf)
   runner.run()
 

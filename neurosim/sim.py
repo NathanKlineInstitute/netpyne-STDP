@@ -335,8 +335,8 @@ class NeuroSim:
                     sy, self.ICellModel if isInh(poty) else self.ECellModel)
             }
             # Setup STDP plasticity rules
-            if ct in stdpConns and stdpConns[ct] and self.dSTDPparams[synToMech[sy]]['STDPon']:
-              print('Setting STDP on {} ({})'.format(k, weight))
+            if ct in stdpConns and stdpConns[ct] and self.dSTDPparams[synToMech[sy]]['RLon']:
+              print('Setting RL-STDP on {} ({})'.format(k, weight))
               self.netParams.connParams[k]['plast'] = {
                   'mech': 'STDP', 'params': self.dSTDPparams[synToMech[sy]]}
               self.netParams.connParams[k]['weight'] = getInitSTDPWeight(

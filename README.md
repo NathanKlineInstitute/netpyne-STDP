@@ -33,16 +33,6 @@ Compile mod files
 
     python3 neurosim/main.py run
 
-Evaluate example:
-
-    py neurosim/main.py eval results/20210629 --resume_tidx=0
-    py neurosim/main.py eval results/20210629 --resume_tidx=-1
-
-    for ((i=2;i<=30;i+=2)); do
-        echo "Evaluating at $i"
-        py neurosim/main.py eval results/20210629-longrun --resume_tidx=$i
-    done
-
 Check notebooks:
 
     jupyter notebook
@@ -51,11 +41,25 @@ Run tests:
 
     pytest tests
 
-Frequency analysis tool:
+### Tools/Evaluation
 
-    py neurosim/tools/evaluate.py frequency \
-        results/20210624/sim.json \
-        --outputfile results/20210624/frequency.png \
-        --timestep 10000
+Evaluate the model before and after training:
+    
+    WDIR=results/20210701
+    py neurosim/main.py eval $WDIR --resume_tidx=0
+    py neurosim/main.py eval $WDIR --resume_tidx=-1
 
-outputs the frequency file
+Optional: Maybe evaluate in depth
+
+    for ((i=2;i<=30;i+=2)); do
+        echo "Evaluating at $i"
+        py neurosim/main.py eval $WDIR --resume_tidx=$i
+    done
+
+Run all evaluation:
+
+    WDIR=results/20210701
+    py neurosim/tools/evaluate.py frequency $WDIR --timestep 10000
+    py neurosim/tools/evaluate.py boxplot $WDIR
+    py neurosim/tools/evaluate.py perf $WDIR
+    py neurosim/tools/evaluate.py medians $WDIR
