@@ -637,7 +637,7 @@ class NeuroSim:
         A = readWeights(self.dconf['simtype']['ResumeSimFromFile'])
         # take the latest weights saved
         resume_ts = max(A.time)
-        if 'ResumeSimFromTs' in self.dconf['simtype'] and self.dconf['simtype']['ResumeSimFromTs']:
+        if 'ResumeSimFromTs' in self.dconf['simtype']:
           resume_ts = self.dconf['simtype']['ResumeSimFromTs']
         self.resumeSTDPWeights(sim, A[A.time == resume_ts])
         sim.pc.barrier()  # wait for other nodes
