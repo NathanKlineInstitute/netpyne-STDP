@@ -53,6 +53,9 @@ def evaluate(eval_dir, duration=200, resume_tidx=-1):
     if stdp_param in dconf:
       for k, stdp_map in dconf[stdp_param].items():
         dconf[stdp_param][k]['RLhebbwt'] = 0
+        dconf[stdp_param][k]['RLantiwt'] = 0
+        dconf[stdp_param][k]['hebbwt'] = 0
+        dconf[stdp_param][k]['antiwt'] = 0
 
   backup_config(dconf_path, dconf)
 
