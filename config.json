@@ -9,7 +9,8 @@
             {"type": "rf_normal", "bins": 10, "mean": 0.00529333, "std": 0.09129902},
             {"type": "rf_normal", "bins": 20, "mean": 0.04752025, "std": 0.82070579}
         ],
-        "episodes": 21
+        "episodes": 21,
+        "unk_move": -1
     },
     "moves": {
         "LEFT": 0,
@@ -21,6 +22,11 @@
     "actionsPerPlay": 1,
     "observationsToKeep": 100,
     "rewardsToKeep": 100,
+    "critic": {
+        "angv_bias": 0.1,
+        "total_gain": 5.0,
+        "max_reward": 2.0
+    },
     "verbose": 0,
     "stayStepLim": 0,
     "simtype": {
@@ -28,12 +34,12 @@
         "ResumeSimFromFile": "...pkl"
     },
     "sim": {
-        "duration": 1000,
+        "duration": 200,
         "dt": 0.6,
         "verbose": 0,
         "recordStep": 1.0,
         "recordStim": 0,
-        "recordWeightStepSize": 100,
+        "recordWeightStepSize": 500,
         "RLFakeUpRule": 0,
         "RLFakeDownRule": 0,
         "RLFakeStayRule": 0,
@@ -123,7 +129,7 @@
         },
         
         "InputMaxRate": 50.0,
-        "posRewardBias": 1.5,
+        "posRewardBias": 2.5,
         "stimModW": 35,
         "synMechParams": {
             "AMPA": {"mod": "Exp2Syn", "tau1": 0.05, "tau2": 5.3, "e": 0},
@@ -147,11 +153,11 @@
                 "IAL":{"AM2": 0.98,"NM2":0.098, "conv": 10},
                 "EM":{"AM2": 1.45,"NM2": 0.01,"conv": 25}},
             "IA":{
-                "EA":{"GA": 9.0,"p": 0.2},
+                "EA":{"GA": 9.0,"p": 0.4},
                 "IA":{"GA": 4.5,"p": 0.1},
                 "IAL":{"GA": 4.5,"p": 0.2}},
             "IAL":{
-                "EA":{"GA2": 2.5,"p": 0.2},
+                "EA":{"GA2": 2.5,"p": 0.4},
                 "IA":{"GA2": 2.25,"p": 0.2},
                 "IAL":{"GA2": 5.5,"p": 0.1}},
             "EM":{
@@ -160,11 +166,11 @@
                 "IML":{"AM2": 0.98,"NM2":0.098, "conv": 8},
                 "EA":{"AM2": 0.5,"NM2": 0.01,"conv": 4}},
             "IM":{
-                "EM":{"GA": 9.0,"p": 0.2},
+                "EM":{"GA": 9.0,"p": 0.4},
                 "IM":{"GA": 4.5,"p": 0.1},
                 "IML":{"GA": 4.5,"p": 0.2}},
             "IML":{
-                "EM":{"GA2": 2.5,"p": 0.2},
+                "EM":{"GA2": 2.5,"p": 0.4},
                 "IM":{"GA2": 2.25,"p": 0.2},
                 "IML":{"GA2": 5.5,"p": 0.1}}
         },
@@ -181,7 +187,7 @@
             "wbase": 0.4,
             "wmax": 30,
             "RLon": 1,
-            "STDPon": 1,
+            "STDPon": 0,
             "RLlenhebb": 75,
             "RLlenanti": 60,
             "useRLexp": 1,
