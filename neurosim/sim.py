@@ -14,7 +14,7 @@ from matplotlib import pyplot as plt
 
 from cells import intf7
 from game_interface import GameInterface
-from critic import calc_reward
+from critic import Critic
 from utils.conns import getconv, getSec, getInitDelay, getDelay, setdminID, setrecspikes
 from utils.plots import plotRaster, plotWeights, saveGameBehavior, saveActionsPerEpisode
 from utils.sync import syncdata_alltoall
@@ -552,37 +552,37 @@ class NeuroSim:
       if len(sim.AIGame.observations) == 0:
         raise Exception('Failed to get an observation from the Game')
       else:
-        critic = calc_reward(
+        reward = self.critic.calc_reward(
             sim.AIGame.observations[-1],
             sim.AIGame.observations[-2] if len(sim.AIGame.observations) > 1 else None)
         if 'posRewardBias' in dconf['net'] and dconf['net']['posRewardBias'] != 1.0:
-          if critic > 0:
-            critic *= dconf['net']['posRewardBias']
+          if reward > 0:
+            reward *= dconf['net']['posRewardBias']
 
       # use py_broadcast to avoid converting to/from Vector
-      sim.pc.py_broadcast(critic, 0)  # broadcast critic value to other nodes
+      sim.pc.py_broadcast(reward, 0)  # broadcast reward value to other nodes
 
     else:  # other workers
-      # receive critic value from master node
-      critic = sim.pc.py_broadcast(None, 0)
+      # receive reward value from master node
+      reward = sim.pc.py_broadcast(None, 0)
 
     t2 = datetime.now() - t2
     t3 = datetime.now()
 
-    # if critic signal indicates punishment (-1) or reward (+1)
-    if critic != 0:
+    # if reward signal indicates punishment (-1) or reward (+1)
+    if reward != 0:
       if dconf['verbose']:
         if sim.rank == 0:
-          print('t={} Reward:{}'.format(round(t, 2), critic))
+          print('t={} Reward:{}'.format(round(t, 2), reward))
       for STDPmech in self.dSTDPmech['all']:
-        STDPmech.reward_punish(critic)
+        STDPmech.reward_punish(reward)
 
     t3 = datetime.now() - t3
     t4 = datetime.now()
 
     if sim.rank == 0:
       sim.allActions.extend(actions)
-      sim.allRewards.append(critic)
+      sim.allRewards.append(reward)
       tvec_actions = []
       for ts in range(len(actions)):
         tvec_actions.append(t-self.tstepPerAction*(len(actions)-ts-1))
@@ -617,6 +617,8 @@ class NeuroSim:
       from aigame import AIGame
       sim.AIGame = AIGame(self.dconf)  # only create AIGame on node 0
       sim.GameInterface = GameInterface(sim.AIGame, self.dconf)
+
+    self.critic = Critic(self.dconf)
 
     # instantiate network populations
     sim.net.createPops()

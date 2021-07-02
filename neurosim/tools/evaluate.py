@@ -65,7 +65,7 @@ def boxplot(wdir, include_random=True, outputfile=None):
 def performance(wdir, outputfile=None):
   if not outputfile:
     outputfile = os.path.join(wdir, 'evaluations_performance.png')
-  results = _read_evaluations(wdir)
+  results = _read_evaluations(wdir, False)
 
   fig = plt.figure(figsize =(10, 7))
 

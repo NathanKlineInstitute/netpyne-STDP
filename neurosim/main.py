@@ -1,7 +1,7 @@
 import os
 import fire
 
-from conf import read_conf, backup_config
+from conf import read_conf, init_wdir, backup_config
 from sim import NeuroSim
 from utils.weights import readWeights
 
@@ -21,6 +21,8 @@ def main(dconf=None):
           'This will rewrite!', 
           'Please delete to continue!']))
 
+  init_wdir(dconf)
+
   runner = NeuroSim(dconf)
   runner.run()
 
@@ -37,7 +39,9 @@ def evaluate(eval_dir, duration=100, resume_tidx=-1, display=False):
     resume_tidx += len(timesteps)
   assert resume_tidx >= 0 and resume_tidx < len(timesteps)
 
-  dconf = read_conf(dconf_path, outdir=os.path.join(eval_dir, 'evaluation_{}'.format(resume_tidx)))
+  outdir = os.path.join(eval_dir, 'evaluation_{}'.format(resume_tidx))
+  dconf = read_conf(dconf_path, outdir=outdir)
+  init_wdir(dconf)
 
   if display:
     dconf['env']['render'] = 1
