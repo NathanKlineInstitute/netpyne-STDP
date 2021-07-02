@@ -497,16 +497,28 @@ class NeuroSim:
         no_firing_rates = sum([v[ts] for v in move_freq.values()]) == 0
         if no_firing_rates:
           # Should we initialize with random?
-          print('Warning: No firing rates for moves {}!'.format(','.join(moves)))
-          actions.append(self.dconf['moves']['LEFT'])
+          if self.dconf['verbose']:
+            print('Warning: No firing rates for moves {}!'.format(','.join(moves)))
+          else:
+            print('.', end='')
+          # actions.append(self.dconf['moves']['LEFT'])
+          actions.append(self.dconf['env']['unk_move'])
         else:
           mvsf = [(m, f[ts]) for m, f in move_freq.items()]
           random.shuffle(mvsf)
-          best_move, best_move_freq = sorted(
-              mvsf, key=lambda x: x[1], reverse=True)[0]
+          mvsf = sorted(mvsf, key=lambda x: x[1], reverse=True)
+          best_move, best_move_freq = mvsf[0]
+          if best_move_freq == mvsf[-1][1]:
+            if self.dconf['verbose']:
+              print('Warning: No discrimination between moves, fired: {}!'.format(
+                [f for m,f in mvsf]))
+            else:
+              print(str(round(best_move_freq)) + '-', end='')
+            actions.append(self.dconf['env']['unk_move'])
+          else:
+            actions.append(self.dconf['moves'][best_move])
           if self.dconf['verbose']:
             print('Selected Move', best_move)
-          actions.append(self.dconf['moves'][best_move])
 
     return actions
 
@@ -532,6 +544,9 @@ class NeuroSim:
     t2 = datetime.now()
 
     if sim.rank == 0:
+      is_unk_move = len([a for a in actions if a == self.dconf['env']['unk_move']]) > 0
+      actions = [a if a != self.dconf['env']['unk_move'] else sim.AIGame.randmove()
+        for a in actions]
       rewards, done = sim.AIGame.playGame(actions)
       if done:
         ep_cnt = dconf['env']['episodes']
@@ -554,10 +569,8 @@ class NeuroSim:
       else:
         reward = self.critic.calc_reward(
             sim.AIGame.observations[-1],
-            sim.AIGame.observations[-2] if len(sim.AIGame.observations) > 1 else None)
-        if 'posRewardBias' in dconf['net'] and dconf['net']['posRewardBias'] != 1.0:
-          if reward > 0:
-            reward *= dconf['net']['posRewardBias']
+            sim.AIGame.observations[-2] if len(sim.AIGame.observations) > 1 else None,
+            is_unk_move)
 
       # use py_broadcast to avoid converting to/from Vector
       sim.pc.py_broadcast(reward, 0)  # broadcast reward value to other nodes
@@ -603,7 +616,7 @@ class NeuroSim:
       self.recordWeights(sim, t)
 
     t5 = datetime.now() - t5
-    if random.random() < 0.005:
+    if random.random() < 0.0005:
       print(t, [round(tk.microseconds / 1000, 0)
                 for tk in [t1, t2, t3, t4, t5]])
 

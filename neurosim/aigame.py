@@ -29,6 +29,9 @@ class AIGame:
     self.count_steps.append(0)
     self.tstart = None
 
+  def randmove(self):
+    return self.env.action_space.sample()
+
   def playGame(self, actions):
     current_rewards = []
     done = False

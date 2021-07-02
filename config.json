@@ -9,7 +9,8 @@
             {"type": "rf_normal", "bins": 10, "mean": 0.00529333, "std": 0.09129902},
             {"type": "rf_normal", "bins": 20, "mean": 0.04752025, "std": 0.82070579}
         ],
-        "episodes": 21
+        "episodes": 21,
+        "unk_move": -1
     },
     "moves": {
         "LEFT": 0,
@@ -22,7 +23,7 @@
     "observationsToKeep": 100,
     "rewardsToKeep": 100,
     "critic": {
-        "angv_bias": 0.5,
+        "angv_bias": 0.1,
         "total_gain": 5.0,
         "max_reward": 2.0
     },
@@ -33,12 +34,12 @@
         "ResumeSimFromFile": "...pkl"
     },
     "sim": {
-        "duration": 2000,
+        "duration": 200,
         "dt": 0.6,
         "verbose": 0,
         "recordStep": 1.0,
         "recordStim": 0,
-        "recordWeightStepSize": 100,
+        "recordWeightStepSize": 500,
         "RLFakeUpRule": 0,
         "RLFakeDownRule": 0,
         "RLFakeStayRule": 0,
@@ -128,7 +129,7 @@
         },
         
         "InputMaxRate": 50.0,
-        "posRewardBias": 1.5,
+        "posRewardBias": 2.5,
         "stimModW": 35,
         "synMechParams": {
             "AMPA": {"mod": "Exp2Syn", "tau1": 0.05, "tau2": 5.3, "e": 0},

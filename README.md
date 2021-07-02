@@ -50,11 +50,11 @@ Evaluate the model before and after training:
     py neurosim/main.py eval $WDIR --resume_tidx=-1
 
     # To display the model run
-    py neurosim/main.py eval $WDIR --resume_tidx=0 --display
+    py neurosim/main.py eval $WDIR --resume_tidx=-1 --display
 
 Optional: Maybe evaluate in depth
 
-    for ((i=50;i<400;i+=50)); do
+    for ((i=120;i<200;i+=10)); do
         echo "Evaluating at $i"
         py neurosim/main.py eval $WDIR --resume_tidx=$i
     done
