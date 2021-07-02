@@ -110,6 +110,35 @@ print(cumulative)
 cumulative * 50 / 1000
 """
 
+"""    
+#
+def drawcellVm (simConfig, ldrawpop=None,tlim=None, lclr=None):
+  csm=cm.ScalarMappable(cmap=cm.prism); csm.set_clim(0,len(dspkT.keys()))
+  if tlim is not None:
+    dt = simConfig['simData']['t'][1]-simConfig['simData']['t'][0]    
+    sidx,eidx = int(0.5+tlim[0]/dt),int(0.5+tlim[1]/dt)
+  dclr = OrderedDict(); lpop = []
+  for kdx,k in enumerate(list(simConfig['simData']['V_soma'].keys())):  
+    color = csm.to_rgba(kdx);
+    if lclr is not None and kdx < len(lclr): color = lclr[kdx]
+    cty = simConfig['net']['cells'][int(k.split('_')[1])]['tags']['cellType']
+    if ldrawpop is not None and cty not in ldrawpop: continue
+    dclr[kdx]=color
+    lpop.append(simConfig['net']['cells'][int(k.split('_')[1])]['tags']['cellType'])
+  if ldrawpop is None: ldrawpop = lpop    
+  for kdx,k in enumerate(list(simConfig['simData']['V_soma'].keys())):
+    cty = simConfig['net']['cells'][int(k.split('_')[1])]['tags']['cellType']
+    if ldrawpop is not None and cty not in ldrawpop: continue
+    if tlim is not None:
+      plot(simConfig['simData']['t'][sidx:eidx],simConfig['simData']['V_soma'][k][sidx:eidx],color=dclr[kdx])
+    else:
+      plot(simConfig['simData']['t'],simConfig['simData']['V_soma'][k],color=dclr[kdx])      
+  lpatch = [mpatches.Patch(color=c,label=s) for c,s in zip(dclr.values(),ldrawpop)]
+  ax=gca()
+  ax.legend(handles=lpatch,handlelength=1,loc='best')
+  if tlim is not None: ax.set_xlim(tlim)
+"""
+
 if __name__ == '__main__':
     if len(sys.argv) > 1:
         WDIR = sys.argv[1]

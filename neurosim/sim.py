@@ -712,4 +712,7 @@ class NeuroSim:
       saveActionsPerEpisode(
           sim, self.epCount, self.outpath('ActionsPerEpisode.txt'))
       if sim.plotRaster:
+        plotRaster(sim, self.dconf, self.dnumc, self.outpath('rasterStart.png'), tlim=(0,2*1e3))
         plotRaster(sim, self.dconf, self.dnumc, self.outpath('raster.png'))
+        plotRaster(sim, self.dconf, self.dnumc, self.outpath('rasterEnd.png'), tlim=((self.dconf['sim']['duration']-2)*1e3,self.dconf['sim']['duration']*1e3))
+        

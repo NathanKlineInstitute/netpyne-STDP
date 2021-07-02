@@ -158,7 +158,7 @@ def actions_medians(wdir, steps=[21,51,101], outputfile=None):
   plt.ylabel('actions per episode')
 
   plt.savefig(outputfile)
-
+  
 if __name__ == '__main__':
   fire.Fire({
     'frequency': frequency,

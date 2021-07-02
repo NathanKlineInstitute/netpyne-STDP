@@ -99,7 +99,7 @@ def _prepraster(sim, lpops):
   return dspkID, dspkT
 
 
-def plotRaster(sim, dconf, dnumc, output_filename):
+def plotRaster(sim, dconf, dnumc, output_filename, tlim=None):
   lpops = dict([(k, v) for k, v in dconf['net']['allpops'].items() if v > 0])
   for ty in sim.lstimty:
     lpops[ty] = dconf['net']['allpops'][dconf['net']['inputPop']]
@@ -107,4 +107,4 @@ def plotRaster(sim, dconf, dnumc, output_filename):
   drawraster(
       [k for k, v in lpops.items() if v > 0],
       dspkT, dspkID, dnumc, totalDur=dconf['sim']['duration'] * 1000,
-      figname=output_filename)
+      figname=output_filename, tlim=tlim)

@@ -1,6 +1,6 @@
 import os
 import fire
-
+import sys
 from conf import read_conf, init_wdir, backup_config
 from sim import NeuroSim
 from utils.weights import readWeights
@@ -71,7 +71,11 @@ def evaluate(eval_dir, duration=100, resume_tidx=-1, display=False):
 
 
 if __name__ == '__main__':
-  fire.Fire({
-      'run': main,
-      'eval': evaluate
-  })
+  if sys.argv[-1] == 'run':
+    main()
+  elif sys.argv[-1] == 'eval':
+    evaluate()
+  #fire.Fire({
+  #    'run': main,
+  #    'eval': evaluate
+  #})
