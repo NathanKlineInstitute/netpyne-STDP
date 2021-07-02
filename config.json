@@ -110,12 +110,12 @@
             "ES": 40,
 
             "EA": 80,
-            "IA": 20,
-            "IAL": 20,
+            "IA": 28,
+            "IAL": 12,
 
             "EM": 40,
-            "IM": 10,
-            "IML": 10
+            "IM": 14,
+            "IML": 6
         },
         "inputPop": "ES",
         "STDPconns": {
@@ -201,16 +201,16 @@
             "wmax": 30,
             "RLon": 1,
             "STDPon": 0,
-            "RLlenhebb": 60,
-            "RLlenanti": 60,
+            "RLlenhebb": 75,
+            "RLlenanti": 75,
             "useRLexp": 0,
-            "RLhebbwt": 0.001,
+            "RLhebbwt": 0.00075,
             "RLantiwt": 0.0,
             "hebbwt": 0.0,
             "antiwt": 0.0,
             "tauhebb": 3,
             "tauanti": 3,
-            "RLwindhebb": 5,
+            "RLwindhebb": 25,
             "softthresh": 0,
             "verbose": 0,
             "maxreward": 0.0
