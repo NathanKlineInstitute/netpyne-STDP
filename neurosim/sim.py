@@ -67,6 +67,7 @@ class NeuroSim:
 
     self.allpops = list(dconf['net']['allpops'].keys())
     self.inputPop = dconf['net']['inputPop']
+    self.unk_move = dconf['env']['unk_move'] if 'unk_move' in dconf['env'] else min(dconf['moves'].values()) - 1
     # number of neurons of a given type: dnumc
     # scales the size of the network (only number of neurons)
     scale = dconf['net']['scale']
@@ -502,7 +503,7 @@ class NeuroSim:
           else:
             print('.', end='')
           # actions.append(self.dconf['moves']['LEFT'])
-          actions.append(self.dconf['env']['unk_move'])
+          actions.append(self.unk_move)
         else:
           mvsf = [(m, f[ts]) for m, f in move_freq.items()]
           random.shuffle(mvsf)
@@ -514,7 +515,7 @@ class NeuroSim:
                 [f for m,f in mvsf]))
             else:
               print(str(round(best_move_freq)) + '-', end='')
-            actions.append(self.dconf['env']['unk_move'])
+            actions.append(self.unk_move)
           else:
             actions.append(self.dconf['moves'][best_move])
           if self.dconf['verbose']:
@@ -544,8 +545,8 @@ class NeuroSim:
     t2 = datetime.now()
 
     if sim.rank == 0:
-      is_unk_move = len([a for a in actions if a == self.dconf['env']['unk_move']]) > 0
-      actions = [a if a != self.dconf['env']['unk_move'] else sim.AIGame.randmove()
+      is_unk_move = len([a for a in actions if a == self.unk_move]) > 0
+      actions = [a if a != self.unk_move else sim.AIGame.randmove()
         for a in actions]
       rewards, done = sim.AIGame.playGame(actions)
       if done:
@@ -616,7 +617,7 @@ class NeuroSim:
       self.recordWeights(sim, t)
 
     t5 = datetime.now() - t5
-    if random.random() < 0.0005:
+    if random.random() < 0.001:
       print(t, [round(tk.microseconds / 1000, 0)
                 for tk in [t1, t2, t3, t4, t5]])
 
