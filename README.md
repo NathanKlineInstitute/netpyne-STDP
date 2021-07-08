@@ -16,6 +16,7 @@ create a virtual environment
 activate the environment
 
     source ./venv/bin/activate
+    export PYTHONPATH="`pwd`"
 
 install all dependencies:
 
@@ -54,15 +55,20 @@ Evaluate the model before and after training:
 
 Optional: Maybe evaluate in depth
 
-    for ((i=120;i<200;i+=10)); do
+    for ((i=7;i<15;i+=2)); do
         echo "Evaluating at $i"
         py neurosim/main.py eval $WDIR --resume_tidx=$i
     done
 
 Run all evaluation:
 
-    WDIR=results/20210701
+    WDIR=results/20210707
     py neurosim/tools/evaluate.py frequency $WDIR --timestep 10000
     py neurosim/tools/evaluate.py boxplot $WDIR
     py neurosim/tools/evaluate.py perf $WDIR
     py neurosim/tools/evaluate.py medians $WDIR
+    py neurosim/tools/evaluate.py weights-adj $WDIR
+    py neurosim/tools/evaluate.py weights-adj $WDIR --index 0
+    py neurosim/tools/evaluate.py weights-diffs $WDIR
+    py neurosim/tools/evaluate.py weights-diffs $WDIR --relative
+    

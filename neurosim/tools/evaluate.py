@@ -8,6 +8,8 @@ import matplotlib.pyplot as plt
 import pickle as pkl
 import numpy as np
 
+from neurosim.utils.weights import readWeights
+
 RANDOM_EVALUATION='results/random_cartpole_ActionsPerEpisode.txt'
 
 def _read_evaluations(wdir, include_random):
@@ -159,10 +161,72 @@ def actions_medians(wdir, steps=[21,51,101], outputfile=None):
 
   plt.savefig(outputfile)
 
+def _displayAdj(A):
+    A[A == 0] = np.NaN
+    vmin = np.amin(A[A > 0])
+    vmax = np.amax(A[A > 0])
+        
+    plt.figure(figsize=(10,10))
+
+    plt.imshow(A, cmap='plasma', interpolation='nearest', vmin=vmin, vmax=vmax)
+    plt.clim(vmin, vmax)
+    plt.colorbar()
+
+def _get_weights_adj(synWeights_file):  
+  with open(synWeights_file, 'rb') as f:
+      synWeights = pkl.load(f)
+  M = [len(synWeights[n1][n2]) for n1 in list(synWeights.keys())[:1] for n2 in list(synWeights[n1].keys())[:1]][0]
+  N = max(list(synWeights.keys()) + [n2 for n1 in synWeights.keys() for n2 in synWeights[n1].keys()]) + 1
+
+  Adj = np.zeros((M, N, N))
+  for k in range(M):
+    for n1 in synWeights.keys():
+        for n2 in synWeights[n1].keys():
+            Adj[k][n1][n2] = synWeights[n1][n2][k][1]
+
+  return Adj
+
+def stdp_weights_adj(wdir, index=-1, outputfile=None):
+  synWeights_file = os.path.join(wdir, 'synWeights.pkl')
+  adj = _get_weights_adj(synWeights_file)
+  epochs = adj.shape[0]
+
+  if index < 0:
+    index += epochs
+  assert 0 <= index and index < epochs
+  if not outputfile:
+    outputfile = os.path.join(wdir, 'stdp_weights_{}.png'.format(index))
+
+  _displayAdj(adj[index])
+  plt.savefig(outputfile)
+
+def stdp_weights_diffs(wdir, index1=0, index2=-1, relative=False, outputfile=None):
+  synWeights_file = os.path.join(wdir, 'synWeights.pkl')
+  adj = _get_weights_adj(synWeights_file)
+  epochs = adj.shape[0]
+
+  indices = [index1, index2]
+  for i in range(len(indices)):
+    if indices[i] < 0:
+      indices[i] += epochs
+    assert 0 <= indices[i] and indices[i] < epochs
+  if not outputfile:
+    outputfile = os.path.join(wdir, 'stdp_weights_diffs{}_{}_to_{}.png'.format(
+      '_rel' if relative else '_abs', indices[0], indices[1]))
+
+  matrix = adj[indices[1]] - adj[indices[0]]
+  if relative:
+    matrix = matrix / adj[indices[0]]
+  _displayAdj(matrix)
+  plt.savefig(outputfile)
+
+
 if __name__ == '__main__':
   fire.Fire({
     'frequency': frequency,
     'boxplot': boxplot,
     'perf': performance,
-    'medians': actions_medians
+    'medians': actions_medians,
+    'weights-adj': stdp_weights_adj,
+    'weights-diffs': stdp_weights_diffs
   })
