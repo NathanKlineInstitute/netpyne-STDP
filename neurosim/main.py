@@ -30,7 +30,7 @@ def _saved_timesteps(synWeights_file):
   df = readWeights(synWeights_file)
   return sorted(list(df['time'].unique()))
 
-def evaluate(eval_dir, duration=100, resume_tidx=-1, display=False):
+def evaluate(eval_dir, duration=100, resume_tidx=-1, display=False, verbose=False, sleep=False):
   dconf_path = os.path.join(eval_dir, 'backupcfg_sim.json')
 
   synWeights_file = os.path.join(eval_dir, 'synWeights.pkl')
@@ -48,12 +48,13 @@ def evaluate(eval_dir, duration=100, resume_tidx=-1, display=False):
   dconf['simtype']['ResumeSim'] = 1
   dconf['simtype']['ResumeSimFromFile'] = synWeights_file
   dconf['simtype']['ResumeSimFromTs'] = float(timesteps[resume_tidx])
-  dconf['verbose'] = 0
+  dconf['verbose'] = 1 if verbose else 0
   dconf['sim']['duration'] = duration
   dconf['sim']['saveWeights'] = 0
   dconf['sim']['doSaveData'] = 0
   dconf['sim']['plotRaster'] = 0
-  dconf['sim']['verbose'] = 0
+  dconf['sim']['verbose'] = 1 if verbose else 0
+  dconf['sim']['sleeptrial'] = sleep if sleep else 0
 
   for stdp_param in ['STDP', 'STDP-RL']:
     if stdp_param in dconf:

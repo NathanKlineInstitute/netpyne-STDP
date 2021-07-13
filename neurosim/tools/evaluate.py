@@ -161,6 +161,32 @@ def actions_medians(wdir, steps=[21,51,101], outputfile=None):
 
   plt.savefig(outputfile)
 
+def rewards_steps(wdir, steps=[21, 51,101], outputfile=None):
+  if not outputfile:
+    outputfile = os.path.join(wdir, 'eval_rewards.png')
+
+  with open(os.path.join(wdir, 'ActionsRewards.txt')) as f:
+      training_rewards = [int(float(r)) for _,_,r in csv.reader(f, delimiter='\t')]
+
+  training_medians = {}
+  for STEP in steps:
+      training_medians[STEP] = []
+      for idx in range(len(training_rewards) - STEP):
+        rews = training_rewards[idx:idx+STEP]
+        pos_rews = [r for r in rews if r >= 0]
+        training_medians[STEP].append(len(pos_rews) / len(rews))
+
+  plt.figure(figsize=(20,10))
+
+  for STEP, medians in training_medians.items():
+      plt.plot([t + STEP for t in range(len(medians))], medians)
+
+  plt.legend(['step of {}'.format(STEP) for STEP in training_medians.keys()])
+  plt.xlabel('episode')
+  plt.ylabel('len(rewards) / len(total)')
+
+  plt.savefig(outputfile)
+
 def _displayAdj(A):
     A[A == 0] = np.NaN
     vmin = np.amin(A[A > 0])
@@ -227,6 +253,7 @@ if __name__ == '__main__':
     'boxplot': boxplot,
     'perf': performance,
     'medians': actions_medians,
+    'rewards': rewards_steps,
     'weights-adj': stdp_weights_adj,
     'weights-diffs': stdp_weights_diffs
   })

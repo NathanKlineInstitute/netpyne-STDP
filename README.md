@@ -46,7 +46,7 @@ Run tests:
 
 Evaluate the model before and after training:
     
-    WDIR=results/20210701
+    WDIR=results/20210707
     py neurosim/main.py eval $WDIR --resume_tidx=0
     py neurosim/main.py eval $WDIR --resume_tidx=-1
 
@@ -55,20 +55,22 @@ Evaluate the model before and after training:
 
 Optional: Maybe evaluate in depth
 
-    for ((i=7;i<15;i+=2)); do
+    for ((i=0;i<20;i+=2)); do
         echo "Evaluating at $i"
         py neurosim/main.py eval $WDIR --resume_tidx=$i
     done
 
 Run all evaluation:
 
-    WDIR=results/20210707
+    WDIR=results/20210713
     py neurosim/tools/evaluate.py frequency $WDIR --timestep 10000
-    py neurosim/tools/evaluate.py boxplot $WDIR
-    py neurosim/tools/evaluate.py perf $WDIR
     py neurosim/tools/evaluate.py medians $WDIR
+    py neurosim/tools/evaluate.py rewards $WDIR
+
     py neurosim/tools/evaluate.py weights-adj $WDIR
     py neurosim/tools/evaluate.py weights-adj $WDIR --index 0
     py neurosim/tools/evaluate.py weights-diffs $WDIR
     py neurosim/tools/evaluate.py weights-diffs $WDIR --relative
-    
+
+    py neurosim/tools/evaluate.py boxplot $WDIR
+    py neurosim/tools/evaluate.py perf $WDIR

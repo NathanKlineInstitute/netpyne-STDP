@@ -16,7 +16,7 @@ from cells import intf7
 from game_interface import GameInterface
 from critic import Critic
 from utils.conns import getconv, getSec, getInitDelay, getDelay, setdminID, setrecspikes
-from utils.plots import plotRaster, plotWeights, saveGameBehavior, saveActionsPerEpisode
+from utils.plots import plotRaster, plotWeights, saveActionsPerEpisode
 from utils.sync import syncdata_alltoall
 from utils.weights import saveSynWeights, readWeights, getWeightIndex, getInitSTDPWeight
 
@@ -587,7 +587,7 @@ class NeuroSim:
     if reward != 0:
       if dconf['verbose']:
         if sim.rank == 0:
-          print('t={} Reward:{}'.format(round(t, 2), reward))
+          print('t={} Reward:{} Actions: {}'.format(round(t, 2), reward, actions))
       for STDPmech in self.dSTDPmech['all']:
         STDPmech.reward_punish(reward)
 
@@ -602,6 +602,10 @@ class NeuroSim:
         tvec_actions.append(t-self.tstepPerAction*(len(actions)-ts-1))
       for ltpnt in tvec_actions:
         sim.allTimes.append(ltpnt)
+
+      with open(sim.ActionsRewardsfilename, 'a') as fid3:
+        for action, t in zip(actions, tvec_actions):
+          fid3.write('%0.1f\t%0.1f\t%0.5f\n' % (t, action, reward))
 
     # update firing rate of inputs to R population (based on game state)
     self.updateInputRates(sim)
@@ -620,6 +624,9 @@ class NeuroSim:
     if random.random() < 0.001:
       print(t, [round(tk.microseconds / 1000, 0)
                 for tk in [t1, t2, t3, t4, t5]])
+
+    if 'sleeptrial' in dconf['sim'] and dconf['sim']['sleeptrial']:
+      time.sleep(dconf['sim']['sleeptrial'])
 
   def run(self):
     sim.AIGame = None  # placeholder
@@ -708,7 +715,6 @@ class NeuroSim:
     if sim.rank == 0:
       if sim.plotWeights:
         plotWeights()
-      saveGameBehavior(sim)
       saveActionsPerEpisode(
           sim, self.epCount, self.outpath('ActionsPerEpisode.txt'))
       if sim.plotRaster:

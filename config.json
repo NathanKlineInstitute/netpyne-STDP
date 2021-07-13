@@ -23,9 +23,14 @@
     "observationsToKeep": 100,
     "rewardsToKeep": 100,
     "critic": {
-        "angv_bias": 0.1,
+        "angv_bias": 0.2,
         "total_gain": 5.0,
-        "max_reward": 2.0
+        "max_reward": 2.0,
+        "posRewardBias": 2.0,
+        "modulation": {
+            "type": "linear",
+            "steps": 10
+        }
     },
     "verbose": 0,
     "stayStepLim": 0,
@@ -34,12 +39,12 @@
         "ResumeSimFromFile": "...pkl"
     },
     "sim": {
-        "duration": 2000,
+        "duration": 1000,
         "dt": 0.6,
         "verbose": 0,
         "recordStep": 1.0,
         "recordStim": 0,
-        "recordWeightStepSize": 500,
+        "recordWeightStepSize": 1000,
         "RLFakeUpRule": 0,
         "RLFakeDownRule": 0,
         "RLFakeStayRule": 0,
@@ -129,7 +134,6 @@
         },
         
         "InputMaxRate": 50.0,
-        "posRewardBias": 2.5,
         "stimModW": 35,
         "synMechParams": {
             "AMPA": {"mod": "Exp2Syn", "tau1": 0.05, "tau2": 5.3, "e": 0},
@@ -161,10 +165,10 @@
                 "IA":{"GA2": 2.25,"p": 0.2},
                 "IAL":{"GA2": 5.5,"p": 0.1}},
             "EM":{
-                "EM":{"AM2": 0.05,"NM2": 0.005, "conv": 4},
+                "EM":{"AM2": 0.01,"NM2": 0.001, "conv": 1},
                 "IM":{"AM2": 1.95,"NM2":0.0195, "conv": 8},
                 "IML":{"AM2": 0.98,"NM2":0.098, "conv": 8},
-                "EA":{"AM2": 0.5,"NM2": 0.01,"conv": 4}},
+                "EA":{"AM2": 0.5,"NM2": 0.01,"conv": 6}},
             "IM":{
                 "EM":{"GA": 9.0,"p": 0.4},
                 "IM":{"GA": 4.5,"p": 0.1},
@@ -198,24 +202,26 @@
             "tauhebb": 10,
             "tauanti": 10,
             "RLwindhebb": 50,
+            "RLwindanti": 50,
             "softthresh": 0,
             "verbose": 0,
             "maxreward": 0.0
         },
         "AMPA": {
-            "wmax": 30,
+            "wmax": 15,
             "RLon": 1,
             "STDPon": 0,
-            "RLlenhebb": 51,
-            "RLlenanti": 51,
-            "useRLexp": 0,
+            "RLlenhebb": 150,
+            "RLlenanti": 150,
+            "useRLexp": 1,
             "RLhebbwt": 0.0025,
-            "RLantiwt": 0.0025,
+            "RLantiwt": -0.0025,
             "hebbwt": 0.0,
             "antiwt": 0.0,
             "tauhebb": 3,
             "tauanti": 3,
             "RLwindhebb": 5,
+            "RLwindanti": 5,
             "softthresh": 0,
             "verbose": 0,
             "maxreward": 0.0
@@ -235,6 +241,7 @@
             "tauhebb": 10,
             "tauanti": 10,
             "RLwindhebb": 50,
+            "RLwindanti": 50,
             "softthresh": 0,
             "verbose": 0
         }
