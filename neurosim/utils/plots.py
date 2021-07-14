@@ -42,11 +42,21 @@ def saveGameBehavior(sim):
       fid3.write('\t%0.5f' % sim.allRewards[i])
       fid3.write('\n')
 
+def drawActionsPerEpisode(sim, epCount):
+  plt.figure()
+  plt.plot(epCount)
+  plt.plot(np.median(epCount), 'r')
+  plt.xlabel("Episode")
+  plt.ylabel("Time Step per Episode")
+  figname=sim.outpath('epCount.png')
+  plt.savefig(figname)
+
 def saveActionsPerEpisode(sim, epCount):
   with open(sim.outpath('ActionsPerEpisode.txt'), 'w') as fid5:
     for i in range(len(epCount)):
       fid5.write('\t%0.1f' % epCount[i])
       fid5.write('\n')
+    drawActionsPerEpisode(sim, epCount)
 
 
 def drawraster(lpop, dspkT, dspkID, dnumc,
