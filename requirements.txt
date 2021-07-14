@@ -10,3 +10,4 @@ netpyne
 ipython
 jupyter
 pytest
+fire

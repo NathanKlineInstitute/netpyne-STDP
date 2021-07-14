@@ -1,7 +1,9 @@
 import os
 import pickle
 import time
+import pandas as pd
 
+from neurosim.cells import intf7
 
 def _LSynWeightToD(L):
   # convert list of synaptic weights to dictionary to save disk space
@@ -24,15 +26,15 @@ def _LSynWeightToD(L):
   return dout, doutfinal
 
 
-def saveSynWeights(sim, lsynweights):
+def saveSynWeights(sim, lsynweights, outpath=lambda x:x):
   # save synaptic weights to disk for this node
-  with open(sim.outpath(f'synWeights_{str(sim.rank)}.pkl'), 'wb') as f:
+  with open(outpath(f'synWeights_{str(sim.rank)}.pkl'), 'wb') as f:
     pickle.dump(lsynweights, f)
   sim.pc.barrier()  # wait for other nodes
   if sim.rank == 0:  # rank 0 reads and assembles the synaptic weights into a single output file
     L = []
     for i in range(sim.nhosts):
-      fn = sim.outpath(f'synWeights_{str(i)}.pkl')
+      fn = outpath(f'synWeights_{str(i)}.pkl')
       while not os.path.isfile(fn):  # wait until the file is written/available
         print('saveSynWeights: waiting for finish write of', fn)
         time.sleep(1)
@@ -42,7 +44,39 @@ def saveSynWeights(sim, lsynweights):
       L = L + lw  # concatenate to the list L
     # now convert the list to a dictionary to save space, and save it to disk
     dout, doutfinal = _LSynWeightToD(L)
-    with open(sim.outpath('synWeights.pkl'), 'wb') as f:
+    with open(outpath('synWeights.pkl'), 'wb') as f:
       pickle.dump(dout, f)
-    with open(sim.outpath('synWeights_final.pkl'), 'wb') as f:
+    with open(outpath('synWeights_final.pkl'), 'wb') as f:
       pickle.dump(doutfinal, f)
+
+
+def readWeights(filename):
+  # read the synaptic plasticity weights saved as a dictionary into a pandas dataframe
+  with open(filename, 'rb') as f:
+    D = pickle.load(f)
+  A = []
+  for preID in D.keys():
+    for poID in D[preID].keys():
+      for row in D[preID][poID]:
+        A.append([row[0], preID, poID, row[1]])
+  return pd.DataFrame(A, columns=['time', 'preid', 'postid', 'weight'])
+
+
+def getWeightIndex(synmech, cellModel):
+  # get weight index for connParams
+  if cellModel == 'INTF7':
+    return intf7.dsyn[synmech]
+  return 0
+
+
+def getInitSTDPWeight(cfg, weight):
+  """get initial weight for a connection
+     checks if weightVar is non-zero, if so will use a uniform distribution
+     with range on interval: (1-var)*weight, (1+var)*weight
+  """
+  if cfg.weightVar == 0.0:
+    return weight
+  elif weight <= 0.0:
+    return 0.0
+  else:
+    return 'uniform(%g,%g)' % (max(0, weight*(1.0-cfg.weightVar)), weight*(1.0+cfg.weightVar))
