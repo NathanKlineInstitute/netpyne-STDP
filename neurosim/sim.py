@@ -3,7 +3,7 @@ from neuron import h
 
 import random
 import pickle
-import os
+import os, sys
 import time
 import math
 import numpy as np
@@ -30,7 +30,7 @@ def connType(prety, poty): return prety[0] + poty[0]
 
 
 class NeuroSim:
-  def __init__(self, dconf):
+  def __init__(self, dconf, use_noise = True):
     self.dconf = dconf
 
     def outpath(fname): return os.path.join(dconf['sim']['outdir'], fname)
@@ -154,16 +154,89 @@ class NeuroSim:
     for ty in sim.lstimty:
       self.allpops.append(ty)
 
-    # Setup noise stimulation
-    sim.lnoisety = self.setupNoiseStim()
-    for ty in sim.lnoisety:
-      self.allpops.append(ty)
+    if use_noise:
+        # Setup noise stimulation
+        sim.lnoisety = self.setupNoiseStim()
+        for ty in sim.lnoisety:
+          self.allpops.append(ty)
 
     self.setupSTDPWeights()
 
     # Alternate to create network and run simulation
     # create network object and set cfg and net params; pass simulation config and network params as arguments
     sim.initialize(simConfig=self.simConfig, netParams=self.netParams)
+
+    sim.AIGame = None  # placeholder
+
+    self.NBsteps = 0  # this is a counter for recording the plastic weights
+    self.epCount = []
+
+    if sim.rank == 0:  # sim rank 0 specific init
+      from aigame import AIGame
+      sim.AIGame = AIGame(self.dconf)  # only create AIGame on node 0
+      sim.GameInterface = GameInterface(sim.AIGame, self.dconf)
+
+    self.critic = Critic(self.dconf)
+
+    # instantiate network populations
+    sim.net.createPops()
+    # instantiate network cells based on defined populations
+    sim.net.createCells()
+    # create connections between cells based on params
+    conns = sim.net.connectCells()
+    # instantiate netStim
+    sim.net.addStims()
+
+    # get all the STDP objects up-front
+    self.dSTDPmech = self.getAllSTDPObjects(sim)
+
+    if self.dconf['simtype']['ResumeSim']:
+      # if specified 'ResumeSim' = 1, load the connection data from
+      # 'ResumeSimFromFile' and assign weights to STDP synapses
+      try:
+        A = readWeights(self.dconf['simtype']['ResumeSimFromFile'])
+        # take the latest weights saved
+        resume_ts = max(A.time)
+        if 'ResumeSimFromTs' in self.dconf['simtype']:
+          resume_ts = self.dconf['simtype']['ResumeSimFromTs']
+        self.resumeSTDPWeights(sim, A[A.time == resume_ts])
+        sim.pc.barrier()  # wait for other nodes
+        if sim.rank == 0:
+          print('Updated STDP weights')
+        # if 'normalizeWeightsAtStart' in self.dconf['sim']:
+        #   if self.dconf['sim']['normalizeWeightsAtStart']:
+        #     normalizeAdjustableWeights(sim, 0, lrecpop)
+        #     print(sim.rank,'normalized adjustable weights at start')
+        #     sim.pc.barrier() # wait for other nodes
+      except Exception as err:
+        print('Could not restore STDP weights from file.')
+        raise err
+
+    if sim.rank == 0:
+      fconn = self.outpath('sim')
+      sim.saveData(filename=fconn)
+
+    setrecspikes(self.dconf, sim)
+    # setup variables to record for each cell (spikes, V traces, etc)
+    sim.setupRecording()
+
+    setdminID(sim, self.allpops)
+
+    if use_noise:
+        self.InitializeNoiseRates(sim)
+
+    # Plot 2d net
+    # sim.analysis.plot2Dnet(saveFig='data/net.png', showFig=False)
+    sim.analysis.plotConn(
+        saveFig=self.outpath('connsCells.png'), showFig=False,
+        groupBy='cell', feature='weight')
+    includePre = list(self.dconf['net']['allpops'].keys())
+    sim.analysis.plotConn(saveFig=self.outpath('connsPops.png'), showFig=False,
+                          includePre=includePre, includePost=includePre, feature='probability')
+
+    # Parameters to toggle on/off STDP and simulation ending after one episode
+    self.STDP_active = True
+    self.end_after_episode = False
 
     ################################
     ######### End __init__ #########
@@ -366,6 +439,25 @@ class NeuroSim:
           if self.dconf['verbose'] != 0:
             print('weight updated:', cW)
 
+  def getWeightArray(self, sim):
+    weights = []
+
+    for cell in sim.net.cells:
+        for conn in cell.conns:
+          if 'hSTDP' in conn:
+            weights.append(conn['hObj'].weight[self.PlastWeightIndex])
+
+    return np.array(weights)
+
+  def setWeightArray(self, sim, weights):
+    pos = 0
+
+    for cell in sim.net.cells:
+        for conn in cell.conns:
+          if 'hSTDP' in conn:
+            conn['hObj'].weight[self.PlastWeightIndex] = weights[pos]
+            pos += 1
+
   ###################################################################################################################################
 
   def recordWeights(self, sim, t):
@@ -543,6 +635,8 @@ class NeuroSim:
     t1 = datetime.now() - t1
     t2 = datetime.now()
 
+    print(actions)
+
     if sim.rank == 0:
       is_unk_move = len([a for a in actions if a == self.dconf['env']['unk_move']]) > 0
       actions = [a if a != self.dconf['env']['unk_move'] else sim.AIGame.randmove()
@@ -563,39 +657,49 @@ class NeuroSim:
         self.epCount.append(last_steps)
         print('Episode finished in {} steps {}!'.format(last_steps, eval_str))
 
-      # specific for CartPole-v1. TODO: move to a diff file
-      if len(sim.AIGame.observations) == 0:
-        raise Exception('Failed to get an observation from the Game')
-      else:
-        reward = self.critic.calc_reward(
-            sim.AIGame.observations[-1],
-            sim.AIGame.observations[-2] if len(sim.AIGame.observations) > 1 else None,
-            is_unk_move)
+        self.last_steps = last_steps
 
-      # use py_broadcast to avoid converting to/from Vector
-      sim.pc.py_broadcast(reward, 0)  # broadcast reward value to other nodes
+        if self.end_after_episode:
+            sys.exit()
+
+      if self.STDP_active:
+         # specific for CartPole-v1. TODO: move to a diff file
+         if len(sim.AIGame.observations) == 0:
+           raise Exception('Failed to get an observation from the Game')
+         else:
+           reward = self.critic.calc_reward(
+             sim.AIGame.observations[-1],
+             sim.AIGame.observations[-2] if len(sim.AIGame.observations) > 1 else None,
+             is_unk_move)
+
+         # use py_broadcast to avoid converting to/from Vector
+         sim.pc.py_broadcast(reward, 0)  # broadcast reward value to other nodes
 
     else:  # other workers
-      # receive reward value from master node
-      reward = sim.pc.py_broadcast(None, 0)
+      if self.STDP_active:
+        # receive reward value from master node
+        reward = sim.pc.py_broadcast(None, 0)
+
 
     t2 = datetime.now() - t2
     t3 = datetime.now()
 
-    # if reward signal indicates punishment (-1) or reward (+1)
-    if reward != 0:
-      if dconf['verbose']:
-        if sim.rank == 0:
-          print('t={} Reward:{}'.format(round(t, 2), reward))
-      for STDPmech in self.dSTDPmech['all']:
-        STDPmech.reward_punish(reward)
+    if self.STDP_active:
+        # if reward signal indicates punishment (-1) or reward (+1)
+        if reward != 0:
+          if dconf['verbose']:
+            if sim.rank == 0:
+              print('t={} Reward:{}'.format(round(t, 2), reward))
+          for STDPmech in self.dSTDPmech['all']:
+            STDPmech.reward_punish(reward)
 
     t3 = datetime.now() - t3
     t4 = datetime.now()
 
     if sim.rank == 0:
       sim.allActions.extend(actions)
-      sim.allRewards.append(reward)
+      if self.STDP_active:
+          sim.allRewards.append(reward)
       tvec_actions = []
       for ts in range(len(actions)):
         tvec_actions.append(t-self.tstepPerAction*(len(actions)-ts-1))
@@ -621,94 +725,5 @@ class NeuroSim:
                 for tk in [t1, t2, t3, t4, t5]])
 
   def run(self):
-    sim.AIGame = None  # placeholder
-
-    self.NBsteps = 0  # this is a counter for recording the plastic weights
-    self.epCount = []
-
-    if sim.rank == 0:  # sim rank 0 specific init
-      from aigame import AIGame
-      sim.AIGame = AIGame(self.dconf)  # only create AIGame on node 0
-      sim.GameInterface = GameInterface(sim.AIGame, self.dconf)
-
-    self.critic = Critic(self.dconf)
-
-    # instantiate network populations
-    sim.net.createPops()
-    # instantiate network cells based on defined populations
-    sim.net.createCells()
-    # create connections between cells based on params
-    conns = sim.net.connectCells()
-    # instantiate netStim
-    sim.net.addStims()
-
-    # get all the STDP objects up-front
-    self.dSTDPmech = self.getAllSTDPObjects(sim)
-
-    if self.dconf['simtype']['ResumeSim']:
-      # if specified 'ResumeSim' = 1, load the connection data from
-      # 'ResumeSimFromFile' and assign weights to STDP synapses
-      try:
-        A = readWeights(self.dconf['simtype']['ResumeSimFromFile'])
-        # take the latest weights saved
-        resume_ts = max(A.time)
-        if 'ResumeSimFromTs' in self.dconf['simtype']:
-          resume_ts = self.dconf['simtype']['ResumeSimFromTs']
-        self.resumeSTDPWeights(sim, A[A.time == resume_ts])
-        sim.pc.barrier()  # wait for other nodes
-        if sim.rank == 0:
-          print('Updated STDP weights')
-        # if 'normalizeWeightsAtStart' in self.dconf['sim']:
-        #   if self.dconf['sim']['normalizeWeightsAtStart']:
-        #     normalizeAdjustableWeights(sim, 0, lrecpop)
-        #     print(sim.rank,'normalized adjustable weights at start')
-        #     sim.pc.barrier() # wait for other nodes
-      except Exception as err:
-        print('Could not restore STDP weights from file.')
-        raise err
-
-    if sim.rank == 0:
-      fconn = self.outpath('sim')
-      sim.saveData(filename=fconn)
-
-    setrecspikes(self.dconf, sim)
-    # setup variables to record for each cell (spikes, V traces, etc)
-    sim.setupRecording()
-
-    setdminID(sim, self.allpops)
     tPerPlay = self.tstepPerAction * self.dconf['actionsPerPlay']
-
-    # self.InitializeInputRates(sim)# <-- Do not activate this!
-    self.InitializeNoiseRates(sim)
-
-    # Plot 2d net
-    # sim.analysis.plot2Dnet(saveFig='data/net.png', showFig=False)
-    sim.analysis.plotConn(
-        saveFig=self.outpath('connsCells.png'), showFig=False,
-        groupBy='cell', feature='weight')
-    includePre = list(self.dconf['net']['allpops'].keys())
-    sim.analysis.plotConn(saveFig=self.outpath('connsPops.png'), showFig=False,
-                          includePre=includePre, includePost=includePre, feature='probability')
-
-    # Record weights at time 0
-    self.recordWeights(sim, 0)
-    # has periodic callback to adjust STDP weights based on RL signal
     sim.runSimWithIntervalFunc(tPerPlay, self.trainAgent)
-    if self.ECellModel == 'INTF7' or self.ICellModel == 'INTF7':
-      intf7.insertSpikes(sim, self.simConfig.recordStep)
-    sim.gatherData()  # gather data from different nodes
-    if sim.doSaveData:
-      sim.saveData()  # save data to disk
-
-    if sim.saveWeights:
-      saveSynWeights(sim, sim.allSTDPWeights, self.outpath)
-
-    # only rank 0 should save. otherwise all the other nodes could over-write the output or quit first; rank 0 plots
-    if sim.rank == 0:
-      if sim.plotWeights:
-        plotWeights()
-      saveGameBehavior(sim)
-      saveActionsPerEpisode(
-          sim, self.epCount, self.outpath('ActionsPerEpisode.txt'))
-      if sim.plotRaster:
-        plotRaster(sim, self.dconf, self.dnumc, self.outpath('raster.png'))
