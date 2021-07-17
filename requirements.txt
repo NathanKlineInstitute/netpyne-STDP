@@ -11,3 +11,4 @@ ipython
 jupyter
 pytest
 fire
+tqdm
