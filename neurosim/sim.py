@@ -443,9 +443,18 @@ class NeuroSim:
     # get all the STDP objects from the simulation's cells
     # dictionary of STDP objects keyed by type (all, for EMRIGHT, EMLEFT populations)
     dSTDPmech = {'all': []}
-    for pop in self.dconf['pop_to_moves'].keys():
-      dSTDPmech[pop] = []
-
+    cgids_map = {}      
+    for pop, pop_moves in self.dconf['pop_to_moves'].items():
+      dSTDPmech[pop] = [] #Add EM to dict
+      if type(pop_moves) == str:
+        pop_moves = [pop_moves]
+      for move in pop_moves:
+        dSTDPmech[move] = [] #Add LEFT, RIGHT to dict
+      cells_per_move = math.floor(len(sim.net.pops[pop].cellGids) / len(pop_moves)) #how many cells assigned to move subsets
+      for idx, cgid in enumerate(sim.net.pops[pop].cellGids):
+        cgids_map[cgid] = pop_moves[math.floor(idx / cells_per_move)] #maps cell gid to assigned action 
+    if self.dconf['sim']['targetedRL']>=4:
+      dSTDPmech['nonEM'] = []
     for cell in sim.net.cells:
       #if cell.gid in sim.net.pops['EMLEFT'].cellGids and cell.gid==sim.simData['dminID']['EMLEFT']: print(cell.conns)
       for conn in cell.conns:
@@ -453,9 +462,16 @@ class NeuroSim:
         STDPmech = conn.get('hSTDP')
         if STDPmech:
           dSTDPmech['all'].append(STDPmech)
-          for pop in self.dconf['pop_to_moves'].keys():
-            if cell.gid in sim.net.pops[pop].cellGids:
+          isEM = False
+          for pop, pop_moves in self.dconf['pop_to_moves'].items(): 
+            if cell.gid in sim.net.pops[pop].cellGids: #Creates dSTDPMech['EM']
               dSTDPmech[pop].append(STDPmech)
+              isEM = True
+              for move in pop_moves: #Creates dSTDPMech['LEFT'] and dSTDPMech['RIGHT']
+                if cgids_map[cell.gid] == self.dconf['moves'][move]: #If cell assigned to action == current move, add
+                  dSTDPmech[move].append(STDPmech)
+          if self.dconf['sim']['targetedRL']>=4:
+            if not isEM: dSTDPmech['nonEM'].append(STDPmech)
     return dSTDPmech
 
   def getActions(self, sim, t, moves, pop_to_moves):
@@ -588,8 +604,19 @@ class NeuroSim:
       if dconf['verbose']:
         if sim.rank == 0:
           print('t={} Reward:{} Actions: {}'.format(round(t, 2), reward, actions))
-      for STDPmech in self.dSTDPmech['all']:
-        STDPmech.reward_punish(reward)
+      if dconf['sim']['targetedRL']>=1:
+        for moveName, moveID in dconf['moves'].items():
+          if actions == moveID:
+            if dconf['verbose']: print('Apply RL to EM', moveName)
+            for STDPmech in self.dSTDPmech[moveName]: STDPmech.reward_punish(reward)
+            if dconf['sim']['targetedRL']>=3: #ADD: and EMRight fires
+              for oppMoveName in dconf['moves'].keys():
+                if oppMoveName != moveName:
+                  if dconf['verbose']: print('Apply -RL to EM', oppMoveName)
+                  for STDPmech in self.dSTDPmech[oppMoveName]: STDPmech.reward_punish(float(reward*-dconf['sim']['targetedRLOppFctr']))
+            if dconf['sim']['targetedRL']>=4:
+                if dconf['verbose']: print('Apply RL to nonEM')
+                for STDPmech in self.dSTDPmech['nonEM']: STDPmech.reward_punish(float(reward*-dconf['sim']['targetedRLDscntFctr']))
 
     t3 = datetime.now() - t3
     t4 = datetime.now()

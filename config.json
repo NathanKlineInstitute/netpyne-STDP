@@ -32,10 +32,10 @@
     "stayStepLim": 0,
     "simtype": {
         "ResumeSim": 0,
-        "ResumeSimFromFile": "...pkl"
+        "ResumeSimFromFile": "results/20210714/synWeights_final.pkl"
     },
     "sim": {
-        "duration": 1000,
+        "duration": 100,
         "dt": 0.6,
         "verbose": 0,
         "recordStep": 1.0,
@@ -50,6 +50,9 @@
         "saveCellConns": 1,
         "saveMotionFields": 0,
         "plotRaster": 1,
+        "targetedRL": 3,
+        "targetedRLOppFctr": 0.5,
+        "targetedRLDscntFctr": 0.5,
         "tstepPerAction": 50,
         "saveWeights": 1,
         "saveAssignedFiringRates": 0,
