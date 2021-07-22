@@ -26,7 +26,8 @@
         "angv_bias": 0.2,
         "total_gain": 5.0,
         "max_reward": 2.0,
-        "posRewardBias": 2.0
+        "posRewardBias": 2.0,
+        "negRewardBias": 1.0
     },
     "verbose": 0,
     "stayStepLim": 0,
@@ -35,7 +36,7 @@
         "ResumeSimFromFile": "results/20210714/synWeights_final.pkl"
     },
     "sim": {
-        "duration": 100,
+        "duration": 1000,
         "dt": 0.6,
         "verbose": 0,
         "recordStep": 1.0,
@@ -50,7 +51,7 @@
         "saveCellConns": 1,
         "saveMotionFields": 0,
         "plotRaster": 1,
-        "targetedRL": 3,
+        "targetedRL": 0,
         "targetedRLOppFctr": 0.5,
         "targetedRLDscntFctr": 0.5,
         "tstepPerAction": 50,
@@ -246,14 +247,8 @@
         }
     },
     "noise": {
-        "EMLEFT": {
+        "EM": {
                 "AM": {"w":0, "rate":0},
-                "NM": {"w":0, "rate":0},
-                "GA": {"w":1.875, "rate": 100},
-                "AM2": {"w": 3.938, "rate": 200},
-                "NM2": {"w": 0, "rate": 0},
-                "GA2": {"w": 1.875, "rate": 100}},
-        "EMRIGHT": {"AM": {"w":0, "rate":0},
                 "NM": {"w":0, "rate":0},
                 "GA": {"w":1.875, "rate": 100},
                 "AM2": {"w": 3.938, "rate": 200},
