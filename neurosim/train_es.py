@@ -1,5 +1,5 @@
 from sim import NeuroSim
-from conf import read_conf
+from conf import read_conf, init_wdir
 from aigame import AIGame
 from game_interface import GameInterface
 import os, sys
@@ -15,13 +15,34 @@ from tqdm import tqdm
 def run_episodes(neurosim):
     try:
         # Suppress print statements from the netpyne sim
-        sys.stdout = open(os.devnull, 'w')
+        # sys.stdout = open(os.devnull, 'w')
         neurosim.run()
     except SystemExit:
         pass
     # Turn printing back on after netpyne sim is done
     sys.stdout = sys.__stdout__
     return
+
+def init(dconf):
+  # Initialize the model with dconf config
+  if not dconf:
+      dconf = read_conf()
+  dconf['sim']['duration'] = 1e6
+  dconf['sim']['recordWeightStepSize'] = 1e6
+
+  outdir = dconf['sim']['outdir']
+  if os.path.isdir(outdir):
+    evaluations = [fname
+      for fname in os.listdir(outdir)
+      if fname.startswith('evaluation_') and os.path.isdir(os.path.join(outdir, fname))]
+    if len(evaluations) > 0:
+      raise Exception(' '.join([
+          'You have run evaluations on {}: {}.'.format(outdir, evaluations),
+          'This will rewrite!',
+          'Please delete to continue!']))
+
+  init_wdir(dconf)
+  return dconf
 
 def train(dconf):
     ITERATIONS = 10 # How many iterations to train for
@@ -36,13 +57,9 @@ def train(dconf):
 
     # # Evaluation frequency and sample size, does not effect training, just gives
     # # a better metric from which to track progress (mean fitness of the current best weights)
-    # EVALUATE_EVERY = 10
+    EVALUATE_EVERY = 2
     # EVALUATION_EPISODES = 10
-
-    # Initialize the model with dconf config
-    if not dconf:
-        dconf = read_conf()
-    dconf['sim']['duration'] = 501
+    dconf = init(dconf)
 
     neurosim = NeuroSim(dconf, use_noise = False)
     neurosim.STDP_active = False # deactivate STDP
@@ -80,7 +97,8 @@ def train(dconf):
         fitness_res = [np.median(fitness), fitness.mean(), fitness.min(), fitness.max(),
                best_weights.mean()]
         with open(fres_train, 'a') as out:
-          out.write('\t'.join([str(r) for r in fitness_res]) + '\n')
+          out.write('\t'.join(
+            [str(neurosim.end_after_episode)] + [str(r) for r in fitness_res]) + '\n')
         print("\nFitness Median: {}; Mean: {} ([{}, {}]). Mean Weight: {}".format(*fitness_res))
 
         # normalize the fitness for more stable training
@@ -101,9 +119,10 @@ def train(dconf):
         # # of our current best weights. To truly track the progress of our algorithm we need
         # # to actually run our current best weights with a large enough sample size to
         # # decrease variance. We only do it once every several episodes since it is expensive
-        # if (iteration + 1) % EVALUATE_EVERY == 0:
-        #     print("\nEvaluating best weights after iteration", iteration)
-        #     neurosim.setWeightArray(netpyne.sim, best_weights)
+        if (iteration + 1) % EVALUATE_EVERY == 0:
+            print("\nEvaluating best weights after iteration", iteration)
+            neurosim.setWeightArray(netpyne.sim, best_weights)
+            neurosim.recordWeights(netpyne.sim, iteration)
         #     print("\nSimulating evaluation iteration ... ")
         #     fitness = []
         #     for i in range(EVALUATION_EPISODES):
