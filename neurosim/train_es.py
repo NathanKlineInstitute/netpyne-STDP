@@ -12,7 +12,7 @@ import numpy as np
 from tqdm import tqdm
 
 # Wrapper for netpyne simulation that catched the sys.exit() after one episode (if activated)
-def run_episode(neurosim):
+def run_episodes(neurosim):
     try:
         # Suppress print statements from the netpyne sim
         sys.stdout = open(os.devnull, 'w')
@@ -24,8 +24,8 @@ def run_episode(neurosim):
     return
 
 def train(dconf):
-    ITERATIONS = 100_000 # How many iterations to train for
-    POPULATION_SIZE = 10 # How many perturbations of weights to try per iteration
+    ITERATIONS = 10 # How many iterations to train for
+    POPULATION_SIZE = 3 # How many perturbations of weights to try per iteration
     SIGMA = 0.1 # standard deviation of perturbations applied to each member of population
     LEARNING_RATE = 1 # what percentage of the return normalized perturbations to add to best_weights
 
@@ -34,10 +34,10 @@ def train(dconf):
     LR_DECAY = 1
     SIGMA_DECAY = 1
 
-    # Evaluation frequency and sample size, does not effect training, just gives
-    # a better metric from which to track progress (mean fitness of the current best weights)
-    EVALUATE_EVERY = 10
-    EVALUATION_EPISODES = 10
+    # # Evaluation frequency and sample size, does not effect training, just gives
+    # # a better metric from which to track progress (mean fitness of the current best weights)
+    # EVALUATE_EVERY = 10
+    # EVALUATION_EPISODES = 10
 
     # Initialize the model with dconf config
     if not dconf:
@@ -46,13 +46,16 @@ def train(dconf):
 
     neurosim = NeuroSim(dconf, use_noise = False)
     neurosim.STDP_active = False # deactivate STDP
-    neurosim.end_after_episode = True # activate sys.exit() after one episode
+    neurosim.end_after_episode = 2 # activate sys.exit() after one episode
 
     # randomly initialize best weights to the first weights generated
     best_weights = neurosim.getWeightArray(netpyne.sim)
 
-    for episode in range(ITERATIONS):
-        print("\n--------------------- ES episode", episode, "---------------------")
+    fres_train = neurosim.outpath('es_train.txt')
+    fres_eval = neurosim.outpath('es_eval.txt')
+
+    for iteration in range(ITERATIONS):
+        print("\n--------------------- ES iteration", iteration, "---------------------")
 
         # generate unique randomly sampled perturbations to add to each member of
         # this iteration's the training population
@@ -69,16 +72,16 @@ def train(dconf):
         fitness = []
         for i in range(POPULATION_SIZE):
             neurosim.setWeightArray(netpyne.sim, best_weights * (1 + perturbations[i]))
-            run_episode(neurosim)
-            fitness.append([neurosim.last_steps])
-        fitness = np.array(fitness)
+            run_episodes(neurosim)
+            fitness.append(
+              np.median(neurosim.epCount[-neurosim.end_after_episode:]))
+        fitness = np.expand_dims(np.array(fitness), 1)
 
-        print(
-            "\nMean fitness:", fitness.mean(),
-            "Max fitness:", fitness.max(),
-            "Min fitness:", fitness.min(),
-            "Mean weight:", best_weights.mean()
-        )
+        fitness_res = [np.median(fitness), fitness.mean(), fitness.min(), fitness.max(),
+               best_weights.mean()]
+        with open(fres_train, 'a') as out:
+          out.write('\t'.join([str(r) for r in fitness_res]) + '\n')
+        print("\nFitness Median: {}; Mean: {} ([{}, {}]). Mean Weight: {}".format(*fitness_res))
 
         # normalize the fitness for more stable training
         normalized_fitness = (fitness - fitness.mean()) / (fitness.std() + 1e-8)
@@ -94,25 +97,28 @@ def train(dconf):
         SIGMA *= SIGMA_DECAY
         LEARNING_RATE *= LR_DECAY
 
-        # Evaluation - the training progress printouts are for a bunch of noisy versions
-        # of our current best weights. To truly track the progress of our algorithm we need
-        # to actually run our current best weights with a large enough sample size to
-        # decrease variance. We only do it once every several episodes since it is expensive
-        if (episode + 1) % EVALUATE_EVERY == 0:
-            print("\nEvaluating best weights after episode", episode)
-            neurosim.setWeightArray(netpyne.sim, best_weights)
-
-            print("\nSimulating evaluation episodes ... ")
-            fitness = []
-            for i in range(EVALUATION_EPISODES):
-                run_episode(neurosim)
-                fitness.append([neurosim.last_steps])
-            fitness = np.array(fitness)
-            print(
-                "Mean fitness:", fitness.mean(),
-                "Max fitness:", fitness.max(),
-                "Min fitness:", fitness.min()
-            )
+        # # Evaluation - the training progress printouts are for a bunch of noisy versions
+        # # of our current best weights. To truly track the progress of our algorithm we need
+        # # to actually run our current best weights with a large enough sample size to
+        # # decrease variance. We only do it once every several episodes since it is expensive
+        # if (iteration + 1) % EVALUATE_EVERY == 0:
+        #     print("\nEvaluating best weights after iteration", iteration)
+        #     neurosim.setWeightArray(netpyne.sim, best_weights)
+        #     print("\nSimulating evaluation iteration ... ")
+        #     fitness = []
+        #     for i in range(EVALUATION_EPISODES):
+        #         run_episodes(neurosim)
+        #         fitness.append(
+        #           np.median(neurosim.epCount[-neurosim.end_after_episode:]))
+        #     fitness = np.array(fitness)
+        #     fitness_
+        #     print(
+        #         "Fitness Median: {}; Mean: {} ([{}, {}])".format(
+        #           np.median(fitness),
+        #           fitness.mean(),
+        #           fitness.min(),
+        #           fitness.max())
+        #     )
 
 if __name__ == "__main__":
     train(None)

@@ -659,8 +659,9 @@ class NeuroSim:
 
         self.last_steps = last_steps
 
-        if self.end_after_episode:
-            sys.exit()
+        self.current_episode += 1
+        if self.end_after_episode and self.end_after_episode <= self.current_episode:
+          sys.exit()
 
       if self.STDP_active:
          # specific for CartPole-v1. TODO: move to a diff file
@@ -726,4 +727,5 @@ class NeuroSim:
 
   def run(self):
     tPerPlay = self.tstepPerAction * self.dconf['actionsPerPlay']
+    self.current_episode = 0
     sim.runSimWithIntervalFunc(tPerPlay, self.trainAgent)
