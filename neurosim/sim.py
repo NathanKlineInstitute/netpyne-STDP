@@ -16,7 +16,7 @@ from cells import intf7
 from game_interface import GameInterface
 from critic import Critic
 from utils.conns import getconv, getSec, getInitDelay, getDelay, setdminID, setrecspikes
-from utils.plots import plotRaster, plotWeights, saveGameBehavior, saveActionsPerEpisode
+from utils.plots import plotRaster, plotWeights, saveActionsPerEpisode
 from utils.sync import syncdata_alltoall
 from utils.weights import saveSynWeights, readWeights, getWeightIndex, getInitSTDPWeight
 
@@ -67,6 +67,7 @@ class NeuroSim:
 
     self.allpops = list(dconf['net']['allpops'].keys())
     self.inputPop = dconf['net']['inputPop']
+    self.unk_move = dconf['env']['unk_move'] if 'unk_move' in dconf['env'] else min(dconf['moves'].values()) - 1
     # number of neurons of a given type: dnumc
     # scales the size of the network (only number of neurons)
     scale = dconf['net']['scale']
@@ -594,7 +595,7 @@ class NeuroSim:
           else:
             print('.', end='')
           # actions.append(self.dconf['moves']['LEFT'])
-          actions.append(self.dconf['env']['unk_move'])
+          actions.append(self.unk_move)
         else:
           mvsf = [(m, f[ts]) for m, f in move_freq.items()]
           random.shuffle(mvsf)
@@ -606,7 +607,7 @@ class NeuroSim:
                 [f for m,f in mvsf]))
             else:
               print(str(round(best_move_freq)) + '-', end='')
-            actions.append(self.dconf['env']['unk_move'])
+            actions.append(self.unk_move)
           else:
             actions.append(self.dconf['moves'][best_move])
           if self.dconf['verbose']:
@@ -635,11 +636,9 @@ class NeuroSim:
     t1 = datetime.now() - t1
     t2 = datetime.now()
 
-    print(actions)
-
     if sim.rank == 0:
-      is_unk_move = len([a for a in actions if a == self.dconf['env']['unk_move']]) > 0
-      actions = [a if a != self.dconf['env']['unk_move'] else sim.AIGame.randmove()
+      is_unk_move = len([a for a in actions if a == self.unk_move]) > 0
+      actions = [a if a != self.unk_move else sim.AIGame.randmove()
         for a in actions]
       rewards, done = sim.AIGame.playGame(actions)
       if done:
@@ -690,7 +689,7 @@ class NeuroSim:
         if reward != 0:
           if dconf['verbose']:
             if sim.rank == 0:
-              print('t={} Reward:{}'.format(round(t, 2), reward))
+              print('t={} Reward:{} Actions: {}'.format(round(t, 2), reward, actions))
           for STDPmech in self.dSTDPmech['all']:
             STDPmech.reward_punish(reward)
 
@@ -707,6 +706,11 @@ class NeuroSim:
       for ltpnt in tvec_actions:
         sim.allTimes.append(ltpnt)
 
+      if self.STDP_active:
+        with open(sim.ActionsRewardsfilename, 'a') as fid3:
+          for action, t in zip(actions, tvec_actions):
+            fid3.write('%0.1f\t%0.1f\t%0.5f\n' % (t, action, reward))
+
     # update firing rate of inputs to R population (based on game state)
     self.updateInputRates(sim)
 
@@ -721,11 +725,33 @@ class NeuroSim:
       self.recordWeights(sim, t)
 
     t5 = datetime.now() - t5
-    if random.random() < 0.0005:
+    if random.random() < 0.001:
       print(t, [round(tk.microseconds / 1000, 0)
                 for tk in [t1, t2, t3, t4, t5]])
+
+    if 'sleeptrial' in dconf['sim'] and dconf['sim']['sleeptrial']:
+      time.sleep(dconf['sim']['sleeptrial'])
 
   def run(self):
     tPerPlay = self.tstepPerAction * self.dconf['actionsPerPlay']
     self.current_episode = 0
     sim.runSimWithIntervalFunc(tPerPlay, self.trainAgent)
+
+  def end(self):
+    if self.ECellModel == 'INTF7' or self.ICellModel == 'INTF7':
+      intf7.insertSpikes(sim, self.simConfig.recordStep)
+    sim.gatherData()  # gather data from different nodes
+    if sim.doSaveData:
+      sim.saveData()  # save data to disk
+
+    if sim.saveWeights:
+      saveSynWeights(sim, sim.allSTDPWeights, self.outpath)
+
+    # only rank 0 should save. otherwise all the other nodes could over-write the output or quit first; rank 0 plots
+    if sim.rank == 0:
+      if sim.plotWeights:
+        plotWeights()
+      saveActionsPerEpisode(
+          sim, self.epCount, self.outpath('ActionsPerEpisode.txt'))
+      if sim.plotRaster:
+        plotRaster(sim, self.dconf, self.dnumc, self.outpath('raster.png'))

@@ -120,5 +120,8 @@ def train(dconf):
         #           fitness.max())
         #     )
 
+    # print raster
+    neurosim.end()
+
 if __name__ == "__main__":
     train(None)
