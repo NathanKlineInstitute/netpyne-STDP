@@ -45,8 +45,8 @@ def init(dconf):
   return dconf
 
 def train(dconf):
-    ITERATIONS = 10 # How many iterations to train for
-    POPULATION_SIZE = 3 # How many perturbations of weights to try per iteration
+    ITERATIONS = 100 # How many iterations to train for
+    POPULATION_SIZE = 10 # How many perturbations of weights to try per iteration
     SIGMA = 0.1 # standard deviation of perturbations applied to each member of population
     LEARNING_RATE = 1 # what percentage of the return normalized perturbations to add to best_weights
 
@@ -57,13 +57,16 @@ def train(dconf):
 
     # # Evaluation frequency and sample size, does not effect training, just gives
     # # a better metric from which to track progress (mean fitness of the current best weights)
-    EVALUATE_EVERY = 2
+    EVALUATE_EVERY = 10
     # EVALUATION_EPISODES = 10
+
+    EPISODES_TO_RUN = 5
+
     dconf = init(dconf)
 
     neurosim = NeuroSim(dconf, use_noise = False)
     neurosim.STDP_active = False # deactivate STDP
-    neurosim.end_after_episode = 2 # activate sys.exit() after one episode
+    neurosim.end_after_episode = EPISODES_TO_RUN # activate sys.exit() after this many episode
 
     # randomly initialize best weights to the first weights generated
     best_weights = neurosim.getWeightArray(netpyne.sim)
@@ -71,6 +74,10 @@ def train(dconf):
     fres_train = neurosim.outpath('es_train.txt')
     fres_eval = neurosim.outpath('es_eval.txt')
 
+    total_time = 0
+    spkids = []
+    spkts = []
+    V_somas = {}
     for iteration in range(ITERATIONS):
         print("\n--------------------- ES iteration", iteration, "---------------------")
 
@@ -90,8 +97,21 @@ def train(dconf):
         for i in range(POPULATION_SIZE):
             neurosim.setWeightArray(netpyne.sim, best_weights * (1 + perturbations[i]))
             run_episodes(neurosim)
+            run_duration = neurosim.last_time
+
+            # save the spike and V data
+            spkids.extend(netpyne.sim.simData['spkid'])
+            spkts.extend([(t+total_time) for t in netpyne.sim.simData['spkt']])
+            for kvolt, v_soma in netpyne.sim.simData['V_soma'].items():
+              if kvolt not in V_somas:
+                V_somas[kvolt] = []
+              V_somas[kvolt].extend(v_soma)
+            total_time += run_duration
+
+            # Add fitness
             fitness.append(
               np.median(neurosim.epCount[-neurosim.end_after_episode:]))
+
         fitness = np.expand_dims(np.array(fitness), 1)
 
         fitness_res = [np.median(fitness), fitness.mean(), fitness.min(), fitness.max(),
@@ -107,39 +127,21 @@ def train(dconf):
         # weight the perturbations by their normalized fitness so that perturbations
         # that performed well are added to the best weights and those that performed poorly are subtracted
         fitness_weighted_perturbations = (normalized_fitness * perturbations)
-
         # apply the fitness_weighted_perturbations to the current best weights proportionally to the LR
         best_weights = best_weights * (1 + (LEARNING_RATE * fitness_weighted_perturbations.mean(axis = 0)))
-
         # decay sigma and the learning rate
         SIGMA *= SIGMA_DECAY
         LEARNING_RATE *= LR_DECAY
 
-        # # Evaluation - the training progress printouts are for a bunch of noisy versions
-        # # of our current best weights. To truly track the progress of our algorithm we need
-        # # to actually run our current best weights with a large enough sample size to
-        # # decrease variance. We only do it once every several episodes since it is expensive
         if (iteration + 1) % EVALUATE_EVERY == 0:
             print("\nEvaluating best weights after iteration", iteration)
             neurosim.setWeightArray(netpyne.sim, best_weights)
             neurosim.recordWeights(netpyne.sim, iteration)
-        #     print("\nSimulating evaluation iteration ... ")
-        #     fitness = []
-        #     for i in range(EVALUATION_EPISODES):
-        #         run_episodes(neurosim)
-        #         fitness.append(
-        #           np.median(neurosim.epCount[-neurosim.end_after_episode:]))
-        #     fitness = np.array(fitness)
-        #     fitness_
-        #     print(
-        #         "Fitness Median: {}; Mean: {} ([{}, {}])".format(
-        #           np.median(fitness),
-        #           fitness.mean(),
-        #           fitness.min(),
-        #           fitness.max())
-        #     )
 
-    # print raster
+    neurosim.dconf['sim']['duration'] = total_time / 1000
+    netpyne.sim.simData['V_soma'] = V_somas
+    netpyne.sim.simData['spkid'] = spkids
+    netpyne.sim.simData['spkt'] = spkts
     neurosim.end()
 
 if __name__ == "__main__":

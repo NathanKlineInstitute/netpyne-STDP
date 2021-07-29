@@ -654,12 +654,11 @@ class NeuroSim:
 
         last_steps = [k for k in sim.AIGame.count_steps if k != 0][-1]
         self.epCount.append(last_steps)
-        print('Episode finished in {} steps {}!'.format(last_steps, eval_str))
-
-        self.last_steps = last_steps
+        print('Episode finished in {} steps {} ()!'.format(last_steps, eval_str))
 
         self.current_episode += 1
         if self.end_after_episode and self.end_after_episode <= self.current_episode:
+          self.last_time = t
           sys.exit()
 
       if self.STDP_active:
