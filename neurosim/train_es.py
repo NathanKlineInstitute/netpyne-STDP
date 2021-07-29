@@ -1,15 +1,13 @@
+import os, sys
+
+import numpy as np
+from tqdm import tqdm
+
 from sim import NeuroSim
 from conf import read_conf, init_wdir
 from aigame import AIGame
 from game_interface import GameInterface
-import os, sys
 import netpyne
-
-import multiprocessing
-from multiprocessing import Pool, Manager
-
-import numpy as np
-from tqdm import tqdm
 
 # Wrapper for netpyne simulation that catched the sys.exit() after one episode (if activated)
 def run_episodes(neurosim):
@@ -45,31 +43,28 @@ def init(dconf):
   return dconf
 
 def train(dconf):
-    ITERATIONS = 100 # How many iterations to train for
-    POPULATION_SIZE = 10 # How many perturbations of weights to try per iteration
-    SIGMA = 0.1 # standard deviation of perturbations applied to each member of population
-    LEARNING_RATE = 1 # what percentage of the return normalized perturbations to add to best_weights
+    dconf = init(dconf)
+    ITERATIONS = dconf['ES']['iterations'] # How many iterations to train for
+    POPULATION_SIZE = dconf['ES']['population_size'] # How many perturbations of weights to try per iteration
+    SIGMA = dconf['ES']['sigma'] # 0.1 # standard deviation of perturbations applied to each member of population
+    LEARNING_RATE = dconf['ES']['learning_rate'] # 1 # what percentage of the return normalized perturbations to add to best_weights
 
     # How much to decay the learning rate and sigma by each episode. In theory
     # this should lead to better
-    LR_DECAY = 1
-    SIGMA_DECAY = 1
+    LR_DECAY = dconf['ES']['decay_lr'] # 1
+    SIGMA_DECAY = dconf['ES']['decay_sigma'] # 1
 
-    # # Evaluation frequency and sample size, does not effect training, just gives
-    # # a better metric from which to track progress (mean fitness of the current best weights)
-    EVALUATE_EVERY = 10
-    # EVALUATION_EPISODES = 10
+    EPISODES_PER_ITER = dconf['ES']['episodes_per_iter'] # 5
+    SAVE_WEIGHTS_EVERY_ITER = dconf['ES']['save_weights_every_iter'] # 10
 
-    EPISODES_TO_RUN = 5
-
-    dconf = init(dconf)
-
+    # Setup
     neurosim = NeuroSim(dconf, use_noise = False)
     neurosim.STDP_active = False # deactivate STDP
-    neurosim.end_after_episode = EPISODES_TO_RUN # activate sys.exit() after this many episode
+    neurosim.end_after_episode = EPISODES_PER_ITER # activate sys.exit() after this many episode
 
     # randomly initialize best weights to the first weights generated
     best_weights = neurosim.getWeightArray(netpyne.sim)
+    neurosim.recordWeights(netpyne.sim, 0)
 
     fres_train = neurosim.outpath('es_train.txt')
     fres_eval = neurosim.outpath('es_eval.txt')
@@ -133,10 +128,16 @@ def train(dconf):
         SIGMA *= SIGMA_DECAY
         LEARNING_RATE *= LR_DECAY
 
-        if (iteration + 1) % EVALUATE_EVERY == 0:
-            print("\nEvaluating best weights after iteration", iteration)
+        if (iteration + 1) % SAVE_WEIGHTS_EVERY_ITER == 0:
+            print("\nSaving best weights after iteration", iteration)
             neurosim.setWeightArray(netpyne.sim, best_weights)
-            neurosim.recordWeights(netpyne.sim, iteration)
+            neurosim.recordWeights(netpyne.sim, iteration + 1)
+
+
+    if ITERATIONS % SAVE_WEIGHTS_EVERY_ITER != 0:
+        print("\nSaving best weights after training", iteration)
+        neurosim.setWeightArray(netpyne.sim, best_weights)
+        neurosim.recordWeights(netpyne.sim, ITERATIONS)
 
     neurosim.dconf['sim']['duration'] = total_time / 1000
     netpyne.sim.simData['V_soma'] = V_somas
