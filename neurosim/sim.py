@@ -102,7 +102,7 @@ class NeuroSim:
     # Step size in ms to save data (e.g. V traces, LFP, etc)
     simConfig.recordStep = dconf['sim']['recordStep']
     simConfig.filename = outpath('simConfig')  # Set file output name
-    simConfig.saveJson = True
+    simConfig.saveJson = False
     # Save params, network and sim output to pickle file
     simConfig.savePickle = True
     simConfig.saveMat = False
