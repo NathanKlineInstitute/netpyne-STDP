@@ -97,9 +97,9 @@ def frequency(wdir, timestep=1000, outputfile=None):
   if not outputfile:
     outputfile = os.path.join(wdir, 'frequency.png')
 
-  sim_config = os.path.join(wdir, 'sim.json')
-  with open(sim_config) as f:
-    sim = json.load(f)
+  sim_config = os.path.join(wdir, 'sim.pkl')
+  with open(sim_config, 'rb') as f:
+    sim = pkl.load(f)
 
   sorted_min_ids = sorted(list(sim['simData']['dminID'].items()), key=lambda x:x[1], reverse=True)
   spkid = sim['simData']['spkid']
