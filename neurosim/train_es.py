@@ -105,7 +105,7 @@ def train(dconf):
 
             # Add fitness
             fitness.append(
-              np.median(neurosim.epCount[-neurosim.end_after_episode:]))
+              np.mean(neurosim.epCount[-neurosim.end_after_episode:]))
 
         fitness = np.expand_dims(np.array(fitness), 1)
 

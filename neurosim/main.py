@@ -69,6 +69,7 @@ def evaluate(eval_dir, duration=100, resume_tidx=-1, display=False, verbose=Fals
 
   runner = NeuroSim(dconf)
   runner.run()
+  runner.end()
 
 
 if __name__ == '__main__':
