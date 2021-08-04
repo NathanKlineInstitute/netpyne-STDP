@@ -1,25 +1,25 @@
 {
     "ES": {
-        "iterations": 100,
-        "population_size": 5,
+        "iterations": 1000,
+        "population_size": 10,
         "sigma": 0.1,
         "learning_rate": 1.0,
         "decay_lr": 1.0,
         "decay_sigma": 1.0,
-        "episodes_per_iter": 5,
-        "save_weights_every_iter": 5
+        "episodes_per_iter": 1,
+        "save_weights_every_iter": 100
     },
     "env": {
         "name": "CartPole-v1",
         "savemp4": 0,
         "render": 0,
         "observation_map": [
-            {"type": "rf_normal", "bins": 5, "mean": -0.00645789, "std": 0.06894682},
-            {"type": "rf_normal", "bins": 5, "mean": -0.03634136, "std": 0.53989509},
-            {"type": "rf_normal", "bins": 10, "mean": 0.00529333, "std": 0.09129902},
+            {"type": "rf_normal", "bins": 20, "mean": -0.00645789, "std": 1.0},
+            {"type": "rf_normal", "bins": 20, "mean": -0.03634136, "std": 0.53989509},
+            {"type": "rf_normal", "bins": 20, "mean": 0.00529333, "std": 0.09129902},
             {"type": "rf_normal", "bins": 20, "mean": 0.04752025, "std": 0.82070579}
         ],
-        "episodes": 21,
+        "episodes": 1,
         "unk_move": -1
     },
     "moves": {
@@ -124,7 +124,7 @@
             "I": 0.0
         },
         "allpops": {
-            "ES": 40,
+            "ES": 80,
 
             "EA": 40,
             "IA": 10,
