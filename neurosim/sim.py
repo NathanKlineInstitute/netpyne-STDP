@@ -15,7 +15,7 @@ from matplotlib import pyplot as plt
 from cells import intf7
 from game_interface import GameInterface
 from critic import Critic
-from utils.conns import getconv, getSec, getInitDelay, getDelay, setdminID, setrecspikes
+from utils.conns import getconn, getSec, getInitDelay, getDelay, setdminID, setrecspikes
 from utils.plots import plotRaster, plotWeights, saveActionsPerEpisode
 from utils.sync import syncdata_alltoall
 from utils.weights import saveSynWeights, readWeights, getWeightIndex, getInitSTDPWeight
@@ -81,6 +81,9 @@ class NeuroSim:
     netParams = specs.NetParams()
     # spike threshold, 10 mV is NetCon default, lower it for all cells
     netParams.defaultThreshold = 0.0
+    netParams.sizeX = 100
+    netParams.sizeY = 100
+    netParams.sizeZ = 1
     self.netParams = netParams
 
     # object of class SimConfig to store simulation configuration
@@ -131,13 +134,8 @@ class NeuroSim:
 
     self.ECellModel = dconf['net']['ECellModel']
     self.ICellModel = dconf['net']['ICellModel']
-
-    # Population parameters
-    for ty in self.allpops:
-      self.netParams.popParams[ty] = {
-          'cellType': ty,
-          'numCells': self.dnumc[ty],
-          'cellModel': self.ECellModel if isExc(ty) else self.ICellModel}
+    self.topographic = dconf['net']['topographic'] if 'topographic' in dconf['net'] else None
+    self.dCellGids = None
 
     self.makeECellModel()
     self.makeICellModel()
@@ -200,6 +198,12 @@ class NeuroSim:
             self.netParams.popParams[ty][k] = v
       self.PlastWeightIndex = intf7.dsyn['AM2']
 
+    # Add topographic:
+    if self.topographic:
+      for ty in self.allpops:
+        if isExc(ty) and ty in self.topographic:
+            self.netParams.popParams[ty].update(self.topographic[ty])
+
   def makeICellModel(self):
     # create rules for inhibitory neuron models
     if self.ICellModel == 'IntFire4':
@@ -227,6 +231,12 @@ class NeuroSim:
           else:  # FS
             for k, v in icell.dparam.items():
               self.netParams.popParams[ty][k] = v
+
+    # Add topographic:
+    if self.topographic:
+      for ty in self.allpops:
+        if isInh(ty) and ty in self.topographic:
+            self.netParams.popParams[ty].update(self.topographic[ty])
 
   def readSTDPParams(self):
     lsy = ['AMPA', 'NMDA', 'AMPAI']
@@ -262,6 +272,8 @@ class NeuroSim:
             'rate': 'variable',
             'noise': 0,
             'start': 0}
+        if self.topographic and stimty in self.topographic:
+          self.netParams.popParams[stimty].update(self.topographic[stimty])
         blist = [[i, i] for i in range(self.dnumc[poty])]
         self.netParams.connParams[stimty+'->'+poty] = {
             'preConds': {'pop': stimty},
@@ -273,11 +285,12 @@ class NeuroSim:
     return lstimty
 
   def setupNoiseStim(self):
+    if 'noise' not in self.dconf:
+      return {}
     lnoisety = []
-    dnoise = self.dconf['noise']
     # setup noisy NetStim sources (send random spikes)
     if self.ECellModel == 'IntFire4' or self.ECellModel == 'INTF7':
-      for poty, dpoty in dnoise.items():
+      for poty, dpoty in  self.dconf['noise'].items():
         for sy, dsy in dpoty.items():
           damp = self.dconf['net']['noiseDamping']['E' if isExc(poty) else 'I']
           Weight, Rate = dsy['w'] * damp, dsy['rate']
@@ -326,7 +339,6 @@ class NeuroSim:
             self.netParams.connParams[k] = {
                 'preConds': {'pop': prety},
                 'postConds': {'pop': poty},
-                'convergence': getconv(self.cmat, prety, poty, self.dnumc[prety]),
                 'weight': weight,
                 'delay': getDelay(self.dconf, prety, poty, sy, sec),
                 'synMech': synToMech[sy],
@@ -335,6 +347,8 @@ class NeuroSim:
                 'weightIndex': getWeightIndex(
                     sy, self.ICellModel if isInh(poty) else self.ECellModel)
             }
+            self.netParams.connParams[k].update(
+              getconn(self.cmat, prety, poty, self.dnumc[prety]))
             # Setup STDP plasticity rules
             if ct in stdpConns and stdpConns[ct] and self.dSTDPparams[synToMech[sy]]['RLon']:
               print('Setting RL-STDP on {} ({})'.format(k, weight))
@@ -458,6 +472,30 @@ class NeuroSim:
               dSTDPmech[pop].append(STDPmech)
     return dSTDPmech
 
+  def cellGidsMap(self, sim):
+    if not self.dCellGids:
+      # Check if the self.dCellGids is cached. if not, compute it only once
+      pop_to_moves = self.dconf['pop_to_moves']
+      cgids_map = {}
+      for p, pop_moves in pop_to_moves.items():
+        if type(pop_moves) == str:
+          pop_moves = [pop_moves]
+        cgids = sim.net.pops[p].cellGids
+        if 'out_pop_sort_tag' in self.dconf['net'] and self.dconf['net']['out_pop_sort_tag']:
+          # sort the cgids by `sort_tag` dimension (easiest: 'x')
+          sort_tag = self.dconf['net']['out_pop_sort_tag']
+          cgids, _ = list(zip(*sorted(
+                            [(gid, sim.net.cells[gid].tags[sort_tag]) for gid in cgids],
+                            key=lambda x:x[1])))
+        # Create map of cell gids to env movement.
+        # For example: {150: 'LEFT', 151: 'RIGHT', ...}
+        cells_per_move = math.floor(len(cgids) / len(pop_moves))
+        for idx, cgid in enumerate(cgids):
+          cgids_map[cgid] = pop_moves[math.floor(idx / cells_per_move)]
+      self.dCellGids = cgids_map
+
+    return self.dCellGids
+
   def getActions(self, sim, t, moves, pop_to_moves):
     # Get move frequencies
     move_freq = {}
@@ -466,16 +504,7 @@ class NeuroSim:
     for ts in range(int(self.dconf['actionsPerPlay'])):
       ts_beg = t-self.tstepPerAction*(self.dconf['actionsPerPlay']-ts-1)
       ts_end = t-self.tstepPerAction*(self.dconf['actionsPerPlay']-ts)
-      cgids_map = {}
-      for p, pop_moves in pop_to_moves.items():
-        if type(pop_moves) == str:
-          pop_moves = [pop_moves]
-        cells_per_move = math.floor(
-            len(sim.net.pops[p].cellGids) / len(pop_moves))
-        for idx, cgid in enumerate(sim.net.pops[p].cellGids):
-          cgids_map[cgid] = pop_moves[math.floor(idx / cells_per_move)]
-
-      freq.append(self.getSpikesWithInterval([ts_end, ts_beg], cgids_map))
+      freq.append(self.getSpikesWithInterval([ts_end, ts_beg], self.cellGidsMap(sim)))
     for move in moves:
       freq_move = [q[move] for q in freq]
       sim.pc.allreduce(vec.from_python(freq_move), 1)  # sum
@@ -690,7 +719,7 @@ class NeuroSim:
     self.InitializeNoiseRates(sim)
 
     # Plot 2d net
-    # sim.analysis.plot2Dnet(saveFig='data/net.png', showFig=False)
+    sim.analysis.plot2Dnet(saveFig=self.outpath('net.png'), showFig=False)
     sim.analysis.plotConn(
         saveFig=self.outpath('connsCells.png'), showFig=False,
         groupBy='cell', feature='weight')

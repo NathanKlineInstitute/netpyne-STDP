@@ -55,14 +55,14 @@ Evaluate the model before and after training:
 
 Optional: Maybe evaluate in depth
 
-    for ((i=0;i<20;i+=2)); do
+    for ((i=1;i<2;i+=2)); do
         echo "Evaluating at $i"
         py neurosim/main.py eval $WDIR --resume_tidx=$i
     done
 
 Run all evaluation:
 
-    WDIR=results/20210713
+    WDIR=results/20210805
     py neurosim/tools/evaluate.py frequency $WDIR --timestep 10000
     py neurosim/tools/evaluate.py medians $WDIR
     py neurosim/tools/evaluate.py rewards $WDIR

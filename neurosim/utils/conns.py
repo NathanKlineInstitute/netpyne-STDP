@@ -8,14 +8,16 @@ def prob2conv(prob, npre):
   return int(0.5 + prob * npre)
 
 
-def getconv(cmat, prety, poty, npre):
+def getconn(cmat, prety, poty, npre):
   # get convergence value from cmat dictionary
   # (uses convergence if specified directly, otherwise uses p to calculate)
   if 'conv' in cmat[prety][poty]:
-    return cmat[prety][poty]['conv']
+    conv = cmat[prety][poty]['conv']
   elif 'p' in cmat[prety][poty]:
-    return prob2conv(cmat[prety][poty]['p'], npre)
-  return 0
+    if type(cmat[prety][poty]['p']) == str:
+      return {'probability': cmat[prety][poty]['p']}
+    conv = prob2conv(cmat[prety][poty]['p'], npre)
+  return {"convergence": conv}
 
 
 def getInitDelay(dconf, sec):
