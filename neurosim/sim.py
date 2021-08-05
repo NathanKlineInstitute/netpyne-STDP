@@ -409,13 +409,13 @@ class NeuroSim:
             # then it the mean of the _firing_ neurons will remain the same.
             pop_sizes[pop].append(weight)
     norm_means = dict([(pop, np.mean(weights)) for pop, weights in pop_sizes.items()])
-    print(norm_means)
     return norm_means
 
 
   def normalizeWeights(self, sim):
     pop_means = self.weightsMean(sim)
     norm_means = self.normalizationMeans
+    print('\n!Normalizing from means: {} to {}!'.format(pop_means, norm_means))
     for cell in sim.net.cells:
       for conn in cell.conns:
         if 'hSTDP' in conn:
@@ -691,8 +691,8 @@ class NeuroSim:
 
     t5 = datetime.now() - t5
     if random.random() < 0.001:
-      print(t, [round(tk.microseconds / 1000, 0)
-                for tk in [t1, t2, t3, t4, t5]])
+      print('\n', t, [round(tk.microseconds / 1000, 0)
+                      for tk in [t1, t2, t3, t4, t5]])
 
     if 'sleeptrial' in dconf['sim'] and dconf['sim']['sleeptrial']:
       time.sleep(dconf['sim']['sleeptrial'])
