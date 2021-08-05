@@ -62,6 +62,8 @@ class NeuroSim:
     sim.saveMotionFields = dconf['sim']['saveMotionFields']
     sim.saveObjPos = 1  # save ball and paddle position to file
     self.recordWeightStepSize = dconf['sim']['recordWeightStepSize']
+    self.normalizeStepSize = dconf['sim']['normalizeStepSize']
+    self.normalizationMeans = None
     # time step per action (in ms)
     self.tstepPerAction = dconf['sim']['tstepPerAction']
 
@@ -392,6 +394,39 @@ class NeuroSim:
               conn['hObj'].weight[self.PlastWeightIndex])]
           sim.allSTDPWeights.append(weightItem)
 
+  def weightsMean(self, sim):
+    pop_sizes = {}
+    for cell in sim.net.cells:
+      for conn in cell.conns:
+        if 'hSTDP' in conn:
+          pops = [pop for pop,dpop in sim.net.pops.items() if cell.gid in dpop.cellGids]
+          pop = pops[0]
+          if pop not in pop_sizes:
+            pop_sizes[pop] = []
+          weight = conn['hObj'].weight[self.PlastWeightIndex]
+          if weight > 0:
+            # once the weight reaches 0, we stop counting that weight towards the mean
+            # then it the mean of the _firing_ neurons will remain the same.
+            pop_sizes[pop].append(weight)
+    norm_means = dict([(pop, np.mean(weights)) for pop, weights in pop_sizes.items()])
+    print(norm_means)
+    return norm_means
+
+
+  def normalizeWeights(self, sim):
+    pop_means = self.weightsMean(sim)
+    norm_means = self.normalizationMeans
+    for cell in sim.net.cells:
+      for conn in cell.conns:
+        if 'hSTDP' in conn:
+          pops = [pop for pop,dpop in sim.net.pops.items() if cell.gid in dpop.cellGids]
+          pop = pops[0]
+          new_weight = conn['hObj'].weight[self.PlastWeightIndex] - pop_means[pop] + norm_means[pop]
+          if new_weight < 0:
+            new_weight = 0.0
+          conn['hObj'].weight[self.PlastWeightIndex] = new_weight
+
+
   def getSpikesWithInterval(self, trange=None, neuronal_pop=None):
     if len(neuronal_pop) < 1:
       return 0.0
@@ -648,6 +683,11 @@ class NeuroSim:
         print('Weights Recording Time:', t, 'NBsteps:', self.NBsteps,
               'recordWeightStepSize:', self.recordWeightStepSize)
       self.recordWeights(sim, t)
+    if self.normalizeStepSize and not self.normalizationMeans:
+      # first step count averages per population
+      self.normalizationMeans = self.weightsMean(sim)
+    if self.normalizeStepSize and self.NBsteps % self.normalizeStepSize == 0:
+      self.normalizeWeights(sim)
 
     t5 = datetime.now() - t5
     if random.random() < 0.001:

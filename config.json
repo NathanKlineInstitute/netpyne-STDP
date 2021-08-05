@@ -26,7 +26,11 @@
         "angv_bias": 0.2,
         "total_gain": 5.0,
         "max_reward": 2.0,
-        "posRewardBias": 2.0
+        "posRewardBias": 2.0,
+        "modulation": {
+            "type": "linear",
+            "steps": 25
+        }
     },
     "verbose": 0,
     "stayStepLim": 0,
@@ -41,6 +45,7 @@
         "recordStep": 1.0,
         "recordStim": 0,
         "recordWeightStepSize": 1000,
+        "normalizeStepSize": 2500,
         "RLFakeUpRule": 0,
         "RLFakeDownRule": 0,
         "RLFakeStayRule": 0,
