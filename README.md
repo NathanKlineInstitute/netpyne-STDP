@@ -74,3 +74,9 @@ Run all evaluation:
 
     py neurosim/tools/evaluate.py boxplot $WDIR
     py neurosim/tools/evaluate.py perf $WDIR
+
+Continue training from a already trained model:
+
+    WDIR=results/...
+    py neurosim/main.py continue $WDIR --duration 5000
+    # note: this script needs more care on how to integrate with different/new params
