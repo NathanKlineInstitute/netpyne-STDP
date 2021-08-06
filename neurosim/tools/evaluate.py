@@ -166,17 +166,17 @@ def rewards_steps(wdir, steps=[21, 51,101], outputfile=None):
     outputfile = os.path.join(wdir, 'eval_rewards.png')
 
   with open(os.path.join(wdir, 'ActionsRewards.txt')) as f:
-      training_rewards = [int(float(r)) for _,_,r in csv.reader(f, delimiter='\t')]
+      training_rewards = [float(r) for _,_,r in csv.reader(f, delimiter='\t')]
 
   training_medians = {}
   for STEP in steps:
       training_medians[STEP] = []
       for idx in range(len(training_rewards) - STEP):
         rews = training_rewards[idx:idx+STEP]
-        pos_rews = [r for r in rews if r >= 0]
+        pos_rews = [r for r in rews if r > 0]
         training_medians[STEP].append(len(pos_rews) / len(rews))
 
-  plt.figure(figsize=(20,10))
+  plt.figure(figsize=(15,10))
 
   for STEP, medians in training_medians.items():
       plt.plot([t + STEP for t in range(len(medians))], medians)
