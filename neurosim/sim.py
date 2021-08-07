@@ -63,7 +63,9 @@ class NeuroSim:
     sim.saveObjPos = 1  # save ball and paddle position to file
     self.recordWeightStepSize = dconf['sim']['recordWeightStepSize']
     self.normalizeStepSize = dconf['sim']['normalizeStepSize']
-    self.normalizationMeans = None
+    self.normalizeByOutputBalancing = dconf['sim']['normalizeByOutputBalancing'] if 'normalizeByOutputBalancing' in dconf['sim'] else None
+    self.normInMeans = None
+    self.normOutMeans = None
     # time step per action (in ms)
     self.tstepPerAction = dconf['sim']['tstepPerAction']
 
@@ -380,37 +382,27 @@ class NeuroSim:
               conn['hObj'].weight[self.PlastWeightIndex])]
           sim.allSTDPWeights.append(weightItem)
 
-  def weightsMean(self, sim):
-    pop_sizes = {}
+  def weightsMean(self, sim, ctype):
+    # if ctype == 'in' compute the averages of incoming connections of a neuron
+    # if ctype == 'out' compute the averages of outgoing connections of a neuron
+    assert ctype in ['in', 'out']
+    weights_vec = {}
     for cell in sim.net.cells:
       for conn in cell.conns:
         if 'hSTDP' in conn:
-          pops = [pop for pop,dpop in sim.net.pops.items() if cell.gid in dpop.cellGids]
-          pop = pops[0]
-          if pop not in pop_sizes:
-            pop_sizes[pop] = []
-          weight = conn['hObj'].weight[self.PlastWeightIndex]
-          if weight > 0:
-            # once the weight reaches 0, we stop counting that weight towards the mean
-            # then it the mean of the _firing_ neurons will remain the same.
-            pop_sizes[pop].append(weight)
-    norm_means = dict([(pop, np.mean(weights)) for pop, weights in pop_sizes.items()])
-    print(norm_means)
-    return norm_means
-
+          gid = conn.preGid if ctype == 'out' else cell.gid
+          if gid not in weights_vec:
+            weights_vec[gid] = []
+          weights_vec[gid].append(conn['hObj'].weight[self.PlastWeightIndex])
+    return dict([(k, np.mean(v)) for k,v in weights_vec.items()])
 
   def normalizeWeights(self, sim):
-    pop_means = self.weightsMean(sim)
-    norm_means = self.normalizationMeans
+    curr_means = self.weightsMean(sim, ctype='in')
+    norm_means = self.normInMeans
     for cell in sim.net.cells:
       for conn in cell.conns:
         if 'hSTDP' in conn:
-          pops = [pop for pop,dpop in sim.net.pops.items() if cell.gid in dpop.cellGids]
-          pop = pops[0]
-          new_weight = conn['hObj'].weight[self.PlastWeightIndex] - pop_means[pop] + norm_means[pop]
-          if new_weight < 0:
-            new_weight = 0.0
-          conn['hObj'].weight[self.PlastWeightIndex] = new_weight
+          conn['hObj'].weight[self.PlastWeightIndex] *= norm_means[cell.gid] / curr_means[cell.gid]
 
 
   def getSpikesWithInterval(self, trange=None, neuronal_pop=None):
@@ -477,7 +469,7 @@ class NeuroSim:
   def getAllSTDPObjects(self, sim):
     # get all the STDP objects from the simulation's cells
     # dictionary of STDP objects keyed by type (all, for EMRIGHT, EMLEFT populations)
-    dSTDPmech = {'all': []}
+    dSTDPmech = {'all': [], 'cells': {}}
     for pop in self.dconf['pop_to_moves'].keys():
       dSTDPmech[pop] = []
 
@@ -488,6 +480,13 @@ class NeuroSim:
         STDPmech = conn.get('hSTDP')
         if STDPmech:
           dSTDPmech['all'].append(STDPmech)
+
+          # Set all STDP Mechs indexed by each presynaptic neuron
+          if conn.preGid not in dSTDPmech['cells']:
+            dSTDPmech['cells'][conn.preGid] = []
+          dSTDPmech['cells'][conn.preGid].append(STDPmech)
+
+          # Set all STDP Mechs indexed by each output population
           for pop in self.dconf['pop_to_moves'].keys():
             if cell.gid in sim.net.pops[pop].cellGids:
               dSTDPmech[pop].append(STDPmech)
@@ -565,6 +564,12 @@ class NeuroSim:
 
     t1 = datetime.now()
 
+    # Measure and cache normalized initial weights
+    if self.normalizeStepSize and not self.normInMeans:
+      self.normInMeans = self.weightsMean(sim, ctype='in')
+    if self.normalizeByOutputBalancing and not self.normOutMeans:
+      self.normOutMeans = self.weightsMean(sim, ctype='out')
+
     # for the first time interval use randomly selected actions
     if t < (self.tstepPerAction*dconf['actionsPerPlay']):
       actions = []
@@ -623,8 +628,16 @@ class NeuroSim:
       if dconf['verbose']:
         if sim.rank == 0:
           print('t={} Reward:{} Actions: {}'.format(round(t, 2), reward, actions))
-      for STDPmech in self.dSTDPmech['all']:
-        STDPmech.reward_punish(reward)
+      if self.normalizeByOutputBalancing:
+        curr_means = self.weightsMean(sim, ctype='out')
+        norm_means = self.normOutMeans
+        for cGid, STDPmechs in self.dSTDPmech['cells'].items():
+          cell_scale = norm_means[cGid] / curr_means[cGid]
+          for STDPmech in STDPmechs:
+            STDPmech.reward_punish(reward * cell_scale)
+      else:
+        for STDPmech in self.dSTDPmech['all']:
+          STDPmech.reward_punish(reward)
 
     t3 = datetime.now() - t3
     t4 = datetime.now()
@@ -654,9 +667,6 @@ class NeuroSim:
         print('Weights Recording Time:', t, 'NBsteps:', self.NBsteps,
               'recordWeightStepSize:', self.recordWeightStepSize)
       self.recordWeights(sim, t)
-    if self.normalizeStepSize and not self.normalizationMeans:
-      # first step count averages per population
-      self.normalizationMeans = self.weightsMean(sim)
     if self.normalizeStepSize and self.NBsteps % self.normalizeStepSize == 0:
       self.normalizeWeights(sim)
 

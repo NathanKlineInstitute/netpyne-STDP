@@ -93,15 +93,33 @@ def _get_pop_name(cellId, sorted_min_ids):
   # This is O(n), could be O(log(n)) with binary search
   return [pop for pop, minId in sorted_min_ids if cellId >= minId][0]
 
-def frequency(wdir, timestep=1000, outputfile=None):
+def frequency(wdir, timestep=1000, outputfile=None,
+    separate_movement=True, only_movement=False):
   if not outputfile:
-    outputfile = os.path.join(wdir, 'frequency.png')
+    outputfile = os.path.join(wdir, 'frequency{}.png'.format('_OUT' if only_movement else ''))
 
   sim_config = os.path.join(wdir, 'sim.pkl')
   with open(sim_config, 'rb') as f:
     sim = pkl.load(f)
 
+  dconf_path = os.path.join(wdir, 'backupcfg_sim.json')
+  with open(dconf_path, 'r') as f:
+    dconf = json.load(f)
+  pop_sizes = dconf['net']['allpops']
+
   sorted_min_ids = sorted(list(sim['simData']['dminID'].items()), key=lambda x:x[1], reverse=True)
+  if separate_movement:
+    for pop, moves in dconf['pop_to_moves'].items():
+      pop_size = pop_sizes[pop]
+      move_size = math.floor(pop_size / len(moves))
+      smin_dict = dict(sorted_min_ids)
+      pop_minId = smin_dict[pop]
+      del smin_dict[pop]
+      for midx, move in enumerate(moves):
+        semi_pop_name = '{}-{}'.format(pop, move)
+        smin_dict[semi_pop_name] = pop_minId + midx * move_size
+        pop_sizes[semi_pop_name] = move_size
+      sorted_min_ids = sorted(list(smin_dict.items()), key=lambda x:x[1], reverse=True)
   spkid = sim['simData']['spkid']
   spkt = sim['simData']['spkt']
 
@@ -116,11 +134,11 @@ def frequency(wdir, timestep=1000, outputfile=None):
       spike_aggs[pop][bucket] = 0
     spike_aggs[pop][bucket] += 1
 
-  pop_sizes = dict([(pop, sim['net']['params']['popParams'][pop]['numCells']) for pop in spike_aggs.keys()])
-
   plt.figure(figsize=(10, 10))
   legend = []
   for pop, pop_spikes in spike_aggs.items():
+    if only_movement and '-' not in pop:
+      continue
     spikes = sorted(list(pop_spikes.items()), key=lambda x:x[0])
     plt.plot(
       [x+1 for x,y in spikes],
