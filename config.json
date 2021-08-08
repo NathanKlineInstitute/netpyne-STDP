@@ -26,7 +26,7 @@
         "angv_bias": 0.2,
         "total_gain": 5.0,
         "max_reward": 2.0,
-        "posRewardBias": 2.0,
+        "posRewardBias": 2.85,
         "negRewardBias": 1.0
     },
     "verbose": 0,
@@ -36,7 +36,7 @@
         "ResumeSimFromFile": "results/20210714/synWeights_final.pkl"
     },
     "sim": {
-        "duration": 1000,
+        "duration": 7200,
         "dt": 0.6,
         "verbose": 0,
         "recordStep": 1.0,
@@ -51,7 +51,7 @@
         "saveCellConns": 1,
         "saveMotionFields": 0,
         "plotRaster": 1,
-        "targetedRL": 0,
+        "targetedRL": 3,
         "targetedRLOppFctr": 0.5,
         "targetedRLDscntFctr": 0.5,
         "tstepPerAction": 50,
