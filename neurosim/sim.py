@@ -469,9 +469,13 @@ class NeuroSim:
               isEM = True
               if type(pop_moves) == str:
                 pop_moves = [pop_moves]
-              for move in pop_moves: #Creates dSTDPMech['LEFT'] and dSTDPMech['RIGHT']
-                if cgids_map[cell.gid] == move: #If cell assigned to action == current move, add
+              if len(pop_moves) == 1: # one move for each pop
+                for move in pop_moves:
                   dSTDPmech[move].append(STDPmech)
+              elif len(pop_moves) >= 2: # many moves for one pop
+                for move in pop_moves: #Creates dSTDPMech['LEFT'] and dSTDPMech['RIGHT']
+                  if cgids_map[cell.gid] == move: #If cell assigned to action == current move, add
+                    dSTDPmech[move].append(STDPmech)
           if self.dconf['sim']['targetedRL']>=4:
             if not isEM: dSTDPmech['nonEM'].append(STDPmech)
     return dSTDPmech
