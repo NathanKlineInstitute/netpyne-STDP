@@ -11,9 +11,10 @@ def _modulate_linear(mod_steps, reward, min_steps=1):
   k_pos = len([st for st in mod_steps if st > EPS])
   k_neg = len([st for st in mod_steps if st < -EPS])
   if reward >= 0:
-    return reward * (M - k_pos) / M
+    new_reward = reward * (M - k_pos + 1) / (M+1)
   else:
-    return reward * (M - k_neg) / M
+    new_reward = reward * (M - k_neg + 1) / (M+1)
+  return new_reward
 
 class Critic:
 
