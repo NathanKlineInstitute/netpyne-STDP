@@ -1,4 +1,4 @@
-from neurosim.critic import Critic
+from neurosim.critic import calc_reward
 
 observations = []
 
