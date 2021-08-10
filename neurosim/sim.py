@@ -64,6 +64,8 @@ class NeuroSim:
     self.recordWeightStepSize = dconf['sim']['recordWeightStepSize']
     self.normalizeStepSize = dconf['sim']['normalizeStepSize']
     self.normalizeByOutputBalancing = dconf['sim']['normalizeByOutputBalancing'] if 'normalizeByOutputBalancing' in dconf['sim'] else None
+    self.normalizeOutBalMinMax = dconf['sim']['normalizeOutBalMinMax'] if 'normalizeOutBalMinMax' in dconf['sim'] else None
+    self.normalizeVerbose = dconf['sim']['normalizeVerbose'] if 'normalizeVerbose' in dconf['sim'] else None
     self.normInMeans = None
     self.normOutMeans = None
     # time step per action (in ms)
@@ -396,13 +398,21 @@ class NeuroSim:
           weights_vec[gid].append(conn['hObj'].weight[self.PlastWeightIndex])
     return dict([(k, np.mean(v)) for k,v in weights_vec.items()])
 
-  def normalizeWeights(self, sim):
+  def normalizeInWeights(self, sim):
     curr_means = self.weightsMean(sim, ctype='in')
     norm_means = self.normInMeans
+    cell_scales = {}
     for cell in sim.net.cells:
+      cell_scale = None
       for conn in cell.conns:
         if 'hSTDP' in conn:
-          conn['hObj'].weight[self.PlastWeightIndex] *= norm_means[cell.gid] / curr_means[cell.gid]
+          cell_scale = norm_means[cell.gid] / curr_means[cell.gid]
+          conn['hObj'].weight[self.PlastWeightIndex] *= cell_scale
+      if cell_scale:
+        cell_scales[cell.gid] = cell_scale
+    if self.normalizeVerbose:
+      llscales = sorted(list(cell_scales.items()), key=lambda x:x[1])
+      print('Inminmax scales:', llscales[0], llscales[-1])
 
 
   def getSpikesWithInterval(self, trange=None, neuronal_pop=None):
@@ -469,7 +479,7 @@ class NeuroSim:
   def getAllSTDPObjects(self, sim):
     # get all the STDP objects from the simulation's cells
     # dictionary of STDP objects keyed by type (all, for EMRIGHT, EMLEFT populations)
-    dSTDPmech = {'all': [], 'cells': {}}
+    dSTDPmech = {'all': [], 'outConns': {}}
     for pop in self.dconf['pop_to_moves'].keys():
       dSTDPmech[pop] = []
 
@@ -481,10 +491,10 @@ class NeuroSim:
         if STDPmech:
           dSTDPmech['all'].append(STDPmech)
 
-          # Set all STDP Mechs indexed by each presynaptic neuron
-          if conn.preGid not in dSTDPmech['cells']:
-            dSTDPmech['cells'][conn.preGid] = []
-          dSTDPmech['cells'][conn.preGid].append(STDPmech)
+          # Set all STDP Mechs Output connections indexed by each presynaptic neuron
+          if conn.preGid not in dSTDPmech['outConns']:
+            dSTDPmech['outConns'][conn.preGid] = []
+          dSTDPmech['outConns'][conn.preGid].append(STDPmech)
 
           # Set all STDP Mechs indexed by each output population
           for pop in self.dconf['pop_to_moves'].keys():
@@ -629,12 +639,27 @@ class NeuroSim:
         if sim.rank == 0:
           print('t={} Reward:{} Actions: {}'.format(round(t, 2), reward, actions))
       if self.normalizeByOutputBalancing:
+        # Scale the reward/punishment given to a cell based on its output power:
+        # If a neuron already increased all its output weights: 
+        #     don't reward that neuron's connections as much, but
+        #     punish severely
+        # If a neuron has all its output weights decreased:
+        #     rewards are having a stronger effect
+        #     punishments barely change the weights
+        # Effects are limited by a min and a max
         curr_means = self.weightsMean(sim, ctype='out')
         norm_means = self.normOutMeans
-        for cGid, STDPmechs in self.dSTDPmech['cells'].items():
+        cell_scales = {}
+        for cGid, STDPmechs in self.dSTDPmech['outConns'].items():
           cell_scale = norm_means[cGid] / curr_means[cGid]
+          if reward > 0: cell_scale = 1.0 / cell_scale
+          cell_scale = max(self.normalizeOutBalMinMax[0], min(cell_scale, self.normalizeOutBalMinMax[1]))
+          cell_scales[cGid] = cell_scale
           for STDPmech in STDPmechs:
             STDPmech.reward_punish(reward * cell_scale)
+        if self.normalizeVerbose:
+          llscales = sorted(list(cell_scales.items()), key=lambda x:x[1])
+          print('Outminmax scales:', llscales[0], llscales[-1])
       else:
         for STDPmech in self.dSTDPmech['all']:
           STDPmech.reward_punish(reward)
@@ -668,7 +693,7 @@ class NeuroSim:
               'recordWeightStepSize:', self.recordWeightStepSize)
       self.recordWeights(sim, t)
     if self.normalizeStepSize and self.NBsteps % self.normalizeStepSize == 0:
-      self.normalizeWeights(sim)
+      self.normalizeInWeights(sim)
 
     t5 = datetime.now() - t5
     if random.random() < 0.001:

@@ -11,9 +11,9 @@ def _modulate_linear(mod_steps, reward, min_steps=1):
   k_pos = len([st for st in mod_steps if st > EPS])
   k_neg = len([st for st in mod_steps if st < -EPS])
   if reward >= 0:
-    return reward * (M - k_pos) / M
+    return reward * (M - k_pos + 1) / (M+1)
   else:
-    return reward * (M - k_neg) / M
+    return reward * (M - k_neg + 1) / (M+1)
 
 class Critic:
 
@@ -54,7 +54,9 @@ class Critic:
 
   def calc_reward(self, obs1, obs2=None, is_unk_move=False):
     _, _, ang1, angv1 = obs1
-    if type(obs2) != np.ndarray or is_unk_move:
+    if is_unk_move:
+      reward = self.bad() / 2
+    elif type(obs2) != np.ndarray:
       reward = self.bad()
     elif np.abs(ang1) < 0.01 and np.abs(angv1) < 0.01:
         reward = self.max_reward

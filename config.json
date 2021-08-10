@@ -26,11 +26,7 @@
         "angv_bias": 2.0,
         "total_gain": 5.0,
         "max_reward": 2.0,
-        "posRewardBias": 2.0,
-        "modulation": {
-            "type": "linear",
-            "steps": 25
-        }
+        "posRewardBias": 2.0
     },
     "verbose": 0,
     "stayStepLim": 0,
@@ -39,14 +35,16 @@
         "ResumeSimFromFile": "...pkl"
     },
     "sim": {
-        "duration": 200,
+        "duration": 2000,
         "dt": 0.6,
         "verbose": 0,
         "recordStep": 1.0,
         "recordStim": 0,
-        "recordWeightStepSize": 100,
+        "recordWeightStepSize": 1000,
         "normalizeStepSize": 10,
         "normalizeByOutputBalancing": 1,
+        "normalizeOutBalMinMax": [0.1, 2],
+        "normalizeVerbose": 0,
         "RLFakeUpRule": 0,
         "RLFakeDownRule": 0,
         "RLFakeStayRule": 0,
@@ -152,7 +150,7 @@
         },
         "cmat": {
             "ES":{
-                "EA":{"AM2": 12.5, "NM2": 1, "conv": 8}},
+                "EA":{"AM2": 6.0, "NM2": 0.098, "conv": 16}},
             "EA":{
                 "EA":{"AM2": 0.05,"NM2": 0.005, "conv": 4},
                 "IA":{"AM2": 1.95,"NM2":0.0195, "conv": 8},
@@ -210,7 +208,7 @@
             "maxreward": 0.0
         },
         "AMPA": {
-            "wmax": 15,
+            "wmax": 20,
             "RLon": 1,
             "STDPon": 0,
             "RLlenhebb": 51,

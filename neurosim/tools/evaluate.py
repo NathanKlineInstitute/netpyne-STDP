@@ -179,7 +179,7 @@ def actions_medians(wdir, steps=[21,51,101], outputfile=None):
 
   plt.savefig(outputfile)
 
-def rewards_steps(wdir, steps=[21, 51,101], outputfile=None):
+def rewards_steps(wdir, steps=[25, 50], outputfile=None):
   if not outputfile:
     outputfile = os.path.join(wdir, 'eval_rewards.png')
 
@@ -194,7 +194,7 @@ def rewards_steps(wdir, steps=[21, 51,101], outputfile=None):
         pos_rews = [r for r in rews if r > 0]
         training_medians[STEP].append(len(pos_rews) / len(rews))
 
-  plt.figure(figsize=(15,10))
+  plt.figure(figsize=(10,10))
 
   for STEP, medians in training_medians.items():
       plt.plot([t + STEP for t in range(len(medians))], medians)
