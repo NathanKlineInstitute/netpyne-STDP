@@ -93,6 +93,40 @@ def _get_pop_name(cellId, sorted_min_ids):
   # This is O(n), could be O(log(n)) with binary search
   return [pop for pop, minId in sorted_min_ids if cellId >= minId][0]
 
+
+def _extract_sorted_min_ids(sim, dconf, separate_movement):
+  pop_sizes = dconf['net']['allpops']
+  sorted_min_ids = sorted(list(sim['simData']['dminID'].items()), key=lambda x:x[1], reverse=True)
+  if separate_movement:
+    for pop, moves in dconf['pop_to_moves'].items():
+      pop_size = pop_sizes[pop]
+      move_size = math.floor(pop_size / len(moves))
+      smin_dict = dict(sorted_min_ids)
+      pop_minId = smin_dict[pop]
+      del smin_dict[pop]
+      for midx, move in enumerate(moves):
+        semi_pop_name = '{}-{}'.format(pop, move)
+        smin_dict[semi_pop_name] = pop_minId + midx * move_size
+        pop_sizes[semi_pop_name] = move_size
+      sorted_min_ids = sorted(list(smin_dict.items()), key=lambda x:x[1], reverse=True)
+  return sorted_min_ids
+
+def _get_spike_aggs(sim, sorted_min_ids, timestep):
+  spkid = sim['simData']['spkid']
+  spkt = sim['simData']['spkt']
+
+  spike_aggs = {}
+
+  for cid, ct in zip(spkid, spkt):
+    pop = _get_pop_name(cid, sorted_min_ids)
+    bucket = math.floor(ct / timestep)
+    if pop not in spike_aggs:
+      spike_aggs[pop] = {}
+    if bucket not in spike_aggs[pop]:
+      spike_aggs[pop][bucket] = 0
+    spike_aggs[pop][bucket] += 1
+  return spike_aggs
+
 def frequency(wdir, timestep=1000, outputfile=None,
     separate_movement=True, only_movement=False):
   if not outputfile:
@@ -107,32 +141,8 @@ def frequency(wdir, timestep=1000, outputfile=None,
     dconf = json.load(f)
   pop_sizes = dconf['net']['allpops']
 
-  sorted_min_ids = sorted(list(sim['simData']['dminID'].items()), key=lambda x:x[1], reverse=True)
-  if separate_movement:
-    for pop, moves in dconf['pop_to_moves'].items():
-      pop_size = pop_sizes[pop]
-      move_size = math.floor(pop_size / len(moves))
-      smin_dict = dict(sorted_min_ids)
-      pop_minId = smin_dict[pop]
-      del smin_dict[pop]
-      for midx, move in enumerate(moves):
-        semi_pop_name = '{}-{}'.format(pop, move)
-        smin_dict[semi_pop_name] = pop_minId + midx * move_size
-        pop_sizes[semi_pop_name] = move_size
-      sorted_min_ids = sorted(list(smin_dict.items()), key=lambda x:x[1], reverse=True)
-  spkid = sim['simData']['spkid']
-  spkt = sim['simData']['spkt']
-
-  spike_aggs = {}
-
-  for cid, ct in zip(spkid, spkt):
-    pop = _get_pop_name(cid, sorted_min_ids)
-    bucket = math.floor(ct / timestep)
-    if pop not in spike_aggs:
-      spike_aggs[pop] = {}
-    if bucket not in spike_aggs[pop]:
-      spike_aggs[pop][bucket] = 0
-    spike_aggs[pop][bucket] += 1
+  sorted_min_ids = _extract_sorted_min_ids(sim, dconf, separate_movement)
+  spike_aggs = _get_spike_aggs(sim, sorted_min_ids, timestep)
 
   plt.figure(figsize=(10, 10))
   legend = []
@@ -151,6 +161,56 @@ def frequency(wdir, timestep=1000, outputfile=None,
   plt.title('Frequency of populations over time')
   plt.xlabel('t * {}'.format(timestep))
   plt.ylabel('Hz')
+  plt.legend(legend)
+  plt.savefig(outputfile)
+
+def variance(wdir, timestep=100, outputfile=None, var_of=100,
+    separate_movement=True, only_movement=False):
+  if not outputfile:
+    outputfile = os.path.join(wdir, 'freq_variance{}.png'.format('_OUT' if only_movement else ''))
+
+  sim_config = os.path.join(wdir, 'sim.pkl')
+  with open(sim_config, 'rb') as f:
+    sim = pkl.load(f)
+
+  dconf_path = os.path.join(wdir, 'backupcfg_sim.json')
+  with open(dconf_path, 'r') as f:
+    dconf = json.load(f)
+  pop_sizes = dconf['net']['allpops']
+
+  sorted_min_ids = _extract_sorted_min_ids(sim, dconf, separate_movement)
+  spike_aggs = _get_spike_aggs(sim, sorted_min_ids, timestep)
+
+  # Compute the variances
+  variances = {}
+  for pop, pop_spikes in spike_aggs.items():
+    spikes = sorted(list(pop_spikes.items()), key=lambda x:x[0])
+    variances[pop] = []
+    curr_idx = 0
+    for varidx in range(int(max([x for x,y in spikes]) / var_of)):
+      y = []
+      for idx in range(varidx*var_of, (varidx+1)*var_of):
+        if curr_idx < len(spikes) and idx == spikes[curr_idx][0]:
+          y.append(spikes[curr_idx][1])
+          curr_idx += 1
+        else:
+          y.append(0)
+      variances[pop].append((varidx, np.var(y)))
+
+
+  plt.figure(figsize=(10, 10))
+  legend = []
+  for pop, pop_vars in variances.items():
+    if only_movement and '-' not in pop:
+      continue
+    plt.plot([x+1 for x,y in pop_vars], [y for x,y in pop_vars])
+    # pop_avg_vars = np.mean([y for x,y in pop_vars])
+    # legend.append('{}'.format(pop))
+    legend.append(pop)
+
+  plt.title('Variance of spikes over populations')
+  plt.xlabel('t * {}'.format(timestep * var_of))
+  plt.ylabel('Variance of ({}) spikes counted in {}ms'.format(var_of, timestep))
   plt.legend(legend)
   plt.savefig(outputfile)
 
@@ -268,6 +328,7 @@ def stdp_weights_diffs(wdir, index1=0, index2=-1, relative=False, outputfile=Non
 if __name__ == '__main__':
   fire.Fire({
     'frequency': frequency,
+    'variance': variance,
     'boxplot': boxplot,
     'perf': performance,
     'medians': actions_medians,

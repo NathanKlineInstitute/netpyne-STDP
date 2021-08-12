@@ -64,6 +64,7 @@ Run all evaluation:
 
     WDIR=results/20210809
     py neurosim/tools/evaluate.py frequency $WDIR --timestep 10000
+    py neurosim/tools/evaluate.py variance $WDIR
     py neurosim/tools/evaluate.py medians $WDIR
     py neurosim/tools/evaluate.py rewards $WDIR
 
