@@ -54,9 +54,7 @@ class Critic:
 
   def calc_reward(self, obs1, obs2=None, is_unk_move=False):
     _, _, ang1, angv1 = obs1
-    if is_unk_move:
-      reward = self.bad() / 2
-    elif type(obs2) != np.ndarray:
+    if type(obs2) != np.ndarray or is_unk_move:
       reward = self.bad()
     elif np.abs(ang1) < 0.01 and np.abs(angv1) < 0.01:
         reward = self.max_reward

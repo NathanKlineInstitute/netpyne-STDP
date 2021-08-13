@@ -23,7 +23,7 @@
     "observationsToKeep": 100,
     "rewardsToKeep": 100,
     "critic": {
-        "angv_bias": 2.0,
+        "angv_bias": 0.5,
         "total_gain": 5.0,
         "max_reward": 2.0,
         "posRewardBias": 2.0
@@ -35,7 +35,7 @@
         "ResumeSimFromFile": "...pkl"
     },
     "sim": {
-        "duration": 2000,
+        "duration": 5000,
         "dt": 0.6,
         "verbose": 0,
         "recordStep": 1.0,
@@ -107,7 +107,7 @@
         "Gain": {
             "EE": 2.0,
             "EI": 3.0,
-            "IE": 1.0,
+            "IE": 2.0,
             "II": 1.0
         },
         "ECellModel": "INTF7",
