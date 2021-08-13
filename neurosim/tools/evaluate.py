@@ -324,6 +324,76 @@ def stdp_weights_diffs(wdir, index1=0, index2=-1, relative=False, outputfile=Non
   _displayAdj(matrix)
   plt.savefig(outputfile)
 
+def _group_by_pop(synWeights, sorted_min_ids):
+  new_map = {}
+  for n1, n1conns in synWeights.items():
+      n1pop = _get_pop_name(n1, sorted_min_ids)
+      for n2, wl in n1conns.items():
+          n2pop = _get_pop_name(n2, sorted_min_ids)
+          conn_name = '{}->{}'.format(n1pop, n2pop)
+          for idx,(t,w) in enumerate(wl):
+              if conn_name not in new_map:
+                  new_map[conn_name] = []
+              if idx == len(new_map[conn_name]):
+                  new_map[conn_name].append([])
+              new_map[conn_name][idx].append(w)
+  return new_map
+
+def stdp_weights_changes(wdir, separate_movement=False, outputfile=None, display=False):
+  with open(os.path.join(wdir, 'synWeights.pkl'), 'rb') as f:
+    synWeights = pkl.load(f)
+
+  sim_config = os.path.join(wdir, 'sim.pkl')
+  with open(sim_config, 'rb') as f:
+    sim = pkl.load(f)
+
+  dconf_path = os.path.join(wdir, 'backupcfg_sim.json')
+  with open(dconf_path, 'r') as f:
+    dconf = json.load(f)
+  pop_sizes = dconf['net']['allpops']
+
+  sorted_min_ids = _extract_sorted_min_ids(sim, dconf, separate_movement)
+  popWeights = _group_by_pop(synWeights, sorted_min_ids)
+
+  ncols = 3
+  nbins = 30
+  conns = sorted(list(popWeights.keys()))
+
+  figsize = 20 if separate_movement else 15
+  _, axs = plt.subplots(
+    ncols=ncols, nrows=math.ceil(len(conns) / ncols),
+    subplot_kw=dict(projection="3d"),
+    figsize=(figsize, figsize))
+
+  conn_idx = 0
+  for axi in axs:
+    for ax in axi:
+      if conn_idx == len(conns):
+        continue
+      conn = conns[conn_idx]
+      all_weights = [w for ws in popWeights[conn] for w in ws]
+      wmin = np.min(all_weights)
+      wmax = np.max(all_weights)
+
+      for z, weights in enumerate(popWeights[conn]):
+          hist, bins = np.histogram(weights, bins=nbins, range=(wmin, wmax))
+          xs = (bins[:-1] + bins[1:])/2
+          ax.plot(xs, hist, zs=z, zdir='y', alpha=0.8)
+
+      ax.set_title('{} weight changes over time'.format(conn))
+      ax.set_xlabel('Weights')
+      ax.set_ylabel('Epoch ({}ms)'.format(dconf['sim']['recordWeightStepSize']))
+      ax.set_zlabel('Count of neurons')
+      conn_idx += 1
+
+  if display:
+    plt.show()
+  else:
+    if not outputfile:
+      outputfile = os.path.join(wdir, 'stdp_weight_changes{}.png'.format(
+        '_sep_mov' if separate_movement else ''))
+    plt.savefig(outputfile)
+
 
 if __name__ == '__main__':
   fire.Fire({
@@ -334,5 +404,6 @@ if __name__ == '__main__':
     'medians': actions_medians,
     'rewards': rewards_steps,
     'weights-adj': stdp_weights_adj,
-    'weights-diffs': stdp_weights_diffs
+    'weights-diffs': stdp_weights_diffs,
+    'weights-ch': stdp_weights_changes
   })

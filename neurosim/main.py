@@ -26,13 +26,22 @@ def main(dconf=None):
   runner = NeuroSim(dconf)
   runner.run()
 
-def continue_main(wdir, duration=None, idx=None):
+def continue_main(wdir, duration=None, idx=None,
+    copy_from_config=None, copy_fields=None):
   dconf_path = os.path.join(wdir, 'backupcfg_sim.json')
 
   synWeights_file = os.path.join(wdir, 'synWeights.pkl')
   timesteps = _saved_timesteps(synWeights_file)
   outdir = os.path.join(wdir, 'continue_{}'.format(1 if idx == None else idx))
   dconf = read_conf(dconf_path, outdir=outdir)
+
+  if copy_from_config and copy_fields:
+    dconf_sep = read_conf(copy_from_config, outdir=outdir)
+    if type(copy_fields) == str:
+      copy_fields = copy_fields.split(',')
+    for field in copy_fields:
+      dconf[field] = dconf_sep[field]
+
   init_wdir(dconf)
 
   dconf['simtype']['ResumeSim'] = 1

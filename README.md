@@ -63,6 +63,7 @@ Optional: Maybe evaluate in depth
 Run all evaluation:
 
     WDIR=results/20210809
+    WDIR=results/20210801-1000it-1eps/continue_1
     py neurosim/tools/evaluate.py frequency $WDIR --timestep 10000
     py neurosim/tools/evaluate.py variance $WDIR
     py neurosim/tools/evaluate.py medians $WDIR
@@ -72,6 +73,9 @@ Run all evaluation:
     py neurosim/tools/evaluate.py weights-adj $WDIR --index 0
     py neurosim/tools/evaluate.py weights-diffs $WDIR
     py neurosim/tools/evaluate.py weights-diffs $WDIR --relative
+
+    py neurosim/tools/evaluate.py weights-ch $WDIR
+    py neurosim/tools/evaluate.py weights-ch $WDIR --separate_movement True
 
     py neurosim/tools/evaluate.py boxplot $WDIR
     py neurosim/tools/evaluate.py perf $WDIR
