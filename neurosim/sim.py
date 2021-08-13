@@ -62,7 +62,7 @@ class NeuroSim:
     sim.saveMotionFields = dconf['sim']['saveMotionFields']
     sim.saveObjPos = 1  # save ball and paddle position to file
     self.recordWeightStepSize = dconf['sim']['recordWeightStepSize']
-    self.normalizeStepSize = dconf['sim']['normalizeStepSize']
+    self.normalizeStepSize = dconf['sim']['normalizeStepSize'] if 'normalizeStepSize' in dconf['sim'] else None
     self.normalizeByOutputBalancing = dconf['sim']['normalizeByOutputBalancing'] if 'normalizeByOutputBalancing' in dconf['sim'] else None
     self.normalizeOutBalMinMax = dconf['sim']['normalizeOutBalMinMax'] if 'normalizeOutBalMinMax' in dconf['sim'] else None
     self.normalizeVerbose = dconf['sim']['normalizeVerbose'] if 'normalizeVerbose' in dconf['sim'] else None
