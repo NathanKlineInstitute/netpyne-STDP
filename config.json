@@ -4,9 +4,9 @@
         "savemp4": 0,
         "render": 0,
         "observation_map": [
-            {"type": "rf_normal", "bins": 5, "mean": -0.00645789, "std": 0.06894682},
-            {"type": "rf_normal", "bins": 5, "mean": -0.03634136, "std": 0.53989509},
-            {"type": "rf_normal", "bins": 10, "mean": 0.00529333, "std": 0.09129902},
+            {"type": "rf_normal", "bins": 20, "mean": -0.00645789, "std": 1.0},
+            {"type": "rf_normal", "bins": 20, "mean": -0.03634136, "std": 0.53989509},
+            {"type": "rf_normal", "bins": 20, "mean": 0.00529333, "std": 0.09129902},
             {"type": "rf_normal", "bins": 20, "mean": 0.04752025, "std": 0.82070579}
         ],
         "episodes": 21,
@@ -23,10 +23,10 @@
     "observationsToKeep": 100,
     "rewardsToKeep": 100,
     "critic": {
-        "angv_bias": 0.5,
-        "total_gain": 5.0,
-        "max_reward": 2.0,
-        "posRewardBias": 2.0
+        "angv_bias": 0.25,
+        "total_gain": 3.0,
+        "max_reward": 1.2,
+        "posRewardBias": 3.0
     },
     "verbose": 0,
     "stayStepLim": 0,
@@ -118,7 +118,7 @@
             "I": 0.0
         },
         "allpops": {
-            "ES": 40,
+            "ES": 80,
 
             "EA": 40,
             "IA": 10,
@@ -150,12 +150,12 @@
         },
         "cmat": {
             "ES":{
-                "EA":{"AM2": 6.0, "NM2": 0.098, "conv": 16}},
+                "EA":{"AM2": 5.0, "NM2": 0.098, "conv": 25}},
             "EA":{
-                "EA":{"AM2": 0.05,"NM2": 0.005, "conv": 4},
-                "IA":{"AM2": 1.95,"NM2":0.0195, "conv": 8},
-                "IAL":{"AM2": 0.98,"NM2":0.098, "conv": 10},
-                "EM":{"AM2": 1.45,"NM2": 0.01,"conv": 25}},
+                "EA":{"AM2": 0.05,"NM2": 0.005, "conv": 1},
+                "IA":{"AM2": 1.95,"NM2":0.0195, "conv": 15},
+                "IAL":{"AM2": 1.98,"NM2":0.098, "conv": 15},
+                "EM":{"AM2": 2.45,"NM2": 0.05,"conv": 25}},
             "IA":{
                 "EA":{"GA": 9.0,"p": 0.4},
                 "IA":{"GA": 4.5,"p": 0.1},
@@ -166,8 +166,8 @@
                 "IAL":{"GA2": 5.5,"p": 0.1}},
             "EM":{
                 "EM":{"AM2": 0.01,"NM2": 0.001, "conv": 1},
-                "IM":{"AM2": 1.95,"NM2":0.0195, "conv": 8},
-                "IML":{"AM2": 0.98,"NM2":0.098, "conv": 8},
+                "IM":{"AM2": 1.95,"NM2":0.0195, "conv": 16},
+                "IML":{"AM2": 0.98,"NM2":0.098, "conv": 16},
                 "EA":{"AM2": 0.5,"NM2": 0.01,"conv": 6}},
             "IM":{
                 "EM":{"GA": 9.0,"p": 0.4},
@@ -208,7 +208,7 @@
             "maxreward": 0.0
         },
         "AMPA": {
-            "wmax": 20,
+            "wmax": 200,
             "RLon": 1,
             "STDPon": 0,
             "RLlenhebb": 51,

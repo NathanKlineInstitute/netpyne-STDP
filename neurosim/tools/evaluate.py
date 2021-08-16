@@ -265,6 +265,21 @@ def rewards_steps(wdir, steps=[25, 50], outputfile=None):
 
   plt.savefig(outputfile)
 
+def rewards_val_steps(wdir, outputfile=None):
+  if not outputfile:
+    outputfile = os.path.join(wdir, 'eval_rewards_val.png')
+
+  with open(os.path.join(wdir, 'ActionsRewards.txt')) as f:
+      training_rewards = [float(r) for _,_,r in csv.reader(f, delimiter='\t')]
+
+  plt.figure(figsize=(10,10))
+  plt.plot(list(range(len(training_rewards))), training_rewards, '+')
+  plt.title('Reward values')
+  plt.xlabel('time steps')
+  plt.ylabel('reward value')
+
+  plt.savefig(outputfile)
+
 def _displayAdj(A):
     A[A == 0] = np.NaN
     vmin = np.amin(A[A > 0])
@@ -403,6 +418,7 @@ if __name__ == '__main__':
     'perf': performance,
     'medians': actions_medians,
     'rewards': rewards_steps,
+    'rewards-vals': rewards_val_steps,
     'weights-adj': stdp_weights_adj,
     'weights-diffs': stdp_weights_diffs,
     'weights-ch': stdp_weights_changes

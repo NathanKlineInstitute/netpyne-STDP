@@ -36,7 +36,9 @@ class Critic:
     self.stds = np.array([k['std'] if 'std' in k else 1.0 for k in dconf['env']['observation_map']])
 
   def bad(self):
-    return - self.max_reward
+    if self.posRewardBias:
+      return -self.max_reward / self.posRewardBias
+    return -self.max_reward
 
   # def _normalize(self, obs):
   #   return (obs - self.means) / self.stds

@@ -62,12 +62,12 @@ Optional: Maybe evaluate in depth
 
 Run all evaluation:
 
-    WDIR=results/20210809
-    WDIR=results/20210801-1000it-1eps/continue_1
+    WDIR=results/20210816
     py neurosim/tools/evaluate.py frequency $WDIR --timestep 10000
     py neurosim/tools/evaluate.py variance $WDIR
     py neurosim/tools/evaluate.py medians $WDIR
     py neurosim/tools/evaluate.py rewards $WDIR
+    py neurosim/tools/evaluate.py rewards-vals $WDIR
 
     py neurosim/tools/evaluate.py weights-adj $WDIR
     py neurosim/tools/evaluate.py weights-adj $WDIR --index 0
