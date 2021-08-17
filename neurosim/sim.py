@@ -479,28 +479,110 @@ class NeuroSim:
   def getAllSTDPObjects(self, sim):
     # get all the STDP objects from the simulation's cells
     # dictionary of STDP objects keyed by type (all, for EMRIGHT, EMLEFT populations)
-    dSTDPmech = {'all': [], 'outConns': {}}
-    for pop in self.dconf['pop_to_moves'].keys():
-      dSTDPmech[pop] = []
+    dSTDPmech = {'all': []}
+    cgids_map = {}      
+    for pop, pop_moves in self.dconf['pop_to_moves'].items(): #create dict for all motor pops
+      dSTDPmech[pop] = [] #Add EM to dict
+      if type(pop_moves) == str:
+        pop_moves = [pop_moves]
+      for move in pop_moves:
+        dSTDPmech[move] = [] #Add LEFT, RIGHT to dict
+      cells_per_move = math.floor(len(sim.net.pops[pop].cellGids) / len(pop_moves)) #how many cells assigned to move subsets
+      for idx, cgid in enumerate(sim.net.pops[pop].cellGids):
+        cgids_map[cgid] = pop_moves[math.floor(idx / cells_per_move)] #maps cell gid to assigned action 
+    if self.dconf['sim']['targetedNonEM']>=1:
+      dSTDPmech['nonEM'] = []
 
     for cell in sim.net.cells:
-      #if cell.gid in sim.net.pops['EMLEFT'].cellGids and cell.gid==sim.simData['dminID']['EMLEFT']: print(cell.conns)
       for conn in cell.conns:
         # check if the connection has a NEURON STDP mechanism object
         STDPmech = conn.get('hSTDP')
         if STDPmech:
-          dSTDPmech['all'].append(STDPmech)
+          dSTDPmech['all'].append((conn.preGid, STDPmech))
 
-          # Set all STDP Mechs Output connections indexed by each presynaptic neuron
-          if conn.preGid not in dSTDPmech['outConns']:
-            dSTDPmech['outConns'][conn.preGid] = []
-          dSTDPmech['outConns'][conn.preGid].append(STDPmech)
+          # TODO: Remove
+          # # Set all STDP Mechs Output connections indexed by each presynaptic neuron
+          # if conn.preGid not in dSTDPmech['outConns']:
+          #   dSTDPmech['outConns'][conn.preGid] = []
+          # dSTDPmech['outConns'][conn.preGid].append(STDPmech)
 
           # Set all STDP Mechs indexed by each output population
-          for pop in self.dconf['pop_to_moves'].keys():
-            if cell.gid in sim.net.pops[pop].cellGids:
-              dSTDPmech[pop].append(STDPmech)
+          isEM = False
+          for pop, pop_moves in self.dconf['pop_to_moves'].items(): 
+            if cell.gid in sim.net.pops[pop].cellGids: #Creates dSTDPMech['EM']
+              dSTDPmech[pop].append((conn.preGid, STDPmech))
+              isEM = True
+              if type(pop_moves) == str:
+                pop_moves = [pop_moves]
+              if len(pop_moves) == 1: # one move for each pop
+                for move in pop_moves:
+                  dSTDPmech[move].append((conn.preGid, STDPmech))
+              elif len(pop_moves) >= 2: # many moves for one pop
+                for move in pop_moves: #Creates dSTDPMech['LEFT'] and dSTDPMech['RIGHT']
+                  if cgids_map[cell.gid] == move: #If cell assigned to action == current move, add
+                    dSTDPmech[move].append((conn.preGid, STDPmech))
+          if self.dconf['sim']['targetedNonEM']>=1:
+            if not isEM: dSTDPmech['nonEM'].append((conn.preGid, STDPmech))
     return dSTDPmech
+
+  def applySTDP(self, sim, reward):
+    outNormScale = lambda cellGid: 1.0
+    if self.normalizeByOutputBalancing:
+      # Scale the reward/punishment given to a cell based on its output power:
+      # If a neuron already increased all its output weights: 
+      #     don't reward that neuron's connections as much, but
+      #     punish severely
+      # If a neuron has all its output weights decreased:
+      #     rewards are having a stronger effect
+      #     punishments barely change the weights
+      # Effects are limited by a min and a max
+      curr_means = self.weightsMean(sim, ctype='out')
+      norm_means = self.normOutMeans
+      minMax = self.normalizeOutBalMinMax
+      def normalizeOutF(cGid):
+        cell_scale = norm_means[cGid] / curr_means[cGid]
+        if reward > 0: cell_scale = 1.0 / cell_scale
+        cell_scale = max(minMax[0], min(cell_scale, minMax[1]))
+        return cell_scale
+      outNormScale = normalizeOutF
+
+    #Implement targetedRL
+    # if reward signal indicates punishment (-1) or reward (+1)
+    if dconf['sim']['targetedRL']>=1:
+      if dconf['sim']['targetedNonEM']>=1:
+        if dconf['verbose']: print('Apply RL to nonEM')
+        for cGid, STDPmech in self.dSTDPmech['nonEM']:
+          STDPmech.reward_punish(
+            float(reward*dconf['sim']['targetedRLDscntFctr']) * outNormScale(cGid))
+      if dconf['sim']['targetedRL']==1: #RL=1: Apply to all of EM
+        for pop, pop_moves in self.dconf['pop_to_moves'].items():
+          if dconf['verbose']: print('Apply RL to ', pop)
+          for cGid, STDPmech in self.dSTDPmech[pop]:
+            STDPmech.reward_punish(reward * outNormScale(cGid))
+      elif dconf['sim']['targetedRL']>=2:
+        for moveName, moveID in dconf['moves'].items():
+          if actions[-1] == moveID:
+            if dconf['verbose']: print('Apply RL to EM', moveName)
+            for cGid, STDPmech in self.dSTDPmech[moveName]:
+              STDPmech.reward_punish(reward * outNormScale(cGid))
+            if dconf['sim']['targetedRL']>=3: 
+              for oppMoveName in dconf['moves'].keys():
+                if oppMoveName != moveName: #ADD: and oppMoveName fires
+                  if dconf['verbose']: print('Apply -RL to EM', oppMoveName)
+                  for cGid, STDPmech in self.dSTDPmech[oppMoveName]:
+                    STDPmech.reward_punish(
+                      float(reward*-dconf['sim']['targetedRLOppFctr']) * outNormScale(cGid))
+    else:
+      cell_scales = {}
+      for cGid, STDPmech in self.dSTDPmech['all']:
+        cell_scale = outNormScale(cGid) # scale for normalization (if active)
+        STDPmech.reward_punish(reward * cell_scale)
+        if self.normalizeVerbose:
+          cell_scales[cGid] = cell_scale
+
+      if self.normalizeVerbose:
+        llscales = sorted(list(cell_scales.items()), key=lambda x:x[1])
+        print('Outminmax scales:', llscales[0], llscales[-1])
 
   def getActions(self, sim, t, moves, pop_to_moves):
     # Get move frequencies
@@ -633,36 +715,11 @@ class NeuroSim:
     t2 = datetime.now() - t2
     t3 = datetime.now()
 
-    # if reward signal indicates punishment (-1) or reward (+1)
     if reward != 0:
       if dconf['verbose']:
         if sim.rank == 0:
           print('t={} Reward:{} Actions: {}'.format(round(t, 2), reward, actions))
-      if self.normalizeByOutputBalancing:
-        # Scale the reward/punishment given to a cell based on its output power:
-        # If a neuron already increased all its output weights: 
-        #     don't reward that neuron's connections as much, but
-        #     punish severely
-        # If a neuron has all its output weights decreased:
-        #     rewards are having a stronger effect
-        #     punishments barely change the weights
-        # Effects are limited by a min and a max
-        curr_means = self.weightsMean(sim, ctype='out')
-        norm_means = self.normOutMeans
-        cell_scales = {}
-        for cGid, STDPmechs in self.dSTDPmech['outConns'].items():
-          cell_scale = norm_means[cGid] / curr_means[cGid]
-          if reward > 0: cell_scale = 1.0 / cell_scale
-          cell_scale = max(self.normalizeOutBalMinMax[0], min(cell_scale, self.normalizeOutBalMinMax[1]))
-          cell_scales[cGid] = cell_scale
-          for STDPmech in STDPmechs:
-            STDPmech.reward_punish(reward * cell_scale)
-        if self.normalizeVerbose:
-          llscales = sorted(list(cell_scales.items()), key=lambda x:x[1])
-          print('Outminmax scales:', llscales[0], llscales[-1])
-      else:
-        for STDPmech in self.dSTDPmech['all']:
-          STDPmech.reward_punish(reward)
+      self.applySTDP(sim, reward)
 
     t3 = datetime.now() - t3
     t4 = datetime.now()

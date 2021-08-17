@@ -22,10 +22,15 @@ class Critic:
     self.total_gain = dconf['critic']['total_gain']
     self.max_reward = dconf['critic']['max_reward']
     self.posRewardBias = 1.0
+    self.negRewardBias = 1.0
     if 'posRewardBias' in dconf['critic']:
       self.posRewardBias = dconf['critic']['posRewardBias']
     if 'posRewardBias' in dconf['net'] and dconf['net']['posRewardBias'] != 1.0:
       self.posRewardBias = dconf['net']['posRewardBias']
+    if 'negRewardBias' in dconf['critic']:
+      self.negRewardBias = dconf['critic']['negRewardBias']
+    if 'negRewardBias' in dconf['net'] and dconf['net']['negRewardBias'] != 1.0:
+      self.negRewardBias = dconf['net']['negRewardBias']
     self.modulate = None
     if 'modulation' in dconf['critic']:
       self.mod_steps = dconf['critic']['modulation']['steps']
@@ -69,6 +74,8 @@ class Critic:
 
     if reward > 0:
       reward *= self.posRewardBias
+    if reward < 0:
+      reward *= self.negRewardBias
     if self.modulate != None:
       new_reward = self.modulate(self.mod_queue, reward, self.mod_steps / 2)
       self.mod_queue.append(reward)
