@@ -525,7 +525,7 @@ class NeuroSim:
             if not isEM: dSTDPmech['nonEM'].append((conn.preGid, STDPmech))
     return dSTDPmech
 
-  def applySTDP(self, sim, reward):
+  def applySTDP(self, sim, reward, actions):
     outNormScale = lambda cellGid: 1.0
     if self.normalizeByOutputBalancing:
       # Scale the reward/punishment given to a cell based on its output power:
@@ -548,6 +548,7 @@ class NeuroSim:
 
     #Implement targetedRL
     # if reward signal indicates punishment (-1) or reward (+1)
+    dconf = self.dconf
     if dconf['sim']['targetedRL']>=1:
       if dconf['sim']['targetedNonEM']>=1:
         if dconf['verbose']: print('Apply RL to nonEM')
@@ -555,7 +556,7 @@ class NeuroSim:
           STDPmech.reward_punish(
             float(reward*dconf['sim']['targetedRLDscntFctr']) * outNormScale(cGid))
       if dconf['sim']['targetedRL']==1: #RL=1: Apply to all of EM
-        for pop, pop_moves in self.dconf['pop_to_moves'].items():
+        for pop, pop_moves in dconf['pop_to_moves'].items():
           if dconf['verbose']: print('Apply RL to ', pop)
           for cGid, STDPmech in self.dSTDPmech[pop]:
             STDPmech.reward_punish(reward * outNormScale(cGid))
@@ -719,7 +720,7 @@ class NeuroSim:
       if dconf['verbose']:
         if sim.rank == 0:
           print('t={} Reward:{} Actions: {}'.format(round(t, 2), reward, actions))
-      self.applySTDP(sim, reward)
+      self.applySTDP(sim, reward, actions)
 
     t3 = datetime.now() - t3
     t4 = datetime.now()
