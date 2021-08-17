@@ -28,6 +28,9 @@ def isExc(ty): return ty.startswith('E')
 def isInh(ty): return ty.startswith('I')
 def connType(prety, poty): return prety[0] + poty[0]
 
+def _get_param(dmap, field, default=None):
+  return dmap[field] if field in dmap else default
+
 
 class NeuroSim:
   def __init__(self, dconf):
@@ -36,36 +39,21 @@ class NeuroSim:
     def outpath(fname): return os.path.join(dconf['sim']['outdir'], fname)
     self.outpath = outpath
 
-    sim.davgW = {}  # average adjustable weights on a target population
-    sim.allTimes = []
-    sim.allRewards = []  # list to store all rewards
-    sim.allActions = []  # list to store all actions
-    # list to store firing rate of output motor neurons.
-    sim.allMotorOutputs = []
-    sim.allSTDPWeights = []
 
     sim.ActionsRewardsfilename = outpath('ActionsRewards.txt')
     sim.MotorOutputsfilename = outpath('MotorOutputs.txt')
     # sim.NonRLweightsfilename = outpath('NonRLweights.txt')  # file to store weights
 
     sim.plotWeights = 0  # plot weights
-    sim.plotRaster = 1
-    if 'plotRaster' in dconf['sim']:
-      sim.plotRaster = dconf['sim']['plotRaster']
-    sim.doSaveData = 1
-    if 'doSaveData' in dconf['sim']:
-      sim.doSaveData = dconf['sim']['doSaveData']
-    sim.saveWeights = 1  # save weights
-    if 'saveWeights' in dconf['sim']:
-      sim.saveWeights = dconf['sim']['saveWeights']
-    # whether to save the motion fields
-    sim.saveMotionFields = dconf['sim']['saveMotionFields']
-    sim.saveObjPos = 1  # save ball and paddle position to file
+    sim.plotRaster = _get_param(dconf['sim'], 'plotRaster', default=1)
+    sim.doSaveData = _get_param(dconf['sim'], 'doSaveData', default=1)
+    sim.saveWeights = _get_param(dconf['sim'], 'saveWeights', default=1)
+    sim.allSTDPWeights = [] # place to store weights
     self.recordWeightStepSize = dconf['sim']['recordWeightStepSize']
-    self.normalizeStepSize = dconf['sim']['normalizeStepSize'] if 'normalizeStepSize' in dconf['sim'] else None
-    self.normalizeByOutputBalancing = dconf['sim']['normalizeByOutputBalancing'] if 'normalizeByOutputBalancing' in dconf['sim'] else None
-    self.normalizeOutBalMinMax = dconf['sim']['normalizeOutBalMinMax'] if 'normalizeOutBalMinMax' in dconf['sim'] else None
-    self.normalizeVerbose = dconf['sim']['normalizeVerbose'] if 'normalizeVerbose' in dconf['sim'] else None
+    self.normalizeStepSize = _get_param(dconf['sim'], 'normalizeStepSize')
+    self.normalizeByOutputBalancing = _get_param(dconf['sim'], 'normalizeByOutputBalancing')
+    self.normalizeOutBalMinMax = _get_param(dconf['sim'], 'normalizeOutBalMinMax')
+    self.normalizeVerbose = _get_param(dconf['sim'], 'normalizeVerbose')
     self.normInMeans = None
     self.normOutMeans = None
     # time step per action (in ms)
@@ -73,7 +61,7 @@ class NeuroSim:
 
     self.allpops = list(dconf['net']['allpops'].keys())
     self.inputPop = dconf['net']['inputPop']
-    self.unk_move = dconf['env']['unk_move'] if 'unk_move' in dconf['env'] else min(dconf['moves'].values()) - 1
+    self.unk_move = _get_param(dconf['env'], 'unk_move', default=min(dconf['moves'].values()) - 1)
     # number of neurons of a given type: dnumc
     # scales the size of the network (only number of neurons)
     scale = dconf['net']['scale']
@@ -500,12 +488,6 @@ class NeuroSim:
         if STDPmech:
           dSTDPmech['all'].append((conn.preGid, STDPmech))
 
-          # TODO: Remove
-          # # Set all STDP Mechs Output connections indexed by each presynaptic neuron
-          # if conn.preGid not in dSTDPmech['outConns']:
-          #   dSTDPmech['outConns'][conn.preGid] = []
-          # dSTDPmech['outConns'][conn.preGid].append(STDPmech)
-
           # Set all STDP Mechs indexed by each output population
           isEM = False
           for pop, pop_moves in self.dconf['pop_to_moves'].items(): 
@@ -727,12 +709,9 @@ class NeuroSim:
 
     if sim.rank == 0:
       sim.allActions.extend(actions)
-      sim.allRewards.append(reward)
       tvec_actions = []
       for ts in range(len(actions)):
         tvec_actions.append(t-self.tstepPerAction*(len(actions)-ts-1))
-      for ltpnt in tvec_actions:
-        sim.allTimes.append(ltpnt)
 
       with open(sim.ActionsRewardsfilename, 'a') as fid3:
         for action, t in zip(actions, tvec_actions):
