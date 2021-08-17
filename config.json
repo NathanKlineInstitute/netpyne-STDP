@@ -59,9 +59,7 @@
         "targetedRLOppFctr": 0.5,
         "targetedRLDscntFctr": 0.5,
         "tstepPerAction": 50,
-        "saveWeights": 1,
-        "saveAssignedFiringRates": 0,
-        "useReducedNetwork": 0
+        "saveWeights": 1
     },
     "cell": {
         "E": {"ahpwt": 1,

@@ -58,6 +58,7 @@ class NeuroSim:
     self.normOutMeans = None
     # time step per action (in ms)
     self.tstepPerAction = dconf['sim']['tstepPerAction']
+    self.actionsPerPlay = dconf['actionsPerPlay']
 
     self.allpops = list(dconf['net']['allpops'].keys())
     self.inputPop = dconf['net']['inputPop']
@@ -424,7 +425,6 @@ class NeuroSim:
   def InitializeNoiseRates(self, sim):
     # initialize the noise firing rates for the primary visual neuron populations (location V1 and direction sensitive)
     if self.ECellModel == 'IntFire4' or self.ECellModel == 'INTF7':
-      # np.random.seed(1234)
       for pop in sim.lnoisety:
         if pop in sim.net.pops:
           for cell in sim.net.cells:
@@ -435,7 +435,6 @@ class NeuroSim:
   def InitializeInputRates(self, sim):
     # initialize the source firing rates for the primary visual neuron populations (location V1 and direction sensitive)
     if self.ECellModel == 'IntFire4' or self.ECellModel == 'INTF7':
-      # np.random.seed(1234)
       for pop in sim.lstimty:
         if pop in sim.net.pops:
           for cell in sim.net.cells:
@@ -445,7 +444,6 @@ class NeuroSim:
 
   def updateInputRates(self, sim):
     input_rates = sim.GameInterface.input_firing_rates()
-    # print(input_rates[:4])
     input_rates = syncdata_alltoall(sim, input_rates)
 
     # if sim.rank == 0: print(dFiringRates['EV1'])
@@ -572,9 +570,7 @@ class NeuroSim:
     move_freq = {}
     vec = h.Vector()
     freq = []
-    for ts in range(int(self.dconf['actionsPerPlay'])):
-      ts_beg = t-self.tstepPerAction*(self.dconf['actionsPerPlay']-ts-1)
-      ts_end = t-self.tstepPerAction*(self.dconf['actionsPerPlay']-ts)
+    for ts in range(int(self.actionsPerPlay)):
       cgids_map = {}
       for p, pop_moves in pop_to_moves.items():
         if type(pop_moves) == str:
@@ -584,7 +580,9 @@ class NeuroSim:
         for idx, cgid in enumerate(sim.net.pops[p].cellGids):
           cgids_map[cgid] = pop_moves[math.floor(idx / cells_per_move)]
 
-      freq.append(self.getSpikesWithInterval([ts_end, ts_beg], cgids_map))
+      ts_beg = t-self.tstepPerAction*(self.actionsPerPlay-ts)
+      ts_end = t-self.tstepPerAction*(self.actionsPerPlay-ts-1)
+      freq.append(self.getSpikesWithInterval([ts_beg, ts_end], cgids_map))
     for move in moves:
       freq_move = [q[move] for q in freq]
       sim.pc.allreduce(vec.from_python(freq_move), 1)  # sum
@@ -598,12 +596,12 @@ class NeuroSim:
             round(t, 2), ','.join(moves), ','.join([str(move_freq[m]) for m in moves])))
       with open(sim.MotorOutputsfilename, 'a') as fid4:
         fid4.write('%0.1f' % t)
-        for ts in range(int(self.dconf['actionsPerPlay'])):
+        for ts in range(int(self.actionsPerPlay)):
           fid4.write(
               '\t' + '\t'.join([str(round(move_freq[m][ts], 1)) for m in moves]))
         fid4.write('\n')
 
-      for ts in range(int(self.dconf['actionsPerPlay'])):
+      for ts in range(int(self.actionsPerPlay)):
         no_firing_rates = sum([v[ts] for v in move_freq.values()]) == 0
         if no_firing_rates:
           # Should we initialize with random?
@@ -611,7 +609,6 @@ class NeuroSim:
             print('Warning: No firing rates for moves {}!'.format(','.join(moves)))
           else:
             print('.', end='')
-          # actions.append(self.dconf['moves']['LEFT'])
           actions.append(self.unk_move)
         else:
           mvsf = [(m, f[ts]) for m, f in move_freq.items()]
@@ -646,10 +643,10 @@ class NeuroSim:
       self.normOutMeans = self.weightsMean(sim, ctype='out')
 
     # for the first time interval use randomly selected actions
-    if t < (self.tstepPerAction*dconf['actionsPerPlay']):
+    if t < (self.tstepPerAction*self.actionsPerPlay):
       actions = []
       movecodes = [v for k, v in dconf['moves'].items()]
-      for _ in range(int(dconf['actionsPerPlay'])):
+      for _ in range(int(self.actionsPerPlay)):
         action = movecodes[random.randint(0, len(movecodes)-1)]
         actions.append(action)
     # the actions should be based on the activity of motor cortex (EMRIGHT, EMLEFT)
@@ -708,7 +705,6 @@ class NeuroSim:
     t4 = datetime.now()
 
     if sim.rank == 0:
-      sim.allActions.extend(actions)
       tvec_actions = []
       for ts in range(len(actions)):
         tvec_actions.append(t-self.tstepPerAction*(len(actions)-ts-1))
@@ -796,7 +792,7 @@ class NeuroSim:
     sim.setupRecording()
 
     setdminID(sim, self.allpops)
-    tPerPlay = self.tstepPerAction * self.dconf['actionsPerPlay']
+    tPerPlay = self.tstepPerAction * self.actionsPerPlay
 
     # self.InitializeInputRates(sim)# <-- Do not activate this!
     self.InitializeNoiseRates(sim)

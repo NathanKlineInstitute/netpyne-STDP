@@ -62,7 +62,7 @@ Optional: Maybe evaluate in depth
 
 Run all evaluation:
 
-    WDIR=results/20210816
+    WDIR=results/20210817
     py neurosim/tools/evaluate.py frequency $WDIR --timestep 10000
     py neurosim/tools/evaluate.py variance $WDIR
     py neurosim/tools/evaluate.py medians $WDIR
