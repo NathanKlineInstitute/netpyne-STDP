@@ -6,6 +6,7 @@ import pickle
 import os
 import time
 import math
+import json
 import numpy as np
 import pandas as pd
 from datetime import datetime
@@ -61,6 +62,7 @@ class NeuroSim:
     self.actionsPerPlay = dconf['actionsPerPlay']
     self.targetedRL = _get_param(dconf['sim'], 'targetedRL', 0)
     self.targetedNonEM = _get_param(dconf['sim'], 'targetedNonEM', 0)
+    self.saveEnvObs = _get_param(dconf['sim'], 'saveEnvObs', default=1)
 
     self.allpops = list(dconf['net']['allpops'].keys())
     self.inputPop = dconf['net']['inputPop']
@@ -712,8 +714,9 @@ class NeuroSim:
         tvec_actions.append(t-self.tstepPerAction*(len(actions)-ts-1))
 
       with open(sim.ActionsRewardsfilename, 'a') as fid3:
+        obs = '\t{}'.format(json.dumps(list(sim.AIGame.observations[-1]))) if self.saveEnvObs else ''
         for action, t in zip(actions, tvec_actions):
-          fid3.write('%0.1f\t%0.1f\t%0.5f\n' % (t, action, reward))
+          fid3.write('%0.1f\t%0.1f\t%0.5f%s\n' % (t, action, reward, obs))
 
     # update firing rate of inputs to R population (based on game state)
     self.updateInputRates(sim)

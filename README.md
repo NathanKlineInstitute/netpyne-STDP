@@ -85,3 +85,19 @@ Continue training from a already trained model:
     WDIR=results/...
     py neurosim/main.py continue $WDIR --duration 5000
     # note: this script needs more care on how to integrate with different/new params
+
+#### Critic evaluation
+
+    py neurosim/tools/critic.py eval \
+        --best-wdir results/20210801-1000it-1eps/evaluation_10 \
+        --critic-config results/20210801-1000it-1eps/backupcfg_sim.json \
+        --verbose
+
+    py neurosim/tools/critic.py eval \
+        --best-wdir results/20210801-1000it-1eps/evaluation_10 \
+        --critic-config config.json \
+        --verbose
+
+    py neurosim/tools/critic.py hpsearch \
+        --best-wdir results/20210801-1000it-1eps/evaluation_10 \
+        --critic-config config.json
