@@ -59,6 +59,8 @@ class NeuroSim:
     # time step per action (in ms)
     self.tstepPerAction = dconf['sim']['tstepPerAction']
     self.actionsPerPlay = dconf['actionsPerPlay']
+    self.targetedRL = _get_param(dconf['sim'], 'targetedRL', 0)
+    self.targetedNonEM = _get_param(dconf['sim'], 'targetedNonEM', 0)
 
     self.allpops = list(dconf['net']['allpops'].keys())
     self.inputPop = dconf['net']['inputPop']
@@ -476,7 +478,7 @@ class NeuroSim:
       cells_per_move = math.floor(len(sim.net.pops[pop].cellGids) / len(pop_moves)) #how many cells assigned to move subsets
       for idx, cgid in enumerate(sim.net.pops[pop].cellGids):
         cgids_map[cgid] = pop_moves[math.floor(idx / cells_per_move)] #maps cell gid to assigned action 
-    if self.dconf['sim']['targetedNonEM']>=1:
+    if self.targetedNonEM>=1:
       dSTDPmech['nonEM'] = []
 
     for cell in sim.net.cells:
@@ -501,7 +503,7 @@ class NeuroSim:
                 for move in pop_moves: #Creates dSTDPMech['LEFT'] and dSTDPMech['RIGHT']
                   if cgids_map[cell.gid] == move: #If cell assigned to action == current move, add
                     dSTDPmech[move].append((conn.preGid, STDPmech))
-          if self.dconf['sim']['targetedNonEM']>=1:
+          if self.targetedNonEM>=1:
             if not isEM: dSTDPmech['nonEM'].append((conn.preGid, STDPmech))
     return dSTDPmech
 
@@ -529,24 +531,24 @@ class NeuroSim:
     #Implement targetedRL
     # if reward signal indicates punishment (-1) or reward (+1)
     dconf = self.dconf
-    if dconf['sim']['targetedRL']>=1:
-      if dconf['sim']['targetedNonEM']>=1:
+    if self.targetedRL >= 1:
+      if self.targetedNonEM>=1:
         if dconf['verbose']: print('Apply RL to nonEM')
         for cGid, STDPmech in self.dSTDPmech['nonEM']:
           STDPmech.reward_punish(
             float(reward*dconf['sim']['targetedRLDscntFctr']) * outNormScale(cGid))
-      if dconf['sim']['targetedRL']==1: #RL=1: Apply to all of EM
+      if self.targetedRL == 1: #RL=1: Apply to all of EM
         for pop, pop_moves in dconf['pop_to_moves'].items():
           if dconf['verbose']: print('Apply RL to ', pop)
           for cGid, STDPmech in self.dSTDPmech[pop]:
             STDPmech.reward_punish(reward * outNormScale(cGid))
-      elif dconf['sim']['targetedRL']>=2:
+      elif self.targetedRL >= 2:
         for moveName, moveID in dconf['moves'].items():
           if actions[-1] == moveID:
             if dconf['verbose']: print('Apply RL to EM', moveName)
             for cGid, STDPmech in self.dSTDPmech[moveName]:
               STDPmech.reward_punish(reward * outNormScale(cGid))
-            if dconf['sim']['targetedRL']>=3: 
+            if self.targetedRL >= 3: 
               for oppMoveName in dconf['moves'].keys():
                 if oppMoveName != moveName: #ADD: and oppMoveName fires
                   if dconf['verbose']: print('Apply -RL to EM', oppMoveName)
