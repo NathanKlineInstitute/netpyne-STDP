@@ -6,6 +6,7 @@ import pickle
 import os
 import time
 import math
+import json
 import numpy as np
 import pandas as pd
 from datetime import datetime
@@ -28,6 +29,9 @@ def isExc(ty): return ty.startswith('E')
 def isInh(ty): return ty.startswith('I')
 def connType(prety, poty): return prety[0] + poty[0]
 
+def _get_param(dmap, field, default=None):
+  return dmap[field] if field in dmap else default
+
 
 class NeuroSim:
   def __init__(self, dconf):
@@ -36,38 +40,33 @@ class NeuroSim:
     def outpath(fname): return os.path.join(dconf['sim']['outdir'], fname)
     self.outpath = outpath
 
-    sim.davgW = {}  # average adjustable weights on a target population
-    sim.allTimes = []
-    sim.allRewards = []  # list to store all rewards
-    sim.allActions = []  # list to store all actions
-    # list to store firing rate of output motor neurons.
-    sim.allMotorOutputs = []
-    sim.allSTDPWeights = []
 
     sim.ActionsRewardsfilename = outpath('ActionsRewards.txt')
     sim.MotorOutputsfilename = outpath('MotorOutputs.txt')
     # sim.NonRLweightsfilename = outpath('NonRLweights.txt')  # file to store weights
 
     sim.plotWeights = 0  # plot weights
-    sim.plotRaster = 1
-    if 'plotRaster' in dconf['sim']:
-      sim.plotRaster = dconf['sim']['plotRaster']
-    sim.doSaveData = 1
-    if 'doSaveData' in dconf['sim']:
-      sim.doSaveData = dconf['sim']['doSaveData']
-    sim.saveWeights = 1  # save weights
-    if 'saveWeights' in dconf['sim']:
-      sim.saveWeights = dconf['sim']['saveWeights']
-    # whether to save the motion fields
-    sim.saveMotionFields = dconf['sim']['saveMotionFields']
-    sim.saveObjPos = 1  # save ball and paddle position to file
+    sim.plotRaster = _get_param(dconf['sim'], 'plotRaster', default=1)
+    sim.doSaveData = _get_param(dconf['sim'], 'doSaveData', default=1)
+    sim.saveWeights = _get_param(dconf['sim'], 'saveWeights', default=1)
+    sim.allSTDPWeights = [] # place to store weights
     self.recordWeightStepSize = dconf['sim']['recordWeightStepSize']
+    self.normalizeStepSize = _get_param(dconf['sim'], 'normalizeStepSize')
+    self.normalizeByOutputBalancing = _get_param(dconf['sim'], 'normalizeByOutputBalancing')
+    self.normalizeOutBalMinMax = _get_param(dconf['sim'], 'normalizeOutBalMinMax')
+    self.normalizeVerbose = _get_param(dconf['sim'], 'normalizeVerbose')
+    self.normInMeans = None
+    self.normOutMeans = None
     # time step per action (in ms)
     self.tstepPerAction = dconf['sim']['tstepPerAction']
+    self.actionsPerPlay = dconf['actionsPerPlay']
+    self.targetedRL = _get_param(dconf['sim'], 'targetedRL', 0)
+    self.targetedNonEM = _get_param(dconf['sim'], 'targetedNonEM', 0)
+    self.saveEnvObs = _get_param(dconf['sim'], 'saveEnvObs', default=1)
 
     self.allpops = list(dconf['net']['allpops'].keys())
     self.inputPop = dconf['net']['inputPop']
-    self.unk_move = dconf['env']['unk_move'] if 'unk_move' in dconf['env'] else min(dconf['moves'].values()) - 1
+    self.unk_move = _get_param(dconf['env'], 'unk_move', default=min(dconf['moves'].values()) - 1)
     # number of neurons of a given type: dnumc
     # scales the size of the network (only number of neurons)
     scale = dconf['net']['scale']
@@ -378,6 +377,37 @@ class NeuroSim:
               conn['hObj'].weight[self.PlastWeightIndex])]
           sim.allSTDPWeights.append(weightItem)
 
+  def weightsMean(self, sim, ctype):
+    # if ctype == 'in' compute the averages of incoming connections of a neuron
+    # if ctype == 'out' compute the averages of outgoing connections of a neuron
+    assert ctype in ['in', 'out']
+    weights_vec = {}
+    for cell in sim.net.cells:
+      for conn in cell.conns:
+        if 'hSTDP' in conn:
+          gid = conn.preGid if ctype == 'out' else cell.gid
+          if gid not in weights_vec:
+            weights_vec[gid] = []
+          weights_vec[gid].append(conn['hObj'].weight[self.PlastWeightIndex])
+    return dict([(k, np.mean(v)) for k,v in weights_vec.items()])
+
+  def normalizeInWeights(self, sim):
+    curr_means = self.weightsMean(sim, ctype='in')
+    norm_means = self.normInMeans
+    cell_scales = {}
+    for cell in sim.net.cells:
+      cell_scale = None
+      for conn in cell.conns:
+        if 'hSTDP' in conn:
+          cell_scale = norm_means[cell.gid] / curr_means[cell.gid]
+          conn['hObj'].weight[self.PlastWeightIndex] *= cell_scale
+      if cell_scale:
+        cell_scales[cell.gid] = cell_scale
+    if self.normalizeVerbose:
+      llscales = sorted(list(cell_scales.items()), key=lambda x:x[1])
+      print('Inminmax scales:', llscales[0], llscales[-1])
+
+
   def getSpikesWithInterval(self, trange=None, neuronal_pop=None):
     if len(neuronal_pop) < 1:
       return 0.0
@@ -399,7 +429,6 @@ class NeuroSim:
   def InitializeNoiseRates(self, sim):
     # initialize the noise firing rates for the primary visual neuron populations (location V1 and direction sensitive)
     if self.ECellModel == 'IntFire4' or self.ECellModel == 'INTF7':
-      # np.random.seed(1234)
       for pop in sim.lnoisety:
         if pop in sim.net.pops:
           for cell in sim.net.cells:
@@ -410,7 +439,6 @@ class NeuroSim:
   def InitializeInputRates(self, sim):
     # initialize the source firing rates for the primary visual neuron populations (location V1 and direction sensitive)
     if self.ECellModel == 'IntFire4' or self.ECellModel == 'INTF7':
-      # np.random.seed(1234)
       for pop in sim.lstimty:
         if pop in sim.net.pops:
           for cell in sim.net.cells:
@@ -420,7 +448,6 @@ class NeuroSim:
 
   def updateInputRates(self, sim):
     input_rates = sim.GameInterface.input_firing_rates()
-    # print(input_rates[:4])
     input_rates = syncdata_alltoall(sim, input_rates)
 
     # if sim.rank == 0: print(dFiringRates['EV1'])
@@ -453,41 +480,101 @@ class NeuroSim:
       cells_per_move = math.floor(len(sim.net.pops[pop].cellGids) / len(pop_moves)) #how many cells assigned to move subsets
       for idx, cgid in enumerate(sim.net.pops[pop].cellGids):
         cgids_map[cgid] = pop_moves[math.floor(idx / cells_per_move)] #maps cell gid to assigned action 
-    if self.dconf['sim']['targetedNonEM']>=1:
+    if self.targetedNonEM>=1:
       dSTDPmech['nonEM'] = []
+
     for cell in sim.net.cells:
-      #if cell.gid in sim.net.pops['EMLEFT'].cellGids and cell.gid==sim.simData['dminID']['EMLEFT']: print(cell.conns)
       for conn in cell.conns:
         # check if the connection has a NEURON STDP mechanism object
         STDPmech = conn.get('hSTDP')
         if STDPmech:
-          dSTDPmech['all'].append(STDPmech)
+          dSTDPmech['all'].append((conn.preGid, STDPmech))
+
+          # Set all STDP Mechs indexed by each output population
           isEM = False
           for pop, pop_moves in self.dconf['pop_to_moves'].items(): 
             if cell.gid in sim.net.pops[pop].cellGids: #Creates dSTDPMech['EM']
-              dSTDPmech[pop].append(STDPmech)
+              dSTDPmech[pop].append((conn.preGid, STDPmech))
               isEM = True
               if type(pop_moves) == str:
                 pop_moves = [pop_moves]
               if len(pop_moves) == 1: # one move for each pop
                 for move in pop_moves:
-                  dSTDPmech[move].append(STDPmech)
+                  dSTDPmech[move].append((conn.preGid, STDPmech))
               elif len(pop_moves) >= 2: # many moves for one pop
                 for move in pop_moves: #Creates dSTDPMech['LEFT'] and dSTDPMech['RIGHT']
                   if cgids_map[cell.gid] == move: #If cell assigned to action == current move, add
-                    dSTDPmech[move].append(STDPmech)
-          if self.dconf['sim']['targetedNonEM']>=1:
-            if not isEM: dSTDPmech['nonEM'].append(STDPmech)
+                    dSTDPmech[move].append((conn.preGid, STDPmech))
+          if self.targetedNonEM>=1:
+            if not isEM: dSTDPmech['nonEM'].append((conn.preGid, STDPmech))
     return dSTDPmech
+
+  def applySTDP(self, sim, reward, actions):
+    outNormScale = lambda cellGid: 1.0
+    if self.normalizeByOutputBalancing:
+      # Scale the reward/punishment given to a cell based on its output power:
+      # If a neuron already increased all its output weights: 
+      #     don't reward that neuron's connections as much, but
+      #     punish severely
+      # If a neuron has all its output weights decreased:
+      #     rewards are having a stronger effect
+      #     punishments barely change the weights
+      # Effects are limited by a min and a max
+      curr_means = self.weightsMean(sim, ctype='out')
+      norm_means = self.normOutMeans
+      minMax = self.normalizeOutBalMinMax
+      def normalizeOutF(cGid):
+        cell_scale = norm_means[cGid] / curr_means[cGid]
+        if reward > 0: cell_scale = 1.0 / cell_scale
+        cell_scale = max(minMax[0], min(cell_scale, minMax[1]))
+        return cell_scale
+      outNormScale = normalizeOutF
+
+    #Implement targetedRL
+    # if reward signal indicates punishment (-1) or reward (+1)
+    dconf = self.dconf
+    if self.targetedRL >= 1:
+      if self.targetedNonEM>=1:
+        if dconf['verbose']: print('Apply RL to nonEM')
+        for cGid, STDPmech in self.dSTDPmech['nonEM']:
+          STDPmech.reward_punish(
+            float(reward*dconf['sim']['targetedRLDscntFctr']) * outNormScale(cGid))
+      if self.targetedRL == 1: #RL=1: Apply to all of EM
+        for pop, pop_moves in dconf['pop_to_moves'].items():
+          if dconf['verbose']: print('Apply RL to ', pop)
+          for cGid, STDPmech in self.dSTDPmech[pop]:
+            STDPmech.reward_punish(reward * outNormScale(cGid))
+      elif self.targetedRL >= 2:
+        for moveName, moveID in dconf['moves'].items():
+          if actions[-1] == moveID:
+            if dconf['verbose']: print('Apply RL to EM', moveName)
+            for cGid, STDPmech in self.dSTDPmech[moveName]:
+              STDPmech.reward_punish(reward * outNormScale(cGid))
+            if self.targetedRL >= 3: 
+              for oppMoveName in dconf['moves'].keys():
+                if oppMoveName != moveName: #ADD: and oppMoveName fires
+                  if dconf['verbose']: print('Apply -RL to EM', oppMoveName)
+                  for cGid, STDPmech in self.dSTDPmech[oppMoveName]:
+                    STDPmech.reward_punish(
+                      float(reward*-dconf['sim']['targetedRLOppFctr']) * outNormScale(cGid))
+    else:
+      cell_scales = {}
+      for cGid, STDPmech in self.dSTDPmech['all']:
+        cell_scale = outNormScale(cGid) # scale for normalization (if active)
+        STDPmech.reward_punish(reward * cell_scale)
+        if self.normalizeVerbose:
+          cell_scales[cGid] = cell_scale
+
+      if self.normalizeVerbose:
+        llscales = sorted(list(cell_scales.items()), key=lambda x:x[1])
+        print('Outminmax scales:', llscales[0], llscales[-1])
 
   def getActions(self, sim, t, moves, pop_to_moves):
     # Get move frequencies
     move_freq = {}
     vec = h.Vector()
     freq = []
-    for ts in range(int(self.dconf['actionsPerPlay'])):
-      ts_beg = t-self.tstepPerAction*(self.dconf['actionsPerPlay']-ts-1)
-      ts_end = t-self.tstepPerAction*(self.dconf['actionsPerPlay']-ts)
+    for ts in range(int(self.actionsPerPlay)):
       cgids_map = {}
       for p, pop_moves in pop_to_moves.items():
         if type(pop_moves) == str:
@@ -497,7 +584,9 @@ class NeuroSim:
         for idx, cgid in enumerate(sim.net.pops[p].cellGids):
           cgids_map[cgid] = pop_moves[math.floor(idx / cells_per_move)]
 
-      freq.append(self.getSpikesWithInterval([ts_end, ts_beg], cgids_map))
+      ts_beg = t-self.tstepPerAction*(self.actionsPerPlay-ts)
+      ts_end = t-self.tstepPerAction*(self.actionsPerPlay-ts-1)
+      freq.append(self.getSpikesWithInterval([ts_beg, ts_end], cgids_map))
     for move in moves:
       freq_move = [q[move] for q in freq]
       sim.pc.allreduce(vec.from_python(freq_move), 1)  # sum
@@ -511,12 +600,12 @@ class NeuroSim:
             round(t, 2), ','.join(moves), ','.join([str(move_freq[m]) for m in moves])))
       with open(sim.MotorOutputsfilename, 'a') as fid4:
         fid4.write('%0.1f' % t)
-        for ts in range(int(self.dconf['actionsPerPlay'])):
+        for ts in range(int(self.actionsPerPlay)):
           fid4.write(
               '\t' + '\t'.join([str(round(move_freq[m][ts], 1)) for m in moves]))
         fid4.write('\n')
 
-      for ts in range(int(self.dconf['actionsPerPlay'])):
+      for ts in range(int(self.actionsPerPlay)):
         no_firing_rates = sum([v[ts] for v in move_freq.values()]) == 0
         if no_firing_rates:
           # Should we initialize with random?
@@ -524,7 +613,6 @@ class NeuroSim:
             print('Warning: No firing rates for moves {}!'.format(','.join(moves)))
           else:
             print('.', end='')
-          # actions.append(self.dconf['moves']['LEFT'])
           actions.append(self.unk_move)
         else:
           mvsf = [(m, f[ts]) for m, f in move_freq.items()]
@@ -552,11 +640,17 @@ class NeuroSim:
 
     t1 = datetime.now()
 
+    # Measure and cache normalized initial weights
+    if self.normalizeStepSize and not self.normInMeans:
+      self.normInMeans = self.weightsMean(sim, ctype='in')
+    if self.normalizeByOutputBalancing and not self.normOutMeans:
+      self.normOutMeans = self.weightsMean(sim, ctype='out')
+
     # for the first time interval use randomly selected actions
-    if t < (self.tstepPerAction*dconf['actionsPerPlay']):
+    if t < (self.tstepPerAction*self.actionsPerPlay):
       actions = []
       movecodes = [v for k, v in dconf['moves'].items()]
-      for _ in range(int(dconf['actionsPerPlay'])):
+      for _ in range(int(self.actionsPerPlay)):
         action = movecodes[random.randint(0, len(movecodes)-1)]
         actions.append(action)
     # the actions should be based on the activity of motor cortex (EMRIGHT, EMLEFT)
@@ -604,47 +698,25 @@ class NeuroSim:
 
     t2 = datetime.now() - t2
     t3 = datetime.now()
-    #Implement targetedRL
-    # if reward signal indicates punishment (-1) or reward (+1)
+
     if reward != 0:
-      if sim.rank == 0:
-        if dconf['verbose']:print('t={} Reward:{} Actions: {}'.format(round(t, 2), reward, actions))
-      if dconf['sim']['targetedRL']>=1:
-        if dconf['sim']['targetedNonEM']>=1:
-          if dconf['verbose']: print('Apply RL to nonEM')
-          for STDPmech in self.dSTDPmech['nonEM']: STDPmech.reward_punish(float(reward*dconf['sim']['targetedRLDscntFctr']))
-        if dconf['sim']['targetedRL']==1: #RL=1: Apply to all of EM
-          for pop, pop_moves in self.dconf['pop_to_moves'].items():
-            if dconf['verbose']: print('Apply RL to ', pop)
-            for STDPmech in self.dSTDPmech[pop]: STDPmech.reward_punish(reward)
-        elif dconf['sim']['targetedRL']>=2:
-          for moveName, moveID in dconf['moves'].items():
-            if actions[-1] == moveID:
-              if dconf['verbose']: print('Apply RL to EM', moveName)
-              for STDPmech in self.dSTDPmech[moveName]: STDPmech.reward_punish(reward)
-              if dconf['sim']['targetedRL']>=3: 
-                for oppMoveName in dconf['moves'].keys():
-                  if oppMoveName != moveName: #ADD: and oppMoveName fires
-                    if dconf['verbose']: print('Apply -RL to EM', oppMoveName)
-                    for STDPmech in self.dSTDPmech[oppMoveName]: STDPmech.reward_punish(float(reward*-dconf['sim']['targetedRLOppFctr']))
-      else:
-        for STDPmech in self.dSTDPmech['all']: STDPmech.reward_punish(reward)
+      if dconf['verbose']:
+        if sim.rank == 0:
+          print('t={} Reward:{} Actions: {}'.format(round(t, 2), reward, actions))
+      self.applySTDP(sim, reward, actions)
 
     t3 = datetime.now() - t3
     t4 = datetime.now()
 
     if sim.rank == 0:
-      sim.allActions.extend(actions)
-      sim.allRewards.append(reward)
       tvec_actions = []
       for ts in range(len(actions)):
         tvec_actions.append(t-self.tstepPerAction*(len(actions)-ts-1))
-      for ltpnt in tvec_actions:
-        sim.allTimes.append(ltpnt)
 
       with open(sim.ActionsRewardsfilename, 'a') as fid3:
+        obs = '\t{}'.format(json.dumps(list(sim.AIGame.observations[-1]))) if self.saveEnvObs else ''
         for action, t in zip(actions, tvec_actions):
-          fid3.write('%0.1f\t%0.1f\t%0.5f\n' % (t, action, reward))
+          fid3.write('%0.1f\t%0.1f\t%0.5f%s\n' % (t, action, reward, obs))
 
     # update firing rate of inputs to R population (based on game state)
     self.updateInputRates(sim)
@@ -658,6 +730,8 @@ class NeuroSim:
         print('Weights Recording Time:', t, 'NBsteps:', self.NBsteps,
               'recordWeightStepSize:', self.recordWeightStepSize)
       self.recordWeights(sim, t)
+    if self.normalizeStepSize and self.NBsteps % self.normalizeStepSize == 0:
+      self.normalizeInWeights(sim)
 
     t5 = datetime.now() - t5
     if random.random() < 0.001:
@@ -723,7 +797,7 @@ class NeuroSim:
     sim.setupRecording()
 
     setdminID(sim, self.allpops)
-    tPerPlay = self.tstepPerAction * self.dconf['actionsPerPlay']
+    tPerPlay = self.tstepPerAction * self.actionsPerPlay
 
     # self.InitializeInputRates(sim)# <-- Do not activate this!
     self.InitializeNoiseRates(sim)

@@ -62,15 +62,20 @@ Optional: Maybe evaluate in depth
 
 Run all evaluation:
 
-    WDIR=results/20210713
+    WDIR=results/20210817
     py neurosim/tools/evaluate.py frequency $WDIR --timestep 10000
+    py neurosim/tools/evaluate.py variance $WDIR
     py neurosim/tools/evaluate.py medians $WDIR
     py neurosim/tools/evaluate.py rewards $WDIR
+    py neurosim/tools/evaluate.py rewards-vals $WDIR
 
     py neurosim/tools/evaluate.py weights-adj $WDIR
     py neurosim/tools/evaluate.py weights-adj $WDIR --index 0
     py neurosim/tools/evaluate.py weights-diffs $WDIR
     py neurosim/tools/evaluate.py weights-diffs $WDIR --relative
+
+    py neurosim/tools/evaluate.py weights-ch $WDIR
+    py neurosim/tools/evaluate.py weights-ch $WDIR --separate_movement True
 
     py neurosim/tools/evaluate.py boxplot $WDIR
     py neurosim/tools/evaluate.py perf $WDIR
@@ -80,3 +85,19 @@ Continue training from a already trained model:
     WDIR=results/...
     py neurosim/main.py continue $WDIR --duration 5000
     # note: this script needs more care on how to integrate with different/new params
+
+#### Critic evaluation
+
+    py neurosim/tools/critic.py eval \
+        --best-wdir results/20210801-1000it-1eps/evaluation_10 \
+        --critic-config results/20210801-1000it-1eps/backupcfg_sim.json \
+        --verbose
+
+    py neurosim/tools/critic.py eval \
+        --best-wdir results/20210801-1000it-1eps/evaluation_10 \
+        --critic-config config.json \
+        --verbose
+
+    py neurosim/tools/critic.py hpsearch \
+        --best-wdir results/20210801-1000it-1eps/evaluation_10 \
+        --critic-config config.json
