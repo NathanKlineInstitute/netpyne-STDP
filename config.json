@@ -41,7 +41,7 @@
         "recordStep": 1.0,
         "recordStim": 0,
         "recordWeightStepSize": 1000,
-        "normalizeStepSize": 10,
+        "normalizeStepSize": 50,
         "normalizeByOutputBalancing": 1,
         "normalizeOutBalMinMax": [0.1, 2],
         "normalizeVerbose": 0,
@@ -210,11 +210,11 @@
             "maxreward": 0.0
         },
         "AMPA": {
-            "wmax": 200,
+            "wmax": 50,
             "RLon": 1,
             "STDPon": 0,
-            "RLlenhebb": 51,
-            "RLlenanti": 51,
+            "RLlenhebb": 105,
+            "RLlenanti": 105,
             "useRLexp": 0,
             "RLhebbwt": 0.0025,
             "RLantiwt": -0.0025,

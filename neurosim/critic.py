@@ -59,18 +59,28 @@ class Critic:
     _, _, ang, angv = obs
     return math.sqrt(ang*ang + self.angv_bias*angv*angv)
 
-  def calc_reward(self, obs1, obs2=None, is_unk_move=False):
-    _, _, ang1, angv1 = obs1
-    if type(obs2) != np.ndarray or is_unk_move:
-      reward = self.bad()
-    elif np.abs(ang1) < 0.01 and np.abs(angv1) < 0.01:
-        reward = self.max_reward
-    else:
-      d1 = self._loss(obs1)
-      d2 = self._loss(obs2)
+  def _balanced(self, obs):
+    _, _, ang, angv = obs
+    return np.abs(ang) < 0.01 and np.abs(angv) < 0.01
 
-      reward = (d2 - d1) * self.total_gain
-      # print(d1, d2, reward)
+  def calc_reward(self, curr_obs, prev_obs=None, is_unk_move=False):
+    if type(prev_obs) != np.ndarray:
+      if type(curr_obs) != np.ndarray:
+        raise Exception('Wrong format for observations!')
+      return 0.0
+    elif self._balanced(prev_obs):
+      return 0.0
+    elif is_unk_move:
+      reward = self.bad()
+    elif self._balanced(curr_obs):
+        reward = self.max_reward
+    # elif curr_obs[3] * prev_obs[3] < 0:
+    #   return 0.0
+    else:
+      curr_loss = self._loss(curr_obs)
+      prev_loss = self._loss(prev_obs)
+
+      reward = (prev_loss - curr_loss) * self.total_gain
 
     if reward > 0:
       reward *= self.posRewardBias
@@ -82,5 +92,4 @@ class Critic:
       reward = new_reward
 
     reward = min(max(-self.max_reward, reward), self.max_reward)
-
     return reward

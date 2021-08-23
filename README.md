@@ -112,15 +112,15 @@ Continue training from a already trained model:
 #### Critic evaluation
 
     py neurosim/tools/critic.py eval \
-        --best-wdir results/20210801-1000it-1eps/evaluation_10 \
+        --best-wdir results/20210801-1000it-1eps/500s-evaluation_10 \
         --critic-config results/20210801-1000it-1eps/backupcfg_sim.json \
         --verbose
 
     py neurosim/tools/critic.py eval \
-        --best-wdir results/20210801-1000it-1eps/evaluation_10 \
+        --best-wdir results/20210801-1000it-1eps/500s-evaluation_10 \
         --critic-config config.json \
         --verbose
 
     py neurosim/tools/critic.py hpsearch \
-        --best-wdir results/20210801-1000it-1eps/evaluation_10 \
+        --best-wdir results/20210801-1000it-1eps/500s-evaluation_10 \
         --critic-config config.json

@@ -244,7 +244,7 @@ def rewards_steps(wdir, steps=[25, 50], outputfile=None):
     outputfile = os.path.join(wdir, 'eval_rewards.png')
 
   with open(os.path.join(wdir, 'ActionsRewards.txt')) as f:
-      training_rewards = [float(r) for _,_,r in csv.reader(f, delimiter='\t')]
+      training_rewards = [float(toks[2]) for toks in csv.reader(f, delimiter='\t')]
 
   training_medians = {}
   for STEP in steps:
@@ -270,7 +270,7 @@ def rewards_val_steps(wdir, outputfile=None):
     outputfile = os.path.join(wdir, 'eval_rewards_val.png')
 
   with open(os.path.join(wdir, 'ActionsRewards.txt')) as f:
-      training_rewards = [float(r) for _,_,r in csv.reader(f, delimiter='\t')]
+      training_rewards = [float(toks[2]) for toks in csv.reader(f, delimiter='\t')]
 
   plt.figure(figsize=(10,10))
   plt.plot(list(range(len(training_rewards))), training_rewards, '+')
