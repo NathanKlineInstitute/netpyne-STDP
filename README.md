@@ -3,6 +3,27 @@ Adatapted from SMARTAgent on May 24th
 
 A closed-loop neuronal network model that senses dynamic visual information from the AIgame enviroment and learns to produce actions that maximize game reward through spike-timing dependent reinforcement learning.
 
+### Project structure
+
+- `config.json` the current configuration that we will work with. This gets picked by default
+- `requirements.txt` the pip packages needed for installation
+- `notebooks/` folder with jupyter notebooks that are used for exploration and data analysis before translating into tools
+- `results/` default place for storing the resulting trained models
+- `neurosim/` the code
+    - `main.py` main extry point to the code (run training, evaluation, contiuation)
+    - `sim.py` the NetPyNE model setup and run
+    - `critic.py` the critic in the actor-critic model for RL (provides reward/punishment)
+    - `aigame.py` wrapper for OpenAI gym
+    - `game_interface.py` simple interface between the game and firing rates or receptive fields
+    - `conf.py` utility for configuration files
+    - `utils/` folder for helper functions
+    - `tools/` folder of evaluation tools
+    - `cells/` folder for defined cells
+
+- `mod/` the compiled NEURON objects
+
+
+
 ### Install on Mac
 
 install python
