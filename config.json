@@ -4,9 +4,9 @@
         "savemp4": 0,
         "render": 0,
         "observation_map": [
-            {"type": "rf_normal", "bins": 5, "mean": -0.00645789, "std": 0.06894682},
-            {"type": "rf_normal", "bins": 5, "mean": -0.03634136, "std": 0.53989509},
-            {"type": "rf_normal", "bins": 10, "mean": 0.00529333, "std": 0.09129902},
+            {"type": "rf_normal", "bins": 20, "mean": -0.00645789, "std": 1.0},
+            {"type": "rf_normal", "bins": 20, "mean": -0.03634136, "std": 0.53989509},
+            {"type": "rf_normal", "bins": 20, "mean": 0.00529333, "std": 0.09129902},
             {"type": "rf_normal", "bins": 20, "mean": 0.04752025, "std": 0.82070579}
         ],
         "episodes": 21,
@@ -26,8 +26,7 @@
         "angv_bias": 0.2,
         "total_gain": 5.0,
         "max_reward": 2.0,
-        "posRewardBias": 2.85,
-        "negRewardBias": 1.0
+        "posRewardBias": 2.85
     },
     "verbose": 0,
     "stayStepLim": 0,
@@ -42,6 +41,10 @@
         "recordStep": 1.0,
         "recordStim": 0,
         "recordWeightStepSize": 1000,
+        "normalizeStepSize": 10,
+        "normalizeByOutputBalancing": 1,
+        "normalizeOutBalMinMax": [0.1, 2],
+        "normalizeVerbose": 0,
         "RLFakeUpRule": 0,
         "RLFakeDownRule": 0,
         "RLFakeStayRule": 0,
@@ -56,9 +59,7 @@
         "targetedRLOppFctr": 0.5,
         "targetedRLDscntFctr": 0.5,
         "tstepPerAction": 50,
-        "saveWeights": 1,
-        "saveAssignedFiringRates": 0,
-        "useReducedNetwork": 0
+        "saveWeights": 1
     },
     "cell": {
         "E": {"ahpwt": 1,
@@ -108,7 +109,7 @@
         "Gain": {
             "EE": 2.0,
             "EI": 3.0,
-            "IE": 1.0,
+            "IE": 2.0,
             "II": 1.0
         },
         "ECellModel": "INTF7",
@@ -119,7 +120,7 @@
             "I": 0.0
         },
         "allpops": {
-            "ES": 40,
+            "ES": 80,
 
             "EA": 40,
             "IA": 10,
@@ -151,12 +152,12 @@
         },
         "cmat": {
             "ES":{
-                "EA":{"AM2": 12.5, "NM2": 1, "conv": 8}},
+                "EA":{"AM2": 5.0, "NM2": 0.098, "conv": 25}},
             "EA":{
-                "EA":{"AM2": 0.05,"NM2": 0.005, "conv": 4},
-                "IA":{"AM2": 1.95,"NM2":0.0195, "conv": 8},
-                "IAL":{"AM2": 0.98,"NM2":0.098, "conv": 10},
-                "EM":{"AM2": 1.45,"NM2": 0.01,"conv": 25}},
+                "EA":{"AM2": 0.05,"NM2": 0.005, "conv": 1},
+                "IA":{"AM2": 1.95,"NM2":0.0195, "conv": 15},
+                "IAL":{"AM2": 1.98,"NM2":0.098, "conv": 15},
+                "EM":{"AM2": 2.45,"NM2": 0.05,"conv": 25}},
             "IA":{
                 "EA":{"GA": 9.0,"p": 0.4},
                 "IA":{"GA": 4.5,"p": 0.1},
@@ -167,8 +168,8 @@
                 "IAL":{"GA2": 5.5,"p": 0.1}},
             "EM":{
                 "EM":{"AM2": 0.01,"NM2": 0.001, "conv": 1},
-                "IM":{"AM2": 1.95,"NM2":0.0195, "conv": 8},
-                "IML":{"AM2": 0.98,"NM2":0.098, "conv": 8},
+                "IM":{"AM2": 1.95,"NM2":0.0195, "conv": 16},
+                "IML":{"AM2": 0.98,"NM2":0.098, "conv": 16},
                 "EA":{"AM2": 0.5,"NM2": 0.01,"conv": 6}},
             "IM":{
                 "EM":{"GA": 9.0,"p": 0.4},
@@ -209,12 +210,12 @@
             "maxreward": 0.0
         },
         "AMPA": {
-            "wmax": 15,
+            "wmax": 200,
             "RLon": 1,
             "STDPon": 0,
-            "RLlenhebb": 150,
-            "RLlenanti": 150,
-            "useRLexp": 1,
+            "RLlenhebb": 51,
+            "RLlenanti": 51,
+            "useRLexp": 0,
             "RLhebbwt": 0.0025,
             "RLantiwt": -0.0025,
             "hebbwt": 0.0,

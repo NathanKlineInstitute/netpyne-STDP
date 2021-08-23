@@ -11,9 +11,9 @@ def _modulate_linear(mod_steps, reward, min_steps=1):
   k_pos = len([st for st in mod_steps if st > EPS])
   k_neg = len([st for st in mod_steps if st < -EPS])
   if reward >= 0:
-    return reward * (M - k_pos) / M
+    return reward * (M - k_pos + 1) / (M+1)
   else:
-    return reward * (M - k_neg) / M
+    return reward * (M - k_neg + 1) / (M+1)
 
 class Critic:
 
@@ -41,7 +41,9 @@ class Critic:
     self.stds = np.array([k['std'] if 'std' in k else 1.0 for k in dconf['env']['observation_map']])
 
   def bad(self):
-    return - self.max_reward
+    if self.posRewardBias:
+      return -self.max_reward / self.posRewardBias
+    return -self.max_reward
 
   # def _normalize(self, obs):
   #   return (obs - self.means) / self.stds
