@@ -26,7 +26,7 @@
         "angv_bias": 0.2,
         "total_gain": 5.0,
         "max_reward": 2.0,
-        "posRewardBias": 2.85
+        "posRewardBias": 2.0
     },
     "verbose": 0,
     "stayStepLim": 0,
@@ -44,6 +44,10 @@
         "normalizeStepSize": 50,
         "normalizeByOutputBalancing": 1,
         "normalizeOutBalMinMax": [0.1, 2],
+        "normalizeByGainControl": 1,
+        "normalizeByGainControlSteps": 500,
+        "normalizeByGainControlEvery": 75,
+        "normalizeByGainControlValue": 0.0001,
         "normalizeVerbose": 0,
         "RLFakeUpRule": 0,
         "RLFakeDownRule": 0,
@@ -130,11 +134,15 @@
             "IM": 10,
             "IML": 10
         },
+        "popTargetFreq": {
+            "EA": 5.0,
+            "EM": 5.9
+        },
         "inputPop": "ES",
         "STDPconns": {
             "EE": 1
         },
-        
+
         "InputMaxRate": 50.0,
         "stimModW": 35,
         "synMechParams": {
@@ -157,7 +165,7 @@
                 "EA":{"AM2": 0.05,"NM2": 0.005, "conv": 1},
                 "IA":{"AM2": 1.95,"NM2":0.0195, "conv": 15},
                 "IAL":{"AM2": 1.98,"NM2":0.098, "conv": 15},
-                "EM":{"AM2": 2.45,"NM2": 0.05,"conv": 25}},
+                "EM":{"AM2": 3.25,"NM2": 0.05,"conv": 20}},
             "IA":{
                 "EA":{"GA": 9.0,"p": 0.4},
                 "IA":{"GA": 4.5,"p": 0.1},
@@ -213,8 +221,8 @@
             "wmax": 50,
             "RLon": 1,
             "STDPon": 0,
-            "RLlenhebb": 105,
-            "RLlenanti": 105,
+            "RLlenhebb": 102,
+            "RLlenanti": 102,
             "useRLexp": 0,
             "RLhebbwt": 0.0025,
             "RLantiwt": -0.0025,
