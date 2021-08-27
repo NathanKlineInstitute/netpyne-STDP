@@ -35,13 +35,13 @@
         "ResumeSimFromFile": "results/20210714/synWeights_final.pkl"
     },
     "sim": {
-        "duration": 2000,
+        "duration": 200,
         "dt": 0.6,
         "verbose": 0,
         "recordStep": 1.0,
         "recordStim": 0,
         "recordWeightStepSize": 1000,
-        "normalizeStepSize": 50,
+        "normalizeStepSize": 1,
         "normalizeByOutputBalancing": 1,
         "normalizeOutBalMinMax": [0.1, 2],
         "normalizeByGainControl": 1,
@@ -135,8 +135,8 @@
             "IML": 10
         },
         "popTargetFreq": {
-            "EA": 5.0,
-            "EM": 5.9
+            "EA": 5.4,
+            "EM": 5.7
         },
         "inputPop": "ES",
         "STDPconns": {
@@ -162,7 +162,7 @@
             "ES":{
                 "EA":{"AM2": 5.0, "NM2": 0.098, "conv": 25}},
             "EA":{
-                "EA":{"AM2": 0.05,"NM2": 0.005, "conv": 1},
+                "EA":{"AM2": 0.05,"NM2": 0.005, "conv": 0},
                 "IA":{"AM2": 1.95,"NM2":0.0195, "conv": 15},
                 "IAL":{"AM2": 1.98,"NM2":0.098, "conv": 15},
                 "EM":{"AM2": 3.25,"NM2": 0.05,"conv": 20}},
@@ -175,10 +175,10 @@
                 "IA":{"GA2": 2.25,"p": 0.2},
                 "IAL":{"GA2": 5.5,"p": 0.1}},
             "EM":{
-                "EM":{"AM2": 0.01,"NM2": 0.001, "conv": 1},
+                "EM":{"AM2": 0.01,"NM2": 0.001, "conv": 0},
                 "IM":{"AM2": 1.95,"NM2":0.0195, "conv": 16},
                 "IML":{"AM2": 0.98,"NM2":0.098, "conv": 16},
-                "EA":{"AM2": 0.5,"NM2": 0.01,"conv": 6}},
+                "EA":{"AM2": 0.5,"NM2": 0.01,"conv": 0}},
             "IM":{
                 "EM":{"GA": 9.0,"p": 0.4},
                 "IM":{"GA": 4.5,"p": 0.1},

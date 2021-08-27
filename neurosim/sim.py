@@ -597,7 +597,7 @@ class NeuroSim:
           if scalar != 1.0:
             cgids_ch = [cgid for cgid, p in cgids_map.items() if p == popname]
             for gid in cgids_ch:
-              self.normOutMeans[gid] *= scalar
+              self.normInMeans[gid] *= scalar
           if self.normalizeVerbose:
             print('GC:{}{}! curr {} target {}'.format(
               '+' if scalar > 1.0 else '-', popname, 

@@ -375,13 +375,18 @@ def stdp_weights_changes(wdir, separate_movement=False, outputfile=None, display
   conns = sorted(list(popWeights.keys()))
 
   figsize = 20 if separate_movement else 15
+  nrows = math.ceil(len(conns) / ncols)
+  if nrows == 1:
+    ncols = len(conns)
   _, axs = plt.subplots(
-    ncols=ncols, nrows=math.ceil(len(conns) / ncols),
+    ncols=ncols, nrows=nrows,
     subplot_kw=dict(projection="3d"),
     figsize=(figsize, figsize))
 
   conn_idx = 0
   for axi in axs:
+    if nrows == 1:
+      axi = [axi]
     for ax in axi:
       if conn_idx == len(conns):
         continue
@@ -390,14 +395,16 @@ def stdp_weights_changes(wdir, separate_movement=False, outputfile=None, display
       wmin = np.min(all_weights)
       wmax = np.max(all_weights)
 
-      for z, weights in enumerate(popWeights[conn]):
+      for z, weights in reversed(list(enumerate(popWeights[conn]))):
           hist, bins = np.histogram(weights, bins=nbins, range=(wmin, wmax))
           xs = (bins[:-1] + bins[1:])/2
           ax.plot(xs, hist, zs=z, zdir='y', alpha=0.8)
 
       ax.set_title('{} weight changes over time'.format(conn))
       ax.set_xlabel('Weights')
-      ax.set_ylabel('Epoch ({}ms)'.format(dconf['sim']['recordWeightStepSize']))
+      ax.set_ylabel('Epoch ({} * {}ms)'.format(
+        dconf['sim']['recordWeightStepSize'],
+        dconf['sim']['tstepPerAction']))
       ax.set_zlabel('Count of neurons')
       conn_idx += 1
 
