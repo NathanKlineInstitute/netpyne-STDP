@@ -24,9 +24,9 @@
     "rewardsToKeep": 100,
     "critic": {
         "angv_bias": 0.2,
-        "total_gain": 5.0,
-        "max_reward": 2.0,
-        "posRewardBias": 2.0
+        "total_gain": 2.0,
+        "max_reward": 0.8,
+        "posRewardBias": 2.8
     },
     "verbose": 0,
     "stayStepLim": 0,
@@ -35,13 +35,15 @@
         "ResumeSimFromFile": "results/20210714/synWeights_final.pkl"
     },
     "sim": {
-        "duration": 200,
+        "duration": 2000,
         "dt": 0.6,
         "verbose": 0,
         "recordStep": 1.0,
         "recordStim": 0,
-        "recordWeightStepSize": 1000,
-        "normalizeStepSize": 1,
+        "recordWeightStepSize": 500,
+        "normalizeSynInputs": 1,
+        "normalizeInStepSize": 25,
+        "normalizeInPrint": 1,
         "normalizeByOutputBalancing": 1,
         "normalizeOutBalMinMax": [0.1, 2],
         "normalizeByGainControl": 1,
@@ -58,9 +60,9 @@
         "saveCellConns": 1,
         "saveMotionFields": 0,
         "plotRaster": 1,
-        "targetedRL": 2,
-        "targetedNonEM": 1,
-        "targetedRLOppFctr": 0.5,
+        "targetedRL": 3,
+        "targetedNonEM": 0,
+        "targetedRLOppFctr": 0.8,
         "targetedRLDscntFctr": 0.5,
         "tstepPerAction": 50,
         "saveWeights": 1
@@ -135,8 +137,8 @@
             "IML": 10
         },
         "popTargetFreq": {
-            "EA": 5.4,
-            "EM": 5.7
+            "EA": 5.5,
+            "EM": 5.9
         },
         "inputPop": "ES",
         "STDPconns": {

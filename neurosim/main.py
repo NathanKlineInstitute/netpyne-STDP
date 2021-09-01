@@ -27,8 +27,11 @@ def main(dconf=None):
   runner.run()
 
 def continue_main(wdir, duration=None, idx=None,
-    copy_from_config=None, copy_fields=None):
+    copy_from_config=None, copy_fields=None, added_params=None):
   dconf_path = os.path.join(wdir, 'backupcfg_sim.json')
+
+  if type(added_params) == str:
+    added_params = added_params.split(',')
 
   synWeights_file = os.path.join(wdir, 'synWeights.pkl')
   timesteps = _saved_timesteps(synWeights_file)
@@ -50,6 +53,13 @@ def continue_main(wdir, duration=None, idx=None,
   if duration != None:
     dconf['sim']['duration'] = duration
   dconf['sim']['plotRaster'] = 0
+  if added_params:
+    for param in added_params:
+      name, val = param.split(':')
+      if name == 'recordWeightStepSize':
+        dconf['sim']['recordWeightStepSize'] = int(val)
+      else:
+        raise Exception('Cannot find param {}'.format(name))
 
   backup_config(dconf)
 
@@ -86,6 +96,9 @@ def evaluate(eval_dir, duration=100, resume_tidx=-1, display=False, verbose=Fals
   dconf['sim']['plotRaster'] = 0
   dconf['sim']['verbose'] = 1 if verbose else 0
   dconf['sim']['sleeptrial'] = sleep if sleep else 0
+  dconf['sim']['normalizeByGainControl'] = 0
+  dconf['sim']['normalizeByOutputBalancing'] = 0
+  dconf['sim']['normalizeSynInputs'] = 0
 
   for stdp_param in ['STDP', 'STDP-RL']:
     if stdp_param in dconf:

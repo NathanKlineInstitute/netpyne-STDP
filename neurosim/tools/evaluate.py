@@ -291,6 +291,60 @@ def _displayAdj(A):
     plt.clim(vmin, vmax)
     plt.colorbar()
 
+def eval_moves(wdir, steps=[100, 1000], outputfile=None,
+    unk_moves=False, abs_move_diff=False, abs_move_diff_norm=False):
+  if not outputfile:
+    outputfile = os.path.join(
+      wdir,
+      'eval_' + ('unk_moves' if unk_moves else 
+                'abs_move_diff' if abs_move_diff else
+                'abs_move_diff_norm' if abs_move_diff_norm else '') + '.png')
+
+
+  assert sum([unk_moves, abs_move_diff, abs_move_diff_norm]) == 1
+
+  val_moves = []
+  with open(os.path.join(wdir, 'MotorOutputs.txt')) as f:
+    for toks in csv.reader(f, delimiter='\t'):
+      _, l, r = [int(float(tok)) for tok in toks]
+      value = None
+      if unk_moves:
+        value = (1 if l == r else 0)
+      elif abs_move_diff or abs_move_diff_norm:
+        value = abs(l - r)
+      val_moves.append(value)
+
+  val_moves_avgs = {}
+  for STEP in steps:
+      val_moves_avgs[STEP] = []
+      current_sum = sum(val_moves[:STEP])
+      current_avg_by = STEP
+      if abs_move_diff_norm:
+        current_avg_by = sum([1 for v in val_moves[:STEP] if v > 0])
+      val_moves_avgs[STEP].append(current_sum / current_avg_by)
+      for idx in range(1, len(val_moves) - STEP):
+        current_sum += val_moves[idx+STEP-1] - val_moves[idx-1]
+        if abs_move_diff_norm:
+          current_avg_by += sum([k / abs(k) for k in [val_moves[idx+STEP-1], -val_moves[idx-1]] if k != 0])
+        val_moves_avgs[STEP].append(current_sum / current_avg_by)
+
+  plt.figure(figsize=(10,10))
+
+  for STEP, umoves in val_moves_avgs.items():
+      plt.plot([t + STEP for t in range(len(umoves))], umoves)
+
+  plt.legend(['over {} steps'.format(STEP) for STEP in val_moves_avgs.keys()])
+  plt.xlabel('steps')
+  ylabel = None
+  if unk_moves:
+    ylabel = 'percentage of unknown moves'
+  elif abs_move_diff or abs_move_diff_norm:
+    ylabel = 'absolte difference between left and right moves' + (
+      ' normalized' if abs_move_diff_norm else '')
+  plt.ylabel(ylabel)
+
+  plt.savefig(outputfile)
+
 def _get_weights_adj(synWeights_file):  
   with open(synWeights_file, 'rb') as f:
       synWeights = pkl.load(f)
@@ -421,6 +475,7 @@ if __name__ == '__main__':
   fire.Fire({
     'frequency': frequency,
     'variance': variance,
+    'eval-moves': eval_moves,
     'boxplot': boxplot,
     'perf': performance,
     'medians': actions_medians,

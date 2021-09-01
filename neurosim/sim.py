@@ -2,6 +2,8 @@ from netpyne import specs, sim
 from neuron import h
 
 import random
+import signal
+import sys
 import pickle
 import os
 import time
@@ -51,8 +53,10 @@ class NeuroSim:
     sim.saveWeights = _get_param(dconf['sim'], 'saveWeights', default=1)
     sim.allSTDPWeights = [] # place to store weights
     self.recordWeightStepSize = dconf['sim']['recordWeightStepSize']
-    self.normalizeStepSize = _get_param(dconf['sim'], 'normalizeStepSize')
-    self.normalizeByOutputBalancing = _get_param(dconf['sim'], 'normalizeByOutputBalancing')
+    self.normalizeSynInputs = _get_param(dconf['sim'], 'normalizeSynInputs', 0)
+    self.normalizeInStepSize = _get_param(dconf['sim'], 'normalizeInStepSize', None)
+    self.normalizeInPrint = _get_param(dconf['sim'], 'normalizeInPrint')
+    self.normalizeByOutputBalancing = _get_param(dconf['sim'], 'normalizeByOutputBalancing', 0)
     self.normalizeOutBalMinMax = _get_param(dconf['sim'], 'normalizeOutBalMinMax')
     self.normalizeByGainControl = _get_param(dconf['sim'], 'normalizeByGainControl')
     self.normalizeByGainControlSteps = _get_param(dconf['sim'], 'normalizeByGainControlSteps')
@@ -62,6 +66,8 @@ class NeuroSim:
     self.normalizeVerbose = _get_param(dconf['sim'], 'normalizeVerbose', 0)
     self.normInMeans = None
     self.normOutMeans = None
+    if self.normalizeInPrint:
+      self.normalizeInPrintFilename = outpath('normalize_synaptic_input.json')
     # time step per action (in ms)
     self.tstepPerAction = dconf['sim']['tstepPerAction']
     self.actionsPerPlay = dconf['actionsPerPlay']
@@ -412,6 +418,12 @@ class NeuroSim:
     if self.normalizeVerbose:
       llscales = sorted(list(cell_scales.items()), key=lambda x:x[1])
       print('Inminmax scales:', llscales[0], llscales[-1])
+    if self.normalizeInPrint:
+      with open(self.normalizeInPrintFilename, 'a') as out:
+        out.write(json.dumps({
+          'curr': curr_means,
+          'norm': norm_means
+        }) + '\n')
 
 
   def getSpikesWithInterval(self, trange=None, neuronal_pop=None):
@@ -562,7 +574,7 @@ class NeuroSim:
                   if dconf['verbose']: print('Apply -RL to EM', oppMoveName)
                   for cGid, STDPmech in self.dSTDPmech[oppMoveName]:
                     STDPmech.reward_punish(
-                      float(reward*-dconf['sim']['targetedRLOppFctr']) * outNormScale(cGid))
+                      reward * (-dconf['sim']['targetedRLOppFctr']) * outNormScale(cGid))
     else:
       cell_scales = {}
       for cGid, STDPmech in self.dSTDPmech['all']:
@@ -707,7 +719,7 @@ class NeuroSim:
     t1 = datetime.now()
 
     # Measure and cache normalized initial weights
-    if self.normalizeStepSize and not self.normInMeans:
+    if self.normalizeSynInputs and not self.normInMeans:
       self.normInMeans = self.weightsMean(sim, ctype='in')
     if self.normalizeByOutputBalancing and not self.normOutMeans:
       self.normOutMeans = self.weightsMean(sim, ctype='out')
@@ -796,7 +808,7 @@ class NeuroSim:
         print('Weights Recording Time:', t, 'NBsteps:', self.NBsteps,
               'recordWeightStepSize:', self.recordWeightStepSize)
       self.recordWeights(sim, t)
-    if self.normalizeStepSize and self.NBsteps % self.normalizeStepSize == 0:
+    if self.normalizeSynInputs and self.NBsteps % self.normalizeInStepSize == 0:
       self.normalizeInWeights(sim)
 
     t5 = datetime.now() - t5
@@ -880,7 +892,19 @@ class NeuroSim:
     # Record weights at time 0
     self.recordWeights(sim, 0)
     # has periodic callback to adjust STDP weights based on RL signal
+    signal.signal(signal.SIGINT, self._handler)
     sim.runSimWithIntervalFunc(tPerPlay, self.trainAgent)
+    # A Control-C will break from 'runSimWithIntervalFunc' but still save
+    self.save()
+
+
+  def _handler(self, signal_received, frame):
+      # Handle any cleanup here
+      print('SIGINT or CTRL-C detected. Exiting gracefully')
+      self.save()
+      sys.exit()
+
+  def save(self):
     if self.ECellModel == 'INTF7' or self.ICellModel == 'INTF7':
       intf7.insertSpikes(sim, self.simConfig.recordStep)
     sim.gatherData()  # gather data from different nodes
