@@ -24,9 +24,9 @@
     "rewardsToKeep": 100,
     "critic": {
         "angv_bias": 0.2,
-        "total_gain": 2.0,
-        "max_reward": 0.8,
-        "posRewardBias": 2.8
+        "total_gain": 3.0,
+        "max_reward": 1.0,
+        "posRewardBias": 2.0
     },
     "verbose": 0,
     "stayStepLim": 0,
@@ -35,7 +35,7 @@
         "ResumeSimFromFile": "results/20210714/synWeights_final.pkl"
     },
     "sim": {
-        "duration": 2000,
+        "duration": 5000,
         "dt": 0.6,
         "verbose": 0,
         "recordStep": 1.0,
@@ -138,7 +138,7 @@
         },
         "popTargetFreq": {
             "EA": 5.5,
-            "EM": 5.9
+            "EM": 6.0
         },
         "inputPop": "ES",
         "STDPconns": {
@@ -223,17 +223,17 @@
             "wmax": 50,
             "RLon": 1,
             "STDPon": 0,
-            "RLlenhebb": 102,
-            "RLlenanti": 102,
+            "RLlenhebb": 155,
+            "RLlenanti": 155,
             "useRLexp": 0,
-            "RLhebbwt": 0.0025,
-            "RLantiwt": -0.0025,
+            "RLhebbwt": 0.01,
+            "RLantiwt": -0.01,
             "hebbwt": 0.0,
             "antiwt": 0.0,
-            "tauhebb": 3,
-            "tauanti": 3,
-            "RLwindhebb": 5,
-            "RLwindanti": 5,
+            "tauhebb": 5,
+            "tauanti": 5,
+            "RLwindhebb": 10,
+            "RLwindanti": 10,
             "softthresh": 0,
             "verbose": 0,
             "maxreward": 0.0
