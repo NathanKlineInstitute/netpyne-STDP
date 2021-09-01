@@ -86,6 +86,7 @@ class NeuroSim:
 
     # connection matrix (for classes, synapses, probabilities [probabilities not used for topological conn])
     self.cmat = dconf['net']['cmat']
+    self.deactivateNMDA = _get_param(dconf['net'], 'deactivateNMDA')
 
     # Network parameters
     netParams = specs.NetParams()
@@ -319,6 +320,8 @@ class NeuroSim:
   def setupSTDPWeights(self):
     synToMech = self.dconf['net']['synToMech']
     sytypes = self.dconf['net']['synToMech'].keys()
+    if self.deactivateNMDA:
+      sytypes = [sy for sy in sytypes if sy != 'NM2']
 
     # Setup cmat connections
     stdpConns = self.dconf['net']['STDPconns']

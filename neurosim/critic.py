@@ -31,6 +31,7 @@ class Critic:
       self.negRewardBias = dconf['critic']['negRewardBias']
     if 'negRewardBias' in dconf['net'] and dconf['net']['negRewardBias'] != 1.0:
       self.negRewardBias = dconf['net']['negRewardBias']
+    self.clear_flips = dconf['critic']['clear_flips'] if 'clear_flips' in dconf['critic'] else 0
     self.modulate = None
     if 'modulation' in dconf['critic']:
       self.mod_steps = dconf['critic']['modulation']['steps']
@@ -74,8 +75,8 @@ class Critic:
       reward = self.bad()
     elif self._balanced(curr_obs):
         reward = self.max_reward
-    # elif curr_obs[3] * prev_obs[3] < 0:
-    #   return 0.0
+    elif self.clear_flips and curr_obs[3] * prev_obs[3] < 0:
+      return 0.0
     else:
       curr_loss = self._loss(curr_obs)
       prev_loss = self._loss(prev_obs)

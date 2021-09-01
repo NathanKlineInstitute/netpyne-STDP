@@ -214,7 +214,7 @@ def variance(wdir, timestep=100, outputfile=None, var_of=100,
   plt.legend(legend)
   plt.savefig(outputfile)
 
-def actions_medians(wdir, steps=[21,51,101], outputfile=None):
+def actions_medians(wdir, steps=[21,51,101], outputfile=None, just_return=False):
   if not outputfile:
     outputfile = os.path.join(wdir, 'eval_actions.png')
 
@@ -226,6 +226,12 @@ def actions_medians(wdir, steps=[21,51,101], outputfile=None):
       training_medians[STEP] = []
       for idx in range(len(training_results) - STEP):
           training_medians[STEP].append(np.median(training_results[idx:idx+STEP]))
+
+  if just_return:
+    results = []
+    for STEP, medians in sorted(list(training_medians.items()), key=lambda x:x[0]):
+      results.append(np.amax(medians))
+    return results
 
   plt.figure(figsize=(10,10))
 

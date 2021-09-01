@@ -127,3 +127,22 @@ Continue training from a already trained model:
     py neurosim/tools/critic.py hpsearch \
         --best-wdir results/20210801-1000it-1eps/500s-evaluation_10 \
         --critic-config config.json
+
+### Run Hyperparameter search
+
+Change `hpsearch_config.json` to the needed params
+
+    WDIR=results/hpsearch-2021-09-01
+    mkdir $WDIR
+    cp hpsearch_config.json $WDIR/
+
+    # run one sample
+    py neurosim/hpsearch.py sample $WDIR
+    
+    # run 100 samples
+    for ((i=0;i<100;i+=1)); do
+        echo "Sampling $i th run"
+        py neurosim/hpsearch.py sample $WDIR
+    done
+
+Results are posted in `$WDIR/results.tsv`

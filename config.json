@@ -26,7 +26,8 @@
         "angv_bias": 0.2,
         "total_gain": 3.0,
         "max_reward": 1.0,
-        "posRewardBias": 2.0
+        "posRewardBias": 2.0,
+        "clear_flips": false
     },
     "verbose": 0,
     "stayStepLim": 0,
@@ -40,10 +41,10 @@
         "verbose": 0,
         "recordStep": 1.0,
         "recordStim": 0,
-        "recordWeightStepSize": 500,
+        "recordWeightStepSize": 5000,
         "normalizeSynInputs": 1,
         "normalizeInStepSize": 25,
-        "normalizeInPrint": 1,
+        "normalizeInPrint": 0,
         "normalizeByOutputBalancing": 1,
         "normalizeOutBalMinMax": [0.1, 2],
         "normalizeByGainControl": 1,
@@ -140,6 +141,8 @@
             "EA": 5.5,
             "EM": 6.0
         },
+        "deactivateNMDA": 1,
+
         "inputPop": "ES",
         "STDPconns": {
             "EE": 1
@@ -220,7 +223,7 @@
             "maxreward": 0.0
         },
         "AMPA": {
-            "wmax": 50,
+            "wmax": 200,
             "RLon": 1,
             "STDPon": 0,
             "RLlenhebb": 155,
