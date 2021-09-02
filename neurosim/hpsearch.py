@@ -6,10 +6,13 @@ import json
 from tqdm import tqdm
 import numpy as np
 from datetime import datetime
+import pickle as pkl
 
 from neurosim.main import main
+from neurosim.tools.utils import _get_pop_name, _extract_sorted_min_ids
 
 MEDIAN_STEPS = [21,51,101]
+FREQ_POPS = ['EM', 'EA']
 
 def _get_runs(keys, params, conditions):
   # Generate all the runs based on the hyperparam search config
@@ -84,6 +87,29 @@ def _actions_medians(wdir, steps):
       results.append(best)
   return results
 
+def _frequencies(wdir, freq_pops):
+  sim_config = os.path.join(wdir, 'sim.pkl')
+  with open(sim_config, 'rb') as f:
+    sim = pkl.load(f)
+
+  dconf_path = os.path.join(wdir, 'backupcfg_sim.json')
+  with open(dconf_path, 'r') as f:
+    dconf = json.load(f)
+
+  sorted_min_ids = _extract_sorted_min_ids(sim, dconf, separate_movement=False)
+  
+  spkid = sim['simData']['spkid']
+  spkt = sim['simData']['spkt']
+
+  spike_aggs = dict([(p, 0) for p in freq_pops])
+  for cid, ct in zip(spkid, spkt):
+    pop = _get_pop_name(cid, sorted_min_ids)
+    if pop in spike_aggs:
+      spike_aggs[pop] += 1
+  duration = dconf['sim']['duration']
+  pop_size = dconf['net']['allpops']
+  return [float(spike_aggs[p]) / duration / pop_size[p] for p in freq_pops]
+
 def _pseudo_random(digits=7, iters=2):
   # Used the Middle square method (MSM) for generating pseudorandom numbers
   # use own random function to not mess up with the seed
@@ -155,7 +181,9 @@ def sample_run(
 
     with open(results_tsv, 'w') as out:
       writer = csv.writer(out, delimiter='\t')
-      writer.writerow(['run_id'] + ['max_median_s{}'.format(step) for step in MEDIAN_STEPS])
+      writer.writerow(
+        ['run_id'] + ['max_median_s{}'.format(step) for step in MEDIAN_STEPS] + \
+        ['freq_{}'.format(pop) for pop in FREQ_POPS])
     if just_init:
       return
   else:
@@ -189,9 +217,10 @@ def sample_run(
 
   # write results then exit
   medians = _actions_medians(config['sim']['outdir'], MEDIAN_STEPS)
+  freqs = _frequencies(config['sim']['outdir'], FREQ_POPS)
   with open(results_tsv, 'a')as out:
     writer = csv.writer(out, delimiter='\t')
-    writer.writerow([run_id] + medians)
+    writer.writerow([run_id] + medians + freqs)
 
 
 if __name__ == '__main__':

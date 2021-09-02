@@ -74,6 +74,7 @@ class NeuroSim:
     self.targetedRL = _get_param(dconf['sim'], 'targetedRL', 0)
     self.targetedNonEM = _get_param(dconf['sim'], 'targetedNonEM', 0)
     self.saveEnvObs = _get_param(dconf['sim'], 'saveEnvObs', default=1)
+    self.resetEligTrace = _get_param(dconf['sim'], 'resetEligTrace', default=0)
 
     self.allpops = list(dconf['net']['allpops'].keys())
     self.inputPop = dconf['net']['inputPop']
@@ -590,6 +591,9 @@ class NeuroSim:
         llscales = sorted(list(cell_scales.items()), key=lambda x:x[1])
         print('Outminmax scales:', llscales[0], llscales[-1])
 
+  def resetEligibilityTrace(self):
+    for _, STDPmech in self.dSTDPmech['all']:
+      STDPmech.reset_eligibility()
 
   def runGainControl(self, spikes, cgids_map):
     self.normalizeByGainControlQueue.append(spikes)
@@ -785,6 +789,10 @@ class NeuroSim:
         if sim.rank == 0:
           print('t={} Reward:{} Actions: {}'.format(round(t, 2), reward, actions))
       self.applySTDP(sim, reward, actions)
+
+    # Reset eligibility trace
+    if self.resetEligTrace:
+      self.resetEligibilityTrace()
 
     t3 = datetime.now() - t3
     t4 = datetime.now()
