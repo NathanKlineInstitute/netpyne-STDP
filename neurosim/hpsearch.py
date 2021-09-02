@@ -1,4 +1,5 @@
 import os
+import shutil
 import csv
 import fire
 import json
@@ -102,17 +103,29 @@ def _pseudo_random(digits=7, iters=2):
 def sample_run(
     outputdir,
     hpconfig_file='hpsearch_config.json',
+    config_file='config.json',
     just_init=False):
-
-  with open(hpconfig_file) as f:
-    hpconf = json.load(f)
 
   runs_tsv = os.path.join(outputdir, 'runs.tsv')
   runs_json = os.path.join(outputdir, 'runs.json')
   config_json = os.path.join(outputdir, 'init_config.json')
   results_tsv = os.path.join(outputdir, 'results.tsv')
+  hpconfig2_file = os.path.join(outputdir, 'hpsearch_config.json')
 
-  if sum([not os.path.isfile(runs_tsv) for fname in [runs_tsv, runs_json, config_json, results_tsv]]) > 0:
+  if not os.path.isdir(outputdir):
+    os.makedirs(outputdir)
+
+  if os.path.isfile(hpconfig2_file):
+    hpconfig_file = hpconfig2_file
+
+  if os.path.isfile(config_json):
+    config_file = config_json
+
+  with open(hpconfig_file) as f:
+    hpconf = json.load(f)
+
+  if just_init or sum([
+      not os.path.isfile(runs_tsv) for fname in [runs_tsv, runs_json, config_json, results_tsv, hpconfig2_file]]) > 0:
     # Generate all runs
     param_keys = list(hpconf['params'].keys())
     allruns = _get_runs(param_keys, hpconf['params'], hpconf['conditions'])
@@ -129,10 +142,16 @@ def sample_run(
       for run in allruns:
         out.write(json.dumps(dict(zip(header, run))) + '\n')
 
-    with open('config.json') as f:
-      config = json.load(f)
-    with open(config_json, 'w') as out:
-      out.write(json.dumps(config, indent=4))
+    with open(config_file) as f:
+      config = json.load(f)      
+    for param_name in hpconf['params'].keys():
+      config = _config_replace(config, param_name, None)
+    if not os.path.isfile(config_json):
+      with open(config_json, 'w') as out:
+        out.write(json.dumps(config, indent=4))
+
+    if not os.path.isfile(hpconfig2_file):
+      shutil.copy(hpconfig_file, hpconfig2_file)
 
     with open(results_tsv, 'w') as out:
       writer = csv.writer(out, delimiter='\t')

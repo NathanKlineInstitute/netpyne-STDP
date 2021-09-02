@@ -72,6 +72,7 @@ Evaluate the model before and after training:
     WDIR=results/20210707
     py neurosim/main.py eval $WDIR --resume_tidx=0
     py neurosim/main.py eval $WDIR --resume_tidx=-1
+    py neurosim/main.py eval $WDIR --resume_tidx=-2
 
     # To display the model run
     py neurosim/main.py eval $WDIR --resume_tidx=-1 --display
@@ -112,6 +113,13 @@ Continue training from a already trained model:
     py neurosim/main.py continue $WDIR --duration 5000
     # note: this script needs more care on how to integrate with different/new params
 
+    # more detailed example:
+    py neurosim/main.py continue results/20210801-1000it-1eps/ \
+        --copy-from-config config.json \
+        --copy-fields critic,sim,STDP-RL \
+        --duration 100 \
+        --idx=3
+
 #### Critic evaluation
 
     py neurosim/tools/critic.py eval \
@@ -132,9 +140,7 @@ Continue training from a already trained model:
 
 Change `hpsearch_config.json` to the needed params
 
-    WDIR=results/hpsearch-2021-09-01
-    mkdir $WDIR
-    cp hpsearch_config.json $WDIR/
+    WDIR=results/hpsearch-2021-09-02
 
     # Just for setup:
     py neurosim/hpsearch.py sample $WDIR --just-init
@@ -148,6 +154,6 @@ Change `hpsearch_config.json` to the needed params
         time py neurosim/hpsearch.py sample $WDIR
     done
 
-Results are posted in `$WDIR/results.tsv`
+Results are posted in `$WDIR/results.tsv`, then you can analyze with:
 
     py neurosim/tools/eval_hpsearch.py analyze $WDIR

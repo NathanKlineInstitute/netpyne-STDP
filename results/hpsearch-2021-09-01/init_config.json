@@ -49,7 +49,7 @@
         "angv_bias": null,
         "total_gain": 3.0,
         "max_reward": 1.0,
-        "posRewardBias": 2.0,
+        "posRewardBias": null,
         "clear_flips": null
     },
     "verbose": 0,
