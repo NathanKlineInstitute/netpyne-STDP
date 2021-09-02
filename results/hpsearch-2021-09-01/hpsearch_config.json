@@ -1,0 +1,25 @@
+{
+    "params": {
+        "STDP-RL:AMPA:RLlenhebb": [51, 102, 153, 204, 255],
+        "STDP-RL:AMPA:RLlenanti": [51, 102, 153, 204, 255],
+        "STDP-RL:AMPA:RLhebbwt": [0.02, 0.01, 0.005],
+        "STDP-RL:AMPA:RLantiwt": [-0.02, -0.01, -0.005],
+        "STDP-RL:AMPA:tauhebb": [3, 5, 10, 25, 50, 100, 200],
+        "STDP-RL:AMPA:tauanti": [3, 5, 10, 25, 50, 100, 200],
+        "STDP-RL:AMPA:RLwindhebb": [2, 3, 5, 10, 25],
+        "STDP-RL:AMPA:RLwindanti": [2, 3, 5, 10, 25],
+        "sim:targetedRL": [1, 2, 3],
+        "sim:targetedRLOppFctr": [0.5, 0.8, 1.0],
+        "sim:targetedNonEM": [0, 1],
+        "critic:posRewardBias": [1.5, 2.0, 2.5, 2.8],
+        "critic:angv_bias": [0.1, 0.2, 0.5],
+        "net:deactivateNMDA": [false, true]
+    },
+    "conditions": [
+        ["STDP_RL_AMPA_RLlenhebb == STDP_RL_AMPA_RLlenanti", 2],
+        ["STDP_RL_AMPA_RLhebbwt == - STDP_RL_AMPA_RLantiwt", 4],
+        ["STDP_RL_AMPA_tauhebb == STDP_RL_AMPA_tauanti", 6],
+        ["STDP_RL_AMPA_RLwindhebb == STDP_RL_AMPA_RLwindanti", 8],
+        ["sim_targetedRL == 3 or sim_targetedRLOppFctr == 1.0", 10]
+    ]
+}
