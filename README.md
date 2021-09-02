@@ -136,13 +136,18 @@ Change `hpsearch_config.json` to the needed params
     mkdir $WDIR
     cp hpsearch_config.json $WDIR/
 
+    # Just for setup:
+    py neurosim/hpsearch.py sample $WDIR --just-init
+
     # run one sample
     py neurosim/hpsearch.py sample $WDIR
     
     # run 100 samples
-    for ((i=0;i<100;i+=1)); do
+    for ((i=0;i<6;i+=1)); do
         echo "Sampling $i th run"
-        py neurosim/hpsearch.py sample $WDIR
+        time py neurosim/hpsearch.py sample $WDIR
     done
 
 Results are posted in `$WDIR/results.tsv`
+
+    py neurosim/tools/eval_hpsearch.py analyze $WDIR
