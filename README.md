@@ -71,7 +71,7 @@ Evaluate the model before and after training:
     
     WDIR=results/20210707
     py neurosim/main.py eval $WDIR --resume_tidx=0
-    py neurosim/main.py eval $WDIR --resume_tidx=-1
+    py neurosim/main.py eval $WDIR --resume_tidx=-1 --duration 200
 
     # To display the model run
     py neurosim/main.py eval $WDIR --resume_tidx=-1 --display
@@ -93,7 +93,6 @@ Run all evaluation:
     py neurosim/tools/evaluate.py rewards-vals $WDIR
     py neurosim/tools/evaluate.py eval-moves $WDIR --unk_moves
     py neurosim/tools/evaluate.py eval-moves $WDIR --abs_move_diff
-    py neurosim/tools/evaluate.py eval-moves $WDIR --abs_move_diff_norm
 
     py neurosim/tools/evaluate.py weights-adj $WDIR
     py neurosim/tools/evaluate.py weights-adj $WDIR --index 0
@@ -148,7 +147,7 @@ Change `hpsearch_config.json` to the needed params
     py neurosim/hpsearch.py sample $WDIR
     
     # run 100 samples
-    for ((i=0;i<6;i+=1)); do
+    for ((i=0;i<100;i+=1)); do
         echo "Sampling $i th run"
         time py neurosim/hpsearch.py sample $WDIR
     done

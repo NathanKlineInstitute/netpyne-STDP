@@ -745,12 +745,13 @@ class NeuroSim:
     t1 = datetime.now() - t1
     t2 = datetime.now()
 
+    game_done = None
     if sim.rank == 0:
       is_unk_move = len([a for a in actions if a == self.unk_move]) > 0
       actions = [a if a != self.unk_move else sim.AIGame.randmove()
         for a in actions]
-      rewards, done = sim.AIGame.playGame(actions)
-      if done:
+      rewards, game_done = sim.AIGame.playGame(actions)
+      if game_done:
         ep_cnt = dconf['env']['episodes']
         eval_str = ''
         if len(sim.AIGame.count_steps) > ep_cnt:
@@ -791,7 +792,7 @@ class NeuroSim:
       self.applySTDP(sim, reward, actions)
 
     # Reset eligibility trace
-    if self.resetEligTrace:
+    if game_done and self.resetEligTrace:
       self.resetEligibilityTrace()
 
     t3 = datetime.now() - t3
