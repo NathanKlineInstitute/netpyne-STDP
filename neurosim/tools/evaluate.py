@@ -314,6 +314,84 @@ def eval_moves(wdir, steps=[100, 1000], outputfile=None,
 
   plt.savefig(outputfile)
 
+
+def eval_motor_balance(wdir, steps=[1000], outputfile=None):
+  if not outputfile:
+    outputfile = os.path.join(wdir, 'eval_motor_balance.png')
+
+  # TODO: move to model agnostic move choices
+  choices = [] # including unknown as -1
+  spikes = dict([(k, []) for k in range(2)]) # index by move id (including if same)
+  rewards = dict([(k, []) for k in range(2)]) # index by move id (including random)
+  with open(os.path.join(wdir, 'MotorOutputs.txt')) as fMO:
+    readerFMO = csv.reader(fMO, delimiter='\t')
+    with open(os.path.join(wdir, 'ActionsRewards.txt')) as fAR:
+      for idx, rAR in enumerate(csv.reader(fAR, delimiter='\t')):
+        if idx == 0:
+          continue
+        rMO = readerFMO.__next__()
+        if rAR[0] != rMO[0]:
+          raise Exception('Lines not in sync: "{}" vs "{}"'.format(rAR, rMO))
+        spk_l, spk_r = int(float(rMO[1])), int(float(rMO[2]))
+        choice = 0 if spk_l == spk_r else (-1 if spk_l > spk_r else 1)
+        real_choice, reward = [float(k) for k in rAR[1:3]]
+        # assert choice == -1 or choice == int(real_choice)
+        choices.append(choice)
+        spikes[0].append(spk_l)
+        spikes[1].append(spk_r)
+        other_choice = 1.0 - real_choice
+        rewards[int(real_choice)].append(reward)
+        rewards[int(other_choice)].append(0)
+
+  def _get_averages(arr, rm_unk=False):
+    arr_avgs = {}
+    for STEP in steps:
+        arr_avgs[STEP] = []
+        current_sum = sum(arr[:STEP])
+        current_avg_by = STEP
+        if rm_unk:
+          current_avg_by = sum([abs(a) for a in arr[:STEP]])
+        arr_avgs[STEP].append(current_sum / current_avg_by)
+        for idx in range(1, len(arr) - STEP):
+          current_sum += arr[idx+STEP-1] - arr[idx-1]
+          if rm_unk:
+            current_avg_by += abs(arr[idx+STEP-1]) - abs(arr[idx-1])
+          arr_avgs[STEP].append(current_sum / current_avg_by)
+    return arr_avgs
+
+  _, axs = plt.subplots(ncols=3, nrows=1, figsize=(15, 5))
+  ax1, ax2, ax3 = axs
+
+  spikes_avg_l = _get_averages(spikes[0])
+  spikes_avg_r = _get_averages(spikes[1])
+  for STEP in steps:
+      ax1.plot([t + STEP for t in range(len(spikes_avg_l[STEP]))], spikes_avg_l[STEP])
+      ax1.plot([t + STEP for t in range(len(spikes_avg_r[STEP]))], spikes_avg_r[STEP])
+  ax1.legend(['{} over {} steps'.format(direction, STEP) for STEP in steps for direction in ['left', 'right']])
+  ax1.set_xlabel('steps')
+  ax1.set_ylabel('spikes averages')
+
+  rewards_avg_l = _get_averages(rewards[0])
+  rewards_avg_r = _get_averages(rewards[1])
+  for STEP in steps:
+      ax2.plot([t + STEP for t in range(len(rewards_avg_l[STEP]))], rewards_avg_l[STEP])
+      ax2.plot([t + STEP for t in range(len(rewards_avg_r[STEP]))], rewards_avg_r[STEP])
+  ax2.legend(['{} over {} steps'.format(direction, STEP) for STEP in steps for direction in ['left', 'right']])
+  ax2.set_xlabel('steps')
+  ax2.set_ylabel('rewards averages')
+
+
+  choices_avg = _get_averages(choices, rm_unk=True)
+  for STEP in steps:
+      choices_ratio = [(1.0 - avg) / 2 for avg in choices_avg[STEP]]
+      ax3.plot([t + STEP for t in range(len(choices_avg[STEP]))], choices_ratio)
+  ax3.legend(['ratio over {} steps'.format(STEP) for STEP in steps])
+  ax3.set_xlabel('steps')
+  ax3.set_ylabel('ratio of left moves / all non-unk moves')
+
+  plt.savefig(outputfile)
+
+
 def _get_weights_adj(synWeights_file):  
   with open(synWeights_file, 'rb') as f:
       synWeights = pkl.load(f)
@@ -445,6 +523,7 @@ if __name__ == '__main__':
     'frequency': frequency,
     'variance': variance,
     'eval-moves': eval_moves,
+    'eval-motor': eval_motor_balance,
     'boxplot': boxplot,
     'perf': performance,
     'medians': actions_medians,

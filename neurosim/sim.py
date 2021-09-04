@@ -545,8 +545,8 @@ class NeuroSim:
       curr_means = self.weightsMean(sim, ctype='out')
       norm_means = self.normOutMeans
       minMax = self.normalizeOutBalMinMax
-      def normalizeOutF(cGid):
-        cell_scale = norm_means[cGid] / curr_means[cGid]
+      def normalizeOutF(preCGid):
+        cell_scale = norm_means[preCGid] / curr_means[preCGid]
         if reward > 0: cell_scale = 1.0 / cell_scale
         cell_scale = max(minMax[0], min(cell_scale, minMax[1]))
         return cell_scale
@@ -558,34 +558,34 @@ class NeuroSim:
     if self.targetedRL >= 1:
       if self.targetedNonEM>=1:
         if dconf['verbose']: print('Apply RL to nonEM')
-        for cGid, STDPmech in self.dSTDPmech['nonEM']:
+        for preCGid, STDPmech in self.dSTDPmech['nonEM']:
           STDPmech.reward_punish(
-            float(reward*dconf['sim']['targetedRLDscntFctr']) * outNormScale(cGid))
+            float(reward*dconf['sim']['targetedRLDscntFctr']) * outNormScale(preCGid))
       if self.targetedRL == 1: #RL=1: Apply to all of EM
         for pop, pop_moves in dconf['pop_to_moves'].items():
           if dconf['verbose']: print('Apply RL to ', pop)
-          for cGid, STDPmech in self.dSTDPmech[pop]:
-            STDPmech.reward_punish(reward * outNormScale(cGid))
+          for preCGid, STDPmech in self.dSTDPmech[pop]:
+            STDPmech.reward_punish(reward * outNormScale(preCGid))
       elif self.targetedRL >= 2:
         for moveName, moveID in dconf['moves'].items():
           if actions[-1] == moveID:
             if dconf['verbose']: print('Apply RL to EM', moveName)
-            for cGid, STDPmech in self.dSTDPmech[moveName]:
-              STDPmech.reward_punish(reward * outNormScale(cGid))
+            for preCGid, STDPmech in self.dSTDPmech[moveName]:
+              STDPmech.reward_punish(reward * outNormScale(preCGid))
             if self.targetedRL >= 3: 
               for oppMoveName in dconf['moves'].keys():
                 if oppMoveName != moveName: #ADD: and oppMoveName fires
                   if dconf['verbose']: print('Apply -RL to EM', oppMoveName)
-                  for cGid, STDPmech in self.dSTDPmech[oppMoveName]:
+                  for preCGid, STDPmech in self.dSTDPmech[oppMoveName]:
                     STDPmech.reward_punish(
-                      reward * (-dconf['sim']['targetedRLOppFctr']) * outNormScale(cGid))
+                      reward * (-dconf['sim']['targetedRLOppFctr']) * outNormScale(preCGid))
     else:
       cell_scales = {}
-      for cGid, STDPmech in self.dSTDPmech['all']:
-        cell_scale = outNormScale(cGid) # scale for normalization (if active)
+      for preCGid, STDPmech in self.dSTDPmech['all']:
+        cell_scale = outNormScale(preCGid) # scale for normalization (if active)
         STDPmech.reward_punish(reward * cell_scale)
         if self.normalizeVerbose:
-          cell_scales[cGid] = cell_scale
+          cell_scales[preCGid] = cell_scale
 
       if self.normalizeVerbose >= 2:
         llscales = sorted(list(cell_scales.items()), key=lambda x:x[1])

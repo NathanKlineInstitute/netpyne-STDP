@@ -91,6 +91,7 @@ Run all evaluation:
     py neurosim/tools/evaluate.py medians $WDIR
     py neurosim/tools/evaluate.py rewards $WDIR
     py neurosim/tools/evaluate.py rewards-vals $WDIR
+    py neurosim/tools/evaluate.py eval-motor $WDIR
     py neurosim/tools/evaluate.py eval-moves $WDIR --unk_moves
     py neurosim/tools/evaluate.py eval-moves $WDIR --abs_move_diff
 
@@ -116,7 +117,7 @@ Continue training from a already trained model:
         --copy-from-config config.json \
         --copy-fields critic,sim,STDP-RL \
         --duration 100 \
-        --idx=3
+        --index=3
 
 #### Critic evaluation
 

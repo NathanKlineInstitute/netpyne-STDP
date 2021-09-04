@@ -142,7 +142,7 @@
             "EA": 5.5,
             "EM": 6.0
         },
-        "deactivateNMDA": 1,
+        "deactivateNMDA": 0,
 
         "inputPop": "ES",
         "STDPconns": {
@@ -236,8 +236,8 @@
             "antiwt": 0.0,
             "tauhebb": 5,
             "tauanti": 5,
-            "RLwindhebb": 10,
-            "RLwindanti": 10,
+            "RLwindhebb": 25,
+            "RLwindanti": 25,
             "softthresh": 0,
             "verbose": 0,
             "maxreward": 0.0
