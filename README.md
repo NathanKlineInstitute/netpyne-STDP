@@ -156,3 +156,5 @@ Change `hpsearch_config.json` to the needed params
 Results are posted in `$WDIR/results.tsv`, then you can analyze with:
 
     py neurosim/tools/eval_hpsearch.py analyze $WDIR
+
+    py neurosim/tools/eval_hpsearch.py combine $WDIR
