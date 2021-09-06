@@ -61,6 +61,7 @@ def boxplot(wdir, include_random=True, outputfile=None):
   ax.set_ylabel('actions per episode')
   ax.set_title('BoxPlots of ActionsPerEpisode for {} model at different timesteps'.format(wdir))
 
+  plt.grid(axis='y')
   plt.tight_layout()
   plt.savefig(outputfile)
 

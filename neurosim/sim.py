@@ -571,7 +571,7 @@ class NeuroSim:
           if actions[-1] == moveID:
             if dconf['verbose']: print('Apply RL to EM', moveName)
             for preCGid, STDPmech in self.dSTDPmech[moveName]:
-              STDPmech.reward_punish(reward * outNormScale(preCGid))
+              STDPmech.reward_punish(reward * (dconf['sim']['targetedRLMainFctr']) * outNormScale(preCGid))
             if self.targetedRL >= 3: 
               for oppMoveName in dconf['moves'].keys():
                 if oppMoveName != moveName: #ADD: and oppMoveName fires

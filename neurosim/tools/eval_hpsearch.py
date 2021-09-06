@@ -59,13 +59,20 @@ def analyze_samples(wdir):
         key = param_keys[param_idx]
         vals = dict([(v, []) for v in hpconfig['params'][key]])
         for res in results:
-          vals[res['params'][key]].append(res[result_key])
+          param_key = res['params'][key]
+          if type(param_key) == str and 'synWeights_final.pkl' in param_key:
+            new_param_key = param_key.split('/')[-2]
+            if new_param_key not in vals:
+              del vals[param_key]
+              vals[new_param_key] = []
+            param_key = new_param_key
+          vals[param_key].append(res[result_key])
 
         valkeys = sorted(list(vals.keys()))
         ax.boxplot([vals[vk] for vk in valkeys])
         ax.set_xticklabels(
           ['{}({})'.format(vk, len(vals[vk])) for vk in valkeys],
-          rotation=5)
+          rotation=8)
         ax.set_ylabel(result_key)
         ax.set_title(key)
         ax.grid(axis='y', alpha=0.5)
