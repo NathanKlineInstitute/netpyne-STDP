@@ -1,7 +1,7 @@
 {
     "params": {
         "STDP-RL:AMPA:RLhebbwt": [0.03, 0.025, 0.02, 0.015],
-        "STDP-RL:AMPA:RLantiwt": [-0.03, -0.02, -0.015],
+        "STDP-RL:AMPA:RLantiwt": [-0.03, -0.025, -0.02, -0.015],
         "sim:targetedNonEM": [0, 1],
         "sim:targetedRLDscntFctr": [0.5, 0.8, 0.9],
         "sim:targetedRLMainFctr": [0.5, 0.8, 0.9, 1.0],
