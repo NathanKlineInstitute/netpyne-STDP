@@ -26,11 +26,53 @@ def main(dconf=None):
   runner = NeuroSim(dconf)
   runner.run()
 
+def continue_main(wdir, duration=None, index=None,
+    copy_from_config=None, copy_fields=None, added_params=None):
+  dconf_path = os.path.join(wdir, 'backupcfg_sim.json')
+
+  if type(added_params) == str:
+    added_params = added_params.split(',')
+
+  synWeights_file = os.path.join(wdir, 'synWeights.pkl')
+  timesteps = _saved_timesteps(synWeights_file)
+  outdir = os.path.join(wdir, 'continue_{}'.format(1 if index == None else index))
+  dconf = read_conf(dconf_path, outdir=outdir)
+
+  if copy_from_config and copy_fields:
+    dconf_sep = read_conf(copy_from_config, outdir=outdir)
+    if type(copy_fields) == str:
+      copy_fields = copy_fields.split(',')
+    for field in copy_fields:
+      dconf[field] = dconf_sep[field]
+
+  init_wdir(dconf)
+
+  dconf['simtype']['ResumeSim'] = 1
+  dconf['simtype']['ResumeSimFromFile'] = synWeights_file
+  dconf['simtype']['ResumeSimFromTs'] = float(timesteps[-1])
+  if duration != None:
+    dconf['sim']['duration'] = duration
+  dconf['sim']['plotRaster'] = 0
+  if added_params:
+    for param in added_params:
+      name, val = param.split(':')
+      if name == 'recordWeightStepSize':
+        dconf['sim']['recordWeightStepSize'] = int(val)
+      else:
+        raise Exception('Cannot find param {}'.format(name))
+
+  backup_config(dconf)
+
+  runner = NeuroSim(dconf)
+  runner.run()
+
+
 def _saved_timesteps(synWeights_file):
   df = readWeights(synWeights_file)
   return sorted(list(df['time'].unique()))
 
-def evaluate(eval_dir, duration=100, resume_tidx=-1, display=False, verbose=False, sleep=False):
+def evaluate(eval_dir, duration=100, resume_tidx=-1,
+    display=False, verbose=False, sleep=False, saveData=False):
   dconf_path = os.path.join(eval_dir, 'backupcfg_sim.json')
 
   synWeights_file = os.path.join(eval_dir, 'synWeights.pkl')
@@ -51,10 +93,13 @@ def evaluate(eval_dir, duration=100, resume_tidx=-1, display=False, verbose=Fals
   dconf['verbose'] = 1 if verbose else 0
   dconf['sim']['duration'] = duration
   dconf['sim']['saveWeights'] = 0
-  dconf['sim']['doSaveData'] = 0
+  dconf['sim']['doSaveData'] = 1 if saveData else 0
   dconf['sim']['plotRaster'] = 0
   dconf['sim']['verbose'] = 1 if verbose else 0
   dconf['sim']['sleeptrial'] = sleep if sleep else 0
+  dconf['sim']['normalizeByGainControl'] = 0
+  dconf['sim']['normalizeByOutputBalancing'] = 0
+  dconf['sim']['normalizeSynInputs'] = 0
 
   for stdp_param in ['STDP', 'STDP-RL']:
     if stdp_param in dconf:
@@ -69,11 +114,11 @@ def evaluate(eval_dir, duration=100, resume_tidx=-1, display=False, verbose=Fals
 
   runner = NeuroSim(dconf)
   runner.run()
-  runner.end()
 
 
 if __name__ == '__main__':
   fire.Fire({
       'run': main,
+      'continue': continue_main,
       'eval': evaluate
   })

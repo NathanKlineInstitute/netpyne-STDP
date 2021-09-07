@@ -143,7 +143,7 @@ def train(dconf):
     netpyne.sim.simData['V_soma'] = V_somas
     netpyne.sim.simData['spkid'] = spkids
     netpyne.sim.simData['spkt'] = spkts
-    neurosim.end()
+    neurosim.save()
 
 if __name__ == "__main__":
     train(None)

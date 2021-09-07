@@ -9,6 +9,7 @@ import pickle as pkl
 import numpy as np
 
 from neurosim.utils.weights import readWeights
+from neurosim.tools.utils import _get_pop_name, _extract_sorted_min_ids, _get_spike_aggs
 
 RANDOM_EVALUATION='results/random_cartpole_ActionsPerEpisode.txt'
 
@@ -60,6 +61,7 @@ def boxplot(wdir, include_random=True, outputfile=None):
   ax.set_ylabel('actions per episode')
   ax.set_title('BoxPlots of ActionsPerEpisode for {} model at different timesteps'.format(wdir))
 
+  plt.grid(axis='y')
   plt.tight_layout()
   plt.savefig(outputfile)
 
@@ -89,38 +91,28 @@ def performance(wdir, outputfile=None):
   plt.savefig(outputfile)
 
 
-def _get_pop_name(cellId, sorted_min_ids):
-  # This is O(n), could be O(log(n)) with binary search
-  return [pop for pop, minId in sorted_min_ids if cellId >= minId][0]
-
-def frequency(wdir, timestep=1000, outputfile=None):
+def frequency(wdir, timestep=1000, outputfile=None,
+    separate_movement=True, only_movement=False):
   if not outputfile:
-    outputfile = os.path.join(wdir, 'frequency.png')
+    outputfile = os.path.join(wdir, 'frequency{}.png'.format('_OUT' if only_movement else ''))
 
   sim_config = os.path.join(wdir, 'sim.pkl')
   with open(sim_config, 'rb') as f:
     sim = pkl.load(f)
 
-  sorted_min_ids = sorted(list(sim['simData']['dminID'].items()), key=lambda x:x[1], reverse=True)
-  spkid = sim['simData']['spkid']
-  spkt = sim['simData']['spkt']
+  dconf_path = os.path.join(wdir, 'backupcfg_sim.json')
+  with open(dconf_path, 'r') as f:
+    dconf = json.load(f)
+  pop_sizes = dconf['net']['allpops']
 
-  spike_aggs = {}
-
-  for cid, ct in zip(spkid, spkt):
-    pop = _get_pop_name(cid, sorted_min_ids)
-    bucket = math.floor(ct / timestep)
-    if pop not in spike_aggs:
-      spike_aggs[pop] = {}
-    if bucket not in spike_aggs[pop]:
-      spike_aggs[pop][bucket] = 0
-    spike_aggs[pop][bucket] += 1
-
-  pop_sizes = dict([(pop, sim['net']['params']['popParams'][pop]['numCells']) for pop in spike_aggs.keys()])
+  sorted_min_ids = _extract_sorted_min_ids(sim, dconf, separate_movement)
+  spike_aggs = _get_spike_aggs(sim, sorted_min_ids, timestep)
 
   plt.figure(figsize=(10, 10))
   legend = []
   for pop, pop_spikes in spike_aggs.items():
+    if only_movement and '-' not in pop:
+      continue
     spikes = sorted(list(pop_spikes.items()), key=lambda x:x[0])
     plt.plot(
       [x+1 for x,y in spikes],
@@ -136,7 +128,57 @@ def frequency(wdir, timestep=1000, outputfile=None):
   plt.legend(legend)
   plt.savefig(outputfile)
 
-def actions_medians(wdir, steps=[21,51,101], outputfile=None):
+def variance(wdir, timestep=100, outputfile=None, var_of=100,
+    separate_movement=True, only_movement=False):
+  if not outputfile:
+    outputfile = os.path.join(wdir, 'freq_variance{}.png'.format('_OUT' if only_movement else ''))
+
+  sim_config = os.path.join(wdir, 'sim.pkl')
+  with open(sim_config, 'rb') as f:
+    sim = pkl.load(f)
+
+  dconf_path = os.path.join(wdir, 'backupcfg_sim.json')
+  with open(dconf_path, 'r') as f:
+    dconf = json.load(f)
+  pop_sizes = dconf['net']['allpops']
+
+  sorted_min_ids = _extract_sorted_min_ids(sim, dconf, separate_movement)
+  spike_aggs = _get_spike_aggs(sim, sorted_min_ids, timestep)
+
+  # Compute the variances
+  variances = {}
+  for pop, pop_spikes in spike_aggs.items():
+    spikes = sorted(list(pop_spikes.items()), key=lambda x:x[0])
+    variances[pop] = []
+    curr_idx = 0
+    for varidx in range(int(max([x for x,y in spikes]) / var_of)):
+      y = []
+      for idx in range(varidx*var_of, (varidx+1)*var_of):
+        if curr_idx < len(spikes) and idx == spikes[curr_idx][0]:
+          y.append(spikes[curr_idx][1])
+          curr_idx += 1
+        else:
+          y.append(0)
+      variances[pop].append((varidx, np.var(y)))
+
+
+  plt.figure(figsize=(10, 10))
+  legend = []
+  for pop, pop_vars in variances.items():
+    if only_movement and '-' not in pop:
+      continue
+    plt.plot([x+1 for x,y in pop_vars], [y for x,y in pop_vars])
+    # pop_avg_vars = np.mean([y for x,y in pop_vars])
+    # legend.append('{}'.format(pop))
+    legend.append(pop)
+
+  plt.title('Variance of spikes over populations')
+  plt.xlabel('t * {}'.format(timestep * var_of))
+  plt.ylabel('Variance of ({}) spikes counted in {}ms'.format(var_of, timestep))
+  plt.legend(legend)
+  plt.savefig(outputfile)
+
+def actions_medians(wdir, steps=[21,51,101], outputfile=None, just_return=False):
   if not outputfile:
     outputfile = os.path.join(wdir, 'eval_actions.png')
 
@@ -148,6 +190,12 @@ def actions_medians(wdir, steps=[21,51,101], outputfile=None):
       training_medians[STEP] = []
       for idx in range(len(training_results) - STEP):
           training_medians[STEP].append(np.median(training_results[idx:idx+STEP]))
+
+  if just_return:
+    results = []
+    for STEP, medians in sorted(list(training_medians.items()), key=lambda x:x[0]):
+      results.append(np.amax(medians))
+    return results
 
   plt.figure(figsize=(10,10))
 
@@ -161,22 +209,22 @@ def actions_medians(wdir, steps=[21,51,101], outputfile=None):
 
   plt.savefig(outputfile)
 
-def rewards_steps(wdir, steps=[21, 51,101], outputfile=None):
+def rewards_steps(wdir, steps=[25, 50], outputfile=None):
   if not outputfile:
     outputfile = os.path.join(wdir, 'eval_rewards.png')
 
   with open(os.path.join(wdir, 'ActionsRewards.txt')) as f:
-      training_rewards = [int(float(r)) for _,_,r in csv.reader(f, delimiter='\t')]
+      training_rewards = [float(toks[2]) for toks in csv.reader(f, delimiter='\t')]
 
   training_medians = {}
   for STEP in steps:
       training_medians[STEP] = []
       for idx in range(len(training_rewards) - STEP):
         rews = training_rewards[idx:idx+STEP]
-        pos_rews = [r for r in rews if r >= 0]
+        pos_rews = [r for r in rews if r > 0]
         training_medians[STEP].append(len(pos_rews) / len(rews))
 
-  plt.figure(figsize=(20,10))
+  plt.figure(figsize=(10,10))
 
   for STEP, medians in training_medians.items():
       plt.plot([t + STEP for t in range(len(medians))], medians)
@@ -184,6 +232,21 @@ def rewards_steps(wdir, steps=[21, 51,101], outputfile=None):
   plt.legend(['step of {}'.format(STEP) for STEP in training_medians.keys()])
   plt.xlabel('episode')
   plt.ylabel('len(rewards) / len(total)')
+
+  plt.savefig(outputfile)
+
+def rewards_val_steps(wdir, outputfile=None):
+  if not outputfile:
+    outputfile = os.path.join(wdir, 'eval_rewards_val.png')
+
+  with open(os.path.join(wdir, 'ActionsRewards.txt')) as f:
+      training_rewards = [float(toks[2]) for toks in csv.reader(f, delimiter='\t')]
+
+  plt.figure(figsize=(10,10))
+  plt.plot(list(range(len(training_rewards))), training_rewards, '+')
+  plt.title('Reward values')
+  plt.xlabel('time steps')
+  plt.ylabel('reward value')
 
   plt.savefig(outputfile)
 
@@ -197,6 +260,138 @@ def _displayAdj(A):
     plt.imshow(A, cmap='plasma', interpolation='nearest', vmin=vmin, vmax=vmax)
     plt.clim(vmin, vmax)
     plt.colorbar()
+
+def eval_moves(wdir, steps=[100, 1000], outputfile=None,
+    unk_moves=False, abs_move_diff=False, abs_move_diff_norm=False):
+  if not outputfile:
+    outputfile = os.path.join(
+      wdir,
+      'eval_' + ('unk_moves' if unk_moves else 
+                'abs_move_diff' if abs_move_diff else
+                'abs_move_diff_norm' if abs_move_diff_norm else '') + '.png')
+
+
+  assert sum([unk_moves, abs_move_diff, abs_move_diff_norm]) == 1
+
+  val_moves = []
+  with open(os.path.join(wdir, 'MotorOutputs.txt')) as f:
+    for toks in csv.reader(f, delimiter='\t'):
+      _, l, r = [int(float(tok)) for tok in toks]
+      value = None
+      if unk_moves:
+        value = (1 if l == r else 0)
+      elif abs_move_diff or abs_move_diff_norm:
+        value = abs(l - r)
+      val_moves.append(value)
+
+  val_moves_avgs = {}
+  for STEP in steps:
+      val_moves_avgs[STEP] = []
+      current_sum = sum(val_moves[:STEP])
+      current_avg_by = STEP
+      if abs_move_diff_norm:
+        current_avg_by = sum([1 for v in val_moves[:STEP] if v > 0])
+      val_moves_avgs[STEP].append(current_sum / current_avg_by)
+      for idx in range(1, len(val_moves) - STEP):
+        current_sum += val_moves[idx+STEP-1] - val_moves[idx-1]
+        if abs_move_diff_norm:
+          current_avg_by += sum([k / abs(k) for k in [val_moves[idx+STEP-1], -val_moves[idx-1]] if k != 0])
+        val_moves_avgs[STEP].append(current_sum / current_avg_by)
+
+  plt.figure(figsize=(10,10))
+
+  for STEP, umoves in val_moves_avgs.items():
+      plt.plot([t + STEP for t in range(len(umoves))], umoves)
+
+  plt.legend(['over {} steps'.format(STEP) for STEP in val_moves_avgs.keys()])
+  plt.xlabel('steps')
+  ylabel = None
+  if unk_moves:
+    ylabel = 'percentage of unknown moves'
+  elif abs_move_diff or abs_move_diff_norm:
+    ylabel = 'absolte difference between left and right moves' + (
+      ' normalized' if abs_move_diff_norm else '')
+  plt.ylabel(ylabel)
+
+  plt.savefig(outputfile)
+
+
+def eval_motor_balance(wdir, steps=[1000], outputfile=None):
+  if not outputfile:
+    outputfile = os.path.join(wdir, 'eval_motor_balance.png')
+
+  # TODO: move to model agnostic move choices
+  choices = [] # including unknown as -1
+  spikes = dict([(k, []) for k in range(2)]) # index by move id (including if same)
+  rewards = dict([(k, []) for k in range(2)]) # index by move id (including random)
+  with open(os.path.join(wdir, 'MotorOutputs.txt')) as fMO:
+    readerFMO = csv.reader(fMO, delimiter='\t')
+    with open(os.path.join(wdir, 'ActionsRewards.txt')) as fAR:
+      for idx, rAR in enumerate(csv.reader(fAR, delimiter='\t')):
+        if idx == 0:
+          continue
+        rMO = readerFMO.__next__()
+        if rAR[0] != rMO[0]:
+          raise Exception('Lines not in sync: "{}" vs "{}"'.format(rAR, rMO))
+        spk_l, spk_r = int(float(rMO[1])), int(float(rMO[2]))
+        choice = 0 if spk_l == spk_r else (-1 if spk_l > spk_r else 1)
+        real_choice, reward = [float(k) for k in rAR[1:3]]
+        # assert choice == -1 or choice == int(real_choice)
+        choices.append(choice)
+        spikes[0].append(spk_l)
+        spikes[1].append(spk_r)
+        other_choice = 1.0 - real_choice
+        rewards[int(real_choice)].append(reward)
+        rewards[int(other_choice)].append(0)
+
+  def _get_averages(arr, rm_unk=False):
+    arr_avgs = {}
+    for STEP in steps:
+        arr_avgs[STEP] = []
+        current_sum = sum(arr[:STEP])
+        current_avg_by = STEP
+        if rm_unk:
+          current_avg_by = sum([abs(a) for a in arr[:STEP]])
+        arr_avgs[STEP].append(current_sum / current_avg_by)
+        for idx in range(1, len(arr) - STEP):
+          current_sum += arr[idx+STEP-1] - arr[idx-1]
+          if rm_unk:
+            current_avg_by += abs(arr[idx+STEP-1]) - abs(arr[idx-1])
+          arr_avgs[STEP].append(current_sum / current_avg_by)
+    return arr_avgs
+
+  _, axs = plt.subplots(ncols=3, nrows=1, figsize=(15, 5))
+  ax1, ax2, ax3 = axs
+
+  spikes_avg_l = _get_averages(spikes[0])
+  spikes_avg_r = _get_averages(spikes[1])
+  for STEP in steps:
+      ax1.plot([t + STEP for t in range(len(spikes_avg_l[STEP]))], spikes_avg_l[STEP])
+      ax1.plot([t + STEP for t in range(len(spikes_avg_r[STEP]))], spikes_avg_r[STEP])
+  ax1.legend(['{} over {} steps'.format(direction, STEP) for STEP in steps for direction in ['left', 'right']])
+  ax1.set_xlabel('steps')
+  ax1.set_ylabel('spikes averages')
+
+  rewards_avg_l = _get_averages(rewards[0])
+  rewards_avg_r = _get_averages(rewards[1])
+  for STEP in steps:
+      ax2.plot([t + STEP for t in range(len(rewards_avg_l[STEP]))], rewards_avg_l[STEP])
+      ax2.plot([t + STEP for t in range(len(rewards_avg_r[STEP]))], rewards_avg_r[STEP])
+  ax2.legend(['{} over {} steps'.format(direction, STEP) for STEP in steps for direction in ['left', 'right']])
+  ax2.set_xlabel('steps')
+  ax2.set_ylabel('rewards averages')
+
+
+  choices_avg = _get_averages(choices, rm_unk=True)
+  for STEP in steps:
+      choices_ratio = [(1.0 - avg) / 2 for avg in choices_avg[STEP]]
+      ax3.plot([t + STEP for t in range(len(choices_avg[STEP]))], choices_ratio)
+  ax3.legend(['ratio over {} steps'.format(STEP) for STEP in steps])
+  ax3.set_xlabel('steps')
+  ax3.set_ylabel('ratio of left moves / all non-unk moves')
+
+  plt.savefig(outputfile)
+
 
 def _get_weights_adj(synWeights_file):  
   with open(synWeights_file, 'rb') as f:
@@ -246,14 +441,96 @@ def stdp_weights_diffs(wdir, index1=0, index2=-1, relative=False, outputfile=Non
   _displayAdj(matrix)
   plt.savefig(outputfile)
 
+def _group_by_pop(synWeights, sorted_min_ids):
+  new_map = {}
+  for n1, n1conns in synWeights.items():
+      n1pop = _get_pop_name(n1, sorted_min_ids)
+      for n2, wl in n1conns.items():
+          n2pop = _get_pop_name(n2, sorted_min_ids)
+          conn_name = '{}->{}'.format(n1pop, n2pop)
+          for idx,(t,w) in enumerate(wl):
+              if conn_name not in new_map:
+                  new_map[conn_name] = []
+              if idx == len(new_map[conn_name]):
+                  new_map[conn_name].append([])
+              new_map[conn_name][idx].append(w)
+  return new_map
+
+def stdp_weights_changes(wdir, separate_movement=False, outputfile=None, display=False):
+  with open(os.path.join(wdir, 'synWeights.pkl'), 'rb') as f:
+    synWeights = pkl.load(f)
+
+  sim_config = os.path.join(wdir, 'sim.pkl')
+  with open(sim_config, 'rb') as f:
+    sim = pkl.load(f)
+
+  dconf_path = os.path.join(wdir, 'backupcfg_sim.json')
+  with open(dconf_path, 'r') as f:
+    dconf = json.load(f)
+  pop_sizes = dconf['net']['allpops']
+
+  sorted_min_ids = _extract_sorted_min_ids(sim, dconf, separate_movement)
+  popWeights = _group_by_pop(synWeights, sorted_min_ids)
+
+  ncols = 3
+  nbins = 30
+  conns = sorted(list(popWeights.keys()))
+
+  figsize = 20 if separate_movement else 15
+  nrows = math.ceil(len(conns) / ncols)
+  if nrows == 1:
+    ncols = len(conns)
+  _, axs = plt.subplots(
+    ncols=ncols, nrows=nrows,
+    subplot_kw=dict(projection="3d"),
+    figsize=(figsize, figsize))
+
+  conn_idx = 0
+  for axi in axs:
+    if nrows == 1:
+      axi = [axi]
+    for ax in axi:
+      if conn_idx == len(conns):
+        continue
+      conn = conns[conn_idx]
+      all_weights = [w for ws in popWeights[conn] for w in ws]
+      wmin = np.min(all_weights)
+      wmax = np.max(all_weights)
+
+      for z, weights in reversed(list(enumerate(popWeights[conn]))):
+          hist, bins = np.histogram(weights, bins=nbins, range=(wmin, wmax))
+          xs = (bins[:-1] + bins[1:])/2
+          ax.plot(xs, hist, zs=z, zdir='y', alpha=0.8)
+
+      ax.set_title('{} weight changes over time'.format(conn))
+      ax.set_xlabel('Weights')
+      ax.set_ylabel('Epoch ({} * {}ms)'.format(
+        dconf['sim']['recordWeightStepSize'],
+        dconf['sim']['tstepPerAction']))
+      ax.set_zlabel('Count of neurons')
+      conn_idx += 1
+
+  if display:
+    plt.show()
+  else:
+    if not outputfile:
+      outputfile = os.path.join(wdir, 'stdp_weight_changes{}.png'.format(
+        '_sep_mov' if separate_movement else ''))
+    plt.savefig(outputfile)
+
 
 if __name__ == '__main__':
   fire.Fire({
     'frequency': frequency,
+    'variance': variance,
+    'eval-moves': eval_moves,
+    'eval-motor': eval_motor_balance,
     'boxplot': boxplot,
     'perf': performance,
     'medians': actions_medians,
     'rewards': rewards_steps,
+    'rewards-vals': rewards_val_steps,
     'weights-adj': stdp_weights_adj,
-    'weights-diffs': stdp_weights_diffs
+    'weights-diffs': stdp_weights_diffs,
+    'weights-ch': stdp_weights_changes
   })
