@@ -58,7 +58,7 @@ def train(dconf):
     SAVE_WEIGHTS_EVERY_ITER = dconf['ES']['save_weights_every_iter'] # 10
 
     # Setup
-    neurosim = NeuroSim(dconf, use_noise = False)
+    neurosim = NeuroSim(dconf, use_noise=False, save_on_control_c=False)
     neurosim.STDP_active = False # deactivate STDP
     neurosim.end_after_episode = EPISODES_PER_ITER # activate sys.exit() after this many episode
 

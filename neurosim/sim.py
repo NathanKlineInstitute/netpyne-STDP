@@ -36,7 +36,7 @@ def _get_param(dmap, field, default=None):
 
 
 class NeuroSim:
-  def __init__(self, dconf, use_noise = True):
+  def __init__(self, dconf, use_noise=True, save_on_control_c=True):
     self.dconf = dconf
 
     def outpath(fname): return os.path.join(dconf['sim']['outdir'], fname)
@@ -257,9 +257,8 @@ class NeuroSim:
     self.STDP_active = True
     self.end_after_episode = False
 
-    # has periodic callback to adjust STDP weights based on RL signal
-    signal.signal(signal.SIGINT, self._handler)
-
+    if save_on_control_c:
+      signal.signal(signal.SIGINT, self._handler)
 
 
     ################################
