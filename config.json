@@ -23,10 +23,10 @@
     "observationsToKeep": 100,
     "rewardsToKeep": 100,
     "critic": {
-        "angv_bias": 0.2,
-        "total_gain": 3.0,
+        "angv_bias": 0.7,
+        "total_gain": 2.5,
         "max_reward": 1.0,
-        "posRewardBias": 2.0,
+        "posRewardBias": 2.8,
         "clear_flips": false
     },
     "verbose": 0,
