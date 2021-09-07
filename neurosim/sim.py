@@ -2,6 +2,8 @@ from netpyne import specs, sim
 from neuron import h
 
 import random
+import signal
+import sys
 import pickle
 import os
 import time
@@ -10,7 +12,7 @@ import json
 import numpy as np
 import pandas as pd
 from datetime import datetime
-from collections import OrderedDict
+from collections import OrderedDict, deque
 from matplotlib import pyplot as plt
 
 from cells import intf7
@@ -51,18 +53,28 @@ class NeuroSim:
     sim.saveWeights = _get_param(dconf['sim'], 'saveWeights', default=1)
     sim.allSTDPWeights = [] # place to store weights
     self.recordWeightStepSize = dconf['sim']['recordWeightStepSize']
-    self.normalizeStepSize = _get_param(dconf['sim'], 'normalizeStepSize')
-    self.normalizeByOutputBalancing = _get_param(dconf['sim'], 'normalizeByOutputBalancing')
+    self.normalizeSynInputs = _get_param(dconf['sim'], 'normalizeSynInputs', 0)
+    self.normalizeInStepSize = _get_param(dconf['sim'], 'normalizeInStepSize', None)
+    self.normalizeInPrint = _get_param(dconf['sim'], 'normalizeInPrint')
+    self.normalizeByOutputBalancing = _get_param(dconf['sim'], 'normalizeByOutputBalancing', 0)
     self.normalizeOutBalMinMax = _get_param(dconf['sim'], 'normalizeOutBalMinMax')
-    self.normalizeVerbose = _get_param(dconf['sim'], 'normalizeVerbose')
+    self.normalizeByGainControl = _get_param(dconf['sim'], 'normalizeByGainControl')
+    self.normalizeByGainControlSteps = _get_param(dconf['sim'], 'normalizeByGainControlSteps')
+    self.normalizeByGainControlEvery = _get_param(dconf['sim'], 'normalizeByGainControlEvery')
+    self.normalizeByGainControlValue = _get_param(dconf['sim'], 'normalizeByGainControlValue')
+    self.normalizeByGainControlQueue = deque(maxlen=self.normalizeByGainControlSteps)
+    self.normalizeVerbose = _get_param(dconf['sim'], 'normalizeVerbose', 0)
     self.normInMeans = None
     self.normOutMeans = None
+    if self.normalizeInPrint:
+      self.normalizeInPrintFilename = outpath('normalize_synaptic_input.json')
     # time step per action (in ms)
     self.tstepPerAction = dconf['sim']['tstepPerAction']
     self.actionsPerPlay = dconf['actionsPerPlay']
     self.targetedRL = _get_param(dconf['sim'], 'targetedRL', 0)
     self.targetedNonEM = _get_param(dconf['sim'], 'targetedNonEM', 0)
     self.saveEnvObs = _get_param(dconf['sim'], 'saveEnvObs', default=1)
+    self.resetEligTrace = _get_param(dconf['sim'], 'resetEligTrace', default=0)
 
     self.allpops = list(dconf['net']['allpops'].keys())
     self.inputPop = dconf['net']['inputPop']
@@ -75,6 +87,7 @@ class NeuroSim:
 
     # connection matrix (for classes, synapses, probabilities [probabilities not used for topological conn])
     self.cmat = dconf['net']['cmat']
+    self.deactivateNMDA = _get_param(dconf['net'], 'deactivateNMDA')
 
     # Network parameters
     netParams = specs.NetParams()
@@ -147,6 +160,7 @@ class NeuroSim:
       self.netParams.synMechParams[synMech] = synMechParams
 
     self.dSTDPparams = self.readSTDPParams()
+    self.cellGidsMap = None
 
     # Note: when using IntFire4 cells lstimty has the NetStim populations
     # that send spikes to EV1, EV1DE, etc.
@@ -307,6 +321,8 @@ class NeuroSim:
   def setupSTDPWeights(self):
     synToMech = self.dconf['net']['synToMech']
     sytypes = self.dconf['net']['synToMech'].keys()
+    if self.deactivateNMDA:
+      sytypes = [sy for sy in sytypes if sy != 'NM2']
 
     # Setup cmat connections
     stdpConns = self.dconf['net']['STDPconns']
@@ -406,6 +422,12 @@ class NeuroSim:
     if self.normalizeVerbose:
       llscales = sorted(list(cell_scales.items()), key=lambda x:x[1])
       print('Inminmax scales:', llscales[0], llscales[-1])
+    if self.normalizeInPrint:
+      with open(self.normalizeInPrintFilename, 'a') as out:
+        out.write(json.dumps({
+          'curr': curr_means,
+          'norm': norm_means
+        }) + '\n')
 
 
   def getSpikesWithInterval(self, trange=None, neuronal_pop=None):
@@ -523,8 +545,8 @@ class NeuroSim:
       curr_means = self.weightsMean(sim, ctype='out')
       norm_means = self.normOutMeans
       minMax = self.normalizeOutBalMinMax
-      def normalizeOutF(cGid):
-        cell_scale = norm_means[cGid] / curr_means[cGid]
+      def normalizeOutF(preCGid):
+        cell_scale = norm_means[preCGid] / curr_means[preCGid]
         if reward > 0: cell_scale = 1.0 / cell_scale
         cell_scale = max(minMax[0], min(cell_scale, minMax[1]))
         return cell_scale
@@ -536,64 +558,127 @@ class NeuroSim:
     if self.targetedRL >= 1:
       if self.targetedNonEM>=1:
         if dconf['verbose']: print('Apply RL to nonEM')
-        for cGid, STDPmech in self.dSTDPmech['nonEM']:
+        for preCGid, STDPmech in self.dSTDPmech['nonEM']:
           STDPmech.reward_punish(
-            float(reward*dconf['sim']['targetedRLDscntFctr']) * outNormScale(cGid))
+            float(reward*dconf['sim']['targetedRLDscntFctr']) * outNormScale(preCGid))
       if self.targetedRL == 1: #RL=1: Apply to all of EM
         for pop, pop_moves in dconf['pop_to_moves'].items():
           if dconf['verbose']: print('Apply RL to ', pop)
-          for cGid, STDPmech in self.dSTDPmech[pop]:
-            STDPmech.reward_punish(reward * outNormScale(cGid))
+          for preCGid, STDPmech in self.dSTDPmech[pop]:
+            STDPmech.reward_punish(reward * outNormScale(preCGid))
       elif self.targetedRL >= 2:
         for moveName, moveID in dconf['moves'].items():
           if actions[-1] == moveID:
             if dconf['verbose']: print('Apply RL to EM', moveName)
-            for cGid, STDPmech in self.dSTDPmech[moveName]:
-              STDPmech.reward_punish(reward * outNormScale(cGid))
+            for preCGid, STDPmech in self.dSTDPmech[moveName]:
+              STDPmech.reward_punish(reward * (dconf['sim']['targetedRLMainFctr']) * outNormScale(preCGid))
             if self.targetedRL >= 3: 
               for oppMoveName in dconf['moves'].keys():
                 if oppMoveName != moveName: #ADD: and oppMoveName fires
                   if dconf['verbose']: print('Apply -RL to EM', oppMoveName)
-                  for cGid, STDPmech in self.dSTDPmech[oppMoveName]:
+                  for preCGid, STDPmech in self.dSTDPmech[oppMoveName]:
                     STDPmech.reward_punish(
-                      float(reward*-dconf['sim']['targetedRLOppFctr']) * outNormScale(cGid))
+                      reward * (-dconf['sim']['targetedRLOppFctr']) * outNormScale(preCGid))
     else:
       cell_scales = {}
-      for cGid, STDPmech in self.dSTDPmech['all']:
-        cell_scale = outNormScale(cGid) # scale for normalization (if active)
+      for preCGid, STDPmech in self.dSTDPmech['all']:
+        cell_scale = outNormScale(preCGid) # scale for normalization (if active)
         STDPmech.reward_punish(reward * cell_scale)
         if self.normalizeVerbose:
-          cell_scales[cGid] = cell_scale
+          cell_scales[preCGid] = cell_scale
 
-      if self.normalizeVerbose:
+      if self.normalizeVerbose >= 2:
         llscales = sorted(list(cell_scales.items()), key=lambda x:x[1])
         print('Outminmax scales:', llscales[0], llscales[-1])
 
-  def getActions(self, sim, t, moves, pop_to_moves):
-    # Get move frequencies
-    move_freq = {}
-    vec = h.Vector()
+  def resetEligibilityTrace(self):
+    for _, STDPmech in self.dSTDPmech['all']:
+      STDPmech.reset_eligibility()
+
+  def runGainControl(self, spikes, cgids_map):
+    self.normalizeByGainControlQueue.append(spikes)
+    if self.NBsteps % self.normalizeByGainControlEvery == 0 and \
+        len(self.normalizeByGainControlQueue) == self.normalizeByGainControlSteps:
+      pop_to_moves = self.dconf['pop_to_moves']
+      time_scale = self.normalizeByGainControlSteps * self.tstepPerAction / 1000
+      freq_EPS = 0.01
+      for pop, target_freq in self.dconf['net']['popTargetFreq'].items():
+        popnames = ['{}-{}'.format(pop,m) for m in pop_to_moves[pop]] if pop in pop_to_moves else [pop]
+        cells_cnt = math.floor(self.dnumc[pop] / len(popnames))
+        for popname in popnames:
+          curr_spikes = sum([smap[popname] for smap in self.normalizeByGainControlQueue])
+          curr_freq = curr_spikes / time_scale / cells_cnt
+          scalar = 1.0
+          if curr_freq < target_freq - freq_EPS:
+            scalar = scalar + self.normalizeByGainControlValue
+          elif curr_freq > target_freq + freq_EPS:
+            scalar = scalar - self.normalizeByGainControlValue
+          if scalar != 1.0:
+            cgids_ch = [cgid for cgid, p in cgids_map.items() if p == popname]
+            for gid in cgids_ch:
+              self.normInMeans[gid] *= scalar
+          if self.normalizeVerbose:
+            print('GC:{}{}! curr {} target {}'.format(
+              '+' if scalar > 1.0 else '-', popname, 
+              curr_freq, target_freq))
+
+
+  def getCellGidsMap(self, sim):
+    if self.cellGidsMap != None:
+      return self.cellGidsMap
+    cgids_map = {}
+
+    pop_to_moves = self.dconf['pop_to_moves']
+    for p, pop_moves in pop_to_moves.items():
+      if type(pop_moves) == str:
+        pop_moves = [pop_moves]
+      cells_per_move = math.floor(
+          len(sim.net.pops[p].cellGids) / len(pop_moves))
+      for idx, cgid in enumerate(sim.net.pops[p].cellGids):
+        move = pop_moves[math.floor(idx / cells_per_move)]
+        cgids_map[cgid] = '{}-{}'.format(p, move)
+
+    if self.normalizeByGainControl:
+      # track other populations that are in target freq
+      for pop in self.dconf['net']['popTargetFreq'].keys():
+        if pop not in pop_to_moves:
+          for idx, cgid in enumerate(sim.net.pops[pop].cellGids):
+            cgids_map[cgid] = pop
+
+    self.cellGidsMap = cgids_map
+    return self.cellGidsMap
+
+
+  def getActions(self, sim, t):
+    # Get move frequencies by population
     freq = []
     for ts in range(int(self.actionsPerPlay)):
-      cgids_map = {}
-      for p, pop_moves in pop_to_moves.items():
-        if type(pop_moves) == str:
-          pop_moves = [pop_moves]
-        cells_per_move = math.floor(
-            len(sim.net.pops[p].cellGids) / len(pop_moves))
-        for idx, cgid in enumerate(sim.net.pops[p].cellGids):
-          cgids_map[cgid] = pop_moves[math.floor(idx / cells_per_move)]
-
       ts_beg = t-self.tstepPerAction*(self.actionsPerPlay-ts)
       ts_end = t-self.tstepPerAction*(self.actionsPerPlay-ts-1)
-      freq.append(self.getSpikesWithInterval([ts_beg, ts_end], cgids_map))
+      cgids_map = self.getCellGidsMap(sim)
+      spikes = self.getSpikesWithInterval([ts_beg, ts_end], cgids_map)
+      # Extract the move
+      move_map = {}
+      for pop, pop_moves in self.dconf['pop_to_moves'].items():
+        for move in pop_moves:
+          move_map[move] = spikes['{}-{}'.format(pop, move)]
+      freq.append(move_map)
+      # Normalize by Homeostatic Gain control
+      if self.normalizeByGainControl:
+        self.runGainControl(spikes, cgids_map)
+
+
+    # Get move frequency synched between nodes
+    moves = self.dconf['moves']
+    move_freq = {}
+    vec = h.Vector()
     for move in moves:
       freq_move = [q[move] for q in freq]
       sim.pc.allreduce(vec.from_python(freq_move), 1)  # sum
       move_freq[move] = vec.to_python()
 
+    # get the action
     actions = []
-
     if sim.rank == 0:
       if self.dconf['verbose']:
         print('t={}: {} spikes: {}'.format(
@@ -641,7 +726,7 @@ class NeuroSim:
     t1 = datetime.now()
 
     # Measure and cache normalized initial weights
-    if self.normalizeStepSize and not self.normInMeans:
+    if self.normalizeSynInputs and not self.normInMeans:
       self.normInMeans = self.weightsMean(sim, ctype='in')
     if self.normalizeByOutputBalancing and not self.normOutMeans:
       self.normOutMeans = self.weightsMean(sim, ctype='out')
@@ -655,17 +740,18 @@ class NeuroSim:
         actions.append(action)
     # the actions should be based on the activity of motor cortex (EMRIGHT, EMLEFT)
     else:
-      actions = self.getActions(sim, t, dconf['moves'], dconf['pop_to_moves'])
+      actions = self.getActions(sim, t)
 
     t1 = datetime.now() - t1
     t2 = datetime.now()
 
+    game_done = None
     if sim.rank == 0:
       is_unk_move = len([a for a in actions if a == self.unk_move]) > 0
       actions = [a if a != self.unk_move else sim.AIGame.randmove()
         for a in actions]
-      rewards, done = sim.AIGame.playGame(actions)
-      if done:
+      rewards, game_done = sim.AIGame.playGame(actions)
+      if game_done:
         ep_cnt = dconf['env']['episodes']
         eval_str = ''
         if len(sim.AIGame.count_steps) > ep_cnt:
@@ -705,6 +791,10 @@ class NeuroSim:
           print('t={} Reward:{} Actions: {}'.format(round(t, 2), reward, actions))
       self.applySTDP(sim, reward, actions)
 
+    # Reset eligibility trace
+    if game_done and self.resetEligTrace:
+      self.resetEligibilityTrace()
+
     t3 = datetime.now() - t3
     t4 = datetime.now()
 
@@ -730,7 +820,7 @@ class NeuroSim:
         print('Weights Recording Time:', t, 'NBsteps:', self.NBsteps,
               'recordWeightStepSize:', self.recordWeightStepSize)
       self.recordWeights(sim, t)
-    if self.normalizeStepSize and self.NBsteps % self.normalizeStepSize == 0:
+    if self.normalizeSynInputs and self.NBsteps % self.normalizeInStepSize == 0:
       self.normalizeInWeights(sim)
 
     t5 = datetime.now() - t5
@@ -814,7 +904,19 @@ class NeuroSim:
     # Record weights at time 0
     self.recordWeights(sim, 0)
     # has periodic callback to adjust STDP weights based on RL signal
+    signal.signal(signal.SIGINT, self._handler)
     sim.runSimWithIntervalFunc(tPerPlay, self.trainAgent)
+    # A Control-C will break from 'runSimWithIntervalFunc' but still save
+    self.save()
+
+
+  def _handler(self, signal_received, frame):
+      # Handle any cleanup here
+      print('SIGINT or CTRL-C detected. Exiting gracefully')
+      self.save()
+      sys.exit()
+
+  def save(self):
     if self.ECellModel == 'INTF7' or self.ICellModel == 'INTF7':
       intf7.insertSpikes(sim, self.simConfig.recordStep)
     sim.gatherData()  # gather data from different nodes

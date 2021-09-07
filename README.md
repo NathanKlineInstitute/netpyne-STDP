@@ -71,26 +71,29 @@ Evaluate the model before and after training:
     
     WDIR=results/20210707
     py neurosim/main.py eval $WDIR --resume_tidx=0
-    py neurosim/main.py eval $WDIR --resume_tidx=-1
+    py neurosim/main.py eval $WDIR --resume_tidx=-1 --duration 200
 
     # To display the model run
     py neurosim/main.py eval $WDIR --resume_tidx=-1 --display
 
 Optional: Maybe evaluate in depth
 
-    for ((i=0;i<20;i+=2)); do
+    for ((i=41;i<60;i+=1)); do
         echo "Evaluating at $i"
         py neurosim/main.py eval $WDIR --resume_tidx=$i
     done
 
 Run all evaluation:
 
-    WDIR=results/20210817
+    WDIR=results/20210831
     py neurosim/tools/evaluate.py frequency $WDIR --timestep 10000
     py neurosim/tools/evaluate.py variance $WDIR
     py neurosim/tools/evaluate.py medians $WDIR
     py neurosim/tools/evaluate.py rewards $WDIR
     py neurosim/tools/evaluate.py rewards-vals $WDIR
+    py neurosim/tools/evaluate.py eval-motor $WDIR
+    py neurosim/tools/evaluate.py eval-moves $WDIR --unk_moves
+    py neurosim/tools/evaluate.py eval-moves $WDIR --abs_move_diff
 
     py neurosim/tools/evaluate.py weights-adj $WDIR
     py neurosim/tools/evaluate.py weights-adj $WDIR --index 0
@@ -109,18 +112,49 @@ Continue training from a already trained model:
     py neurosim/main.py continue $WDIR --duration 5000
     # note: this script needs more care on how to integrate with different/new params
 
+    # more detailed example:
+    py neurosim/main.py continue results/20210801-1000it-1eps/ \
+        --copy-from-config config.json \
+        --copy-fields critic,sim,STDP-RL \
+        --duration 100 \
+        --index=3
+
 #### Critic evaluation
 
     py neurosim/tools/critic.py eval \
-        --best-wdir results/20210801-1000it-1eps/evaluation_10 \
+        --best-wdir results/20210801-1000it-1eps/500s-evaluation_10 \
         --critic-config results/20210801-1000it-1eps/backupcfg_sim.json \
         --verbose
 
     py neurosim/tools/critic.py eval \
-        --best-wdir results/20210801-1000it-1eps/evaluation_10 \
+        --best-wdir results/20210801-1000it-1eps/500s-evaluation_10 \
         --critic-config config.json \
         --verbose
 
     py neurosim/tools/critic.py hpsearch \
-        --best-wdir results/20210801-1000it-1eps/evaluation_10 \
+        --best-wdir results/20210801-1000it-1eps/500s-evaluation_10 \
         --critic-config config.json
+
+### Run Hyperparameter search
+
+Change `hpsearch_config.json` to the needed params
+
+    WDIR=results/hpsearch-2021-09-02-v2
+
+    # Just for setup:
+    py neurosim/hpsearch.py sample $WDIR --just-init
+
+    # run one sample
+    py neurosim/hpsearch.py sample $WDIR
+    
+    # run 100 samples
+    for ((i=0;i<100;i+=1)); do
+        echo "Sampling $i th run"
+        time py neurosim/hpsearch.py sample $WDIR
+    done
+
+Results are posted in `$WDIR/results.tsv`, then you can analyze with:
+
+    py neurosim/tools/eval_hpsearch.py analyze $WDIR
+
+    py neurosim/tools/eval_hpsearch.py combine $WDIR

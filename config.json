@@ -23,10 +23,11 @@
     "observationsToKeep": 100,
     "rewardsToKeep": 100,
     "critic": {
-        "angv_bias": 0.2,
-        "total_gain": 5.0,
-        "max_reward": 2.0,
-        "posRewardBias": 2.85
+        "angv_bias": 0.7,
+        "total_gain": 2.5,
+        "max_reward": 1.0,
+        "posRewardBias": 2.8,
+        "clear_flips": false
     },
     "verbose": 0,
     "stayStepLim": 0,
@@ -35,15 +36,21 @@
         "ResumeSimFromFile": "results/20210714/synWeights_final.pkl"
     },
     "sim": {
-        "duration": 2000,
+        "duration": 5000,
         "dt": 0.6,
         "verbose": 0,
         "recordStep": 1.0,
         "recordStim": 0,
-        "recordWeightStepSize": 1000,
-        "normalizeStepSize": 10,
+        "recordWeightStepSize": 5000,
+        "normalizeSynInputs": 1,
+        "normalizeInStepSize": 25,
+        "normalizeInPrint": 0,
         "normalizeByOutputBalancing": 1,
         "normalizeOutBalMinMax": [0.1, 2],
+        "normalizeByGainControl": 1,
+        "normalizeByGainControlSteps": 500,
+        "normalizeByGainControlEvery": 75,
+        "normalizeByGainControlValue": 0.0001,
         "normalizeVerbose": 0,
         "RLFakeUpRule": 0,
         "RLFakeDownRule": 0,
@@ -54,12 +61,14 @@
         "saveCellConns": 1,
         "saveMotionFields": 0,
         "plotRaster": 1,
-        "targetedRL": 2,
-        "targetedNonEM": 1,
-        "targetedRLOppFctr": 0.5,
+        "targetedRL": 3,
+        "targetedRLMainFctr": 0.8,
+        "targetedRLOppFctr": 0.8,
+        "targetedNonEM": 0,
         "targetedRLDscntFctr": 0.5,
         "tstepPerAction": 50,
-        "saveWeights": 1
+        "saveWeights": 1,
+        "resetEligTrace": 1
     },
     "cell": {
         "E": {"ahpwt": 1,
@@ -130,11 +139,17 @@
             "IM": 10,
             "IML": 10
         },
+        "popTargetFreq": {
+            "EA": 5.5,
+            "EM": 6.0
+        },
+        "deactivateNMDA": 0,
+
         "inputPop": "ES",
         "STDPconns": {
             "EE": 1
         },
-        
+
         "InputMaxRate": 50.0,
         "stimModW": 35,
         "synMechParams": {
@@ -154,10 +169,10 @@
             "ES":{
                 "EA":{"AM2": 5.0, "NM2": 0.098, "conv": 25}},
             "EA":{
-                "EA":{"AM2": 0.05,"NM2": 0.005, "conv": 1},
+                "EA":{"AM2": 0.05,"NM2": 0.005, "conv": 0},
                 "IA":{"AM2": 1.95,"NM2":0.0195, "conv": 15},
                 "IAL":{"AM2": 1.98,"NM2":0.098, "conv": 15},
-                "EM":{"AM2": 2.45,"NM2": 0.05,"conv": 25}},
+                "EM":{"AM2": 3.25,"NM2": 0.05,"conv": 20}},
             "IA":{
                 "EA":{"GA": 9.0,"p": 0.4},
                 "IA":{"GA": 4.5,"p": 0.1},
@@ -167,10 +182,10 @@
                 "IA":{"GA2": 2.25,"p": 0.2},
                 "IAL":{"GA2": 5.5,"p": 0.1}},
             "EM":{
-                "EM":{"AM2": 0.01,"NM2": 0.001, "conv": 1},
+                "EM":{"AM2": 0.01,"NM2": 0.001, "conv": 0},
                 "IM":{"AM2": 1.95,"NM2":0.0195, "conv": 16},
                 "IML":{"AM2": 0.98,"NM2":0.098, "conv": 16},
-                "EA":{"AM2": 0.5,"NM2": 0.01,"conv": 6}},
+                "EA":{"AM2": 0.5,"NM2": 0.01,"conv": 0}},
             "IM":{
                 "EM":{"GA": 9.0,"p": 0.4},
                 "IM":{"GA": 4.5,"p": 0.1},
@@ -213,17 +228,17 @@
             "wmax": 200,
             "RLon": 1,
             "STDPon": 0,
-            "RLlenhebb": 51,
-            "RLlenanti": 51,
+            "RLlenhebb": 204,
+            "RLlenanti": 204,
             "useRLexp": 0,
-            "RLhebbwt": 0.0025,
-            "RLantiwt": -0.0025,
+            "RLhebbwt": 0.01,
+            "RLantiwt": -0.01,
             "hebbwt": 0.0,
             "antiwt": 0.0,
-            "tauhebb": 3,
-            "tauanti": 3,
-            "RLwindhebb": 5,
-            "RLwindanti": 5,
+            "tauhebb": 5,
+            "tauanti": 5,
+            "RLwindhebb": 25,
+            "RLwindanti": 25,
             "softthresh": 0,
             "verbose": 0,
             "maxreward": 0.0

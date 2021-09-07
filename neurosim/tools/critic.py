@@ -52,6 +52,7 @@ def _extract(wdir, critic, verbose=False):
         is_unk_move = motor_v[0] == motor_v[1]
         steps.append({
             'move': move,
+            'unk_move': is_unk_move,
             'critic_run': float(critic_val),
             'critic': critic.calc_reward(np.array(obs_space), np.array(prev_obs), is_unk_move),
             'motor': motor_v,
@@ -90,12 +91,8 @@ def _evaluate_critic(best_wdir, critic, plot, verbose=False):
 
   critic_vals = []
   for steps in steps_seq:
-      vals = []
       if len(steps) == 500:
-          for j in steps[:-1]:
-              left, right = j['motor']
-              if left != right:
-                  vals.append(j['critic'])
+          vals = [j['critic'] for j in steps[1:-1] if not j['unk_move']]
           critic_vals.append(vals)
   if verbose:
     print('steps for each 500eps run that are not unk:', [len(cv) for cv in critic_vals])
@@ -115,10 +112,12 @@ def _evaluate_critic(best_wdir, critic, plot, verbose=False):
 
     print('--')
 
-  ratio_res = np.mean([1 if v > 0 else 0 for cv in critic_vals for v in cv])
+  ratio_res = np.mean([1 if v > 0 else 0 for cv in critic_vals for v in cv if v != 0])
   if verbose:
     print('Ratio of reward/punishment', round(ratio_res, 3))
-    print('Ratio of reward/punishment per episode', [round(np.mean([1 if v > 0 else 0 for v in cv]), 3) for cv in critic_vals])
+    print('Ratio of reward/punishment per episode', [
+      round(np.mean([1 if v > 0 else 0 for v in cv if v != 0]), 3)
+      for cv in critic_vals])
 
   return avg_res, ratio_res
 

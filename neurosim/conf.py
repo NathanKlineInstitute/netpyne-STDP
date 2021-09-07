@@ -31,7 +31,7 @@ def read_conf(fnjson=None, outdir=None):
   if outdir: 
     dconf['sim']['outdir'] = outdir
   if 'outdir' not in dconf['sim'] or not dconf['sim']['outdir']:
-    dconf['sim']['outdir'] = os.path.join('results', now_str())  
+    dconf['sim']['outdir'] = os.path.join('results', now_str())
   return dconf
 
 def init_wdir(dconf):
