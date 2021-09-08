@@ -1,6 +1,6 @@
 {
     "ES": {
-        "iterations": 1000,
+        "iterations": 1500,
         "population_size": 10,
         "sigma": 0.1,
         "learning_rate": 1.0,
@@ -52,12 +52,12 @@
         "recordStep": 1.0,
         "recordStim": 0,
         "recordWeightStepSize": 5000,
-        "normalizeSynInputs": 1,
+        "normalizeSynInputs": 0,
         "normalizeInStepSize": 25,
         "normalizeInPrint": 0,
-        "normalizeByOutputBalancing": 1,
+        "normalizeByOutputBalancing": 0,
         "normalizeOutBalMinMax": [0.1, 2],
-        "normalizeByGainControl": 1,
+        "normalizeByGainControl": 0,
         "normalizeByGainControlSteps": 500,
         "normalizeByGainControlEvery": 75,
         "normalizeByGainControlValue": 0.0001,

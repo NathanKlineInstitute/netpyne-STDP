@@ -32,7 +32,6 @@ class Critic:
     if 'negRewardBias' in dconf['net'] and dconf['net']['negRewardBias'] != 1.0:
       self.negRewardBias = dconf['net']['negRewardBias']
     self.clear_flips = dconf['critic']['clear_flips'] if 'clear_flips' in dconf['critic'] else 0
-    print('clear_flips', self.clear_flips)
     self.modulate = None
     if 'modulation' in dconf['critic']:
       self.mod_steps = dconf['critic']['modulation']['steps']

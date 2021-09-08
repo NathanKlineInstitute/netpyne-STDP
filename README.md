@@ -65,6 +65,10 @@ Run tests:
 
     pytest tests
 
+Run ES:
+    
+    python3 neurosim/train_es.py
+
 ### Tools/Evaluation
 
 Evaluate the model before and after training:
@@ -85,7 +89,7 @@ Optional: Maybe evaluate in depth
 
 Run all evaluation:
 
-    WDIR=results/20210831
+    WDIR=results/20210907-ES1500it
     py neurosim/tools/evaluate.py frequency $WDIR --timestep 10000
     py neurosim/tools/evaluate.py variance $WDIR
     py neurosim/tools/evaluate.py medians $WDIR
