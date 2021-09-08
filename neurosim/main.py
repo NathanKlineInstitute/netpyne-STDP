@@ -18,7 +18,7 @@ def main(dconf=None):
     if len(evaluations) > 0:
       raise Exception(' '.join([
           'You have run evaluations on {}: {}.'.format(outdir, evaluations),
-          'This will rewrite!', 
+          'This will rewrite!',
           'Please delete to continue!']))
 
   init_wdir(dconf)

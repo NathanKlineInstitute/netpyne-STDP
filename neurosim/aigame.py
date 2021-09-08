@@ -63,4 +63,3 @@ class AIGame:
         break
 
     return current_rewards, done
-
