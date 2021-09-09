@@ -85,6 +85,12 @@ def _actions_medians(wdir, steps):
       for idx in range(len(training_results) - STEP):
           best = max(np.median(training_results[idx:idx+STEP]), best)
       results.append(best)
+  # Get the average over 100 steps
+  avg_steps = 100
+  best_avg = 0
+  for idx in range(len(training_results) - avg_steps):
+      best_avg = max(np.average(training_results[idx:idx+avg_steps]), best_avg)
+  results.append(best_avg)
   return results
 
 def _frequencies(wdir, freq_pops):
@@ -182,7 +188,9 @@ def sample_run(
     with open(results_tsv, 'w') as out:
       writer = csv.writer(out, delimiter='\t')
       writer.writerow(
-        ['run_id'] + ['max_median_s{}'.format(step) for step in MEDIAN_STEPS] + \
+        ['run_id'] + \
+        ['max_median_s{}'.format(step) for step in MEDIAN_STEPS] + \
+        ['max_average_s100'] + \
         ['freq_{}'.format(pop) for pop in FREQ_POPS])
     if just_init:
       return

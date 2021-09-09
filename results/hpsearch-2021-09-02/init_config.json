@@ -64,7 +64,7 @@
         "verbose": 0,
         "recordStep": 1.0,
         "recordStim": 0,
-        "recordWeightStepSize": 1000,
+        "recordWeightStepSize": 2000,
         "normalizeSynInputs": 1,
         "normalizeInStepSize": 25,
         "normalizeInPrint": 0,
@@ -92,7 +92,8 @@
         "targetedRLOppFctr": null,
         "targetedRLDscntFctr": 0.5,
         "tstepPerAction": 50,
-        "saveWeights": 1
+        "saveWeights": 1,
+        "resetEligTrace": 1
     },
     "cell": {
         "E": {

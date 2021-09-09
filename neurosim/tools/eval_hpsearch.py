@@ -20,7 +20,7 @@ def analyze_samples(wdir):
   with open(results_tsv) as f:
     for row in csv.DictReader(f, delimiter='\t'):
       for k in row.keys():
-        if k.startswith('max_median_s'):
+        if k.startswith('max_'):
           row[k] = float(row[k])
         elif k == 'run_id':
           row[k] = int(row[k])
@@ -29,7 +29,7 @@ def analyze_samples(wdir):
   del runs
   print('Found {} results'.format(len(results)))
 
-  result_keys = [rkey for rkey in results[0].keys() if rkey.startswith('max_median_s')]
+  result_keys = [rkey for rkey in results[0].keys() if rkey.startswith('max_')]
 
   with open(hpconfig_json) as f:
     hpconfig = json.load(f)
@@ -45,8 +45,8 @@ def analyze_samples(wdir):
     fig, axs = plt.subplots(
       ncols=ncols, nrows=nrows,
       figsize=(figsize, figsize))
-    fig.suptitle('HyperParam Search Results (Max Medians over {} Episodes) during training'.format(
-      result_key.replace('max_median_s', '')))
+    fig.suptitle('HyperParam Search Results ({} Episodes) during training'.format(
+      result_key.replace('_s', '_over_').replace('_', ' ')))
 
     param_idx = 0
     for axi in axs:
@@ -86,7 +86,7 @@ def create_table(wdir, outputfile=None):
   runs_json = os.path.join(wdir, 'runs.json')
   results_tsv = os.path.join(wdir, 'results.tsv')
 
-  outputfile = os.path.join(wdir, 'results_table.tsv')
+  outputfile = os.path.join(wdir, 'results_table2.tsv')
 
   runs = {}
   with open(runs_json) as f:
@@ -98,7 +98,7 @@ def create_table(wdir, outputfile=None):
   with open(results_tsv) as f:
     for row in csv.DictReader(f, delimiter='\t'):
       for k in row.keys():
-        if k.startswith('max_median_s'):
+        if k.startswith('max_'):
           row[k] = float(row[k])
         elif k == 'run_id':
           row[k] = int(row[k])
@@ -109,7 +109,7 @@ def create_table(wdir, outputfile=None):
   del runs
   print('Found {} results'.format(len(results)))
 
-  results = sorted(results, key=lambda x:x['max_median_s101'], reverse=True)
+  results = sorted(results, key=lambda x:x['max_average_s100'], reverse=True)
   with open(outputfile, 'w') as out:
     writer = csv.writer(out, delimiter='\t')
     header = [k for k in results[0].keys()]
