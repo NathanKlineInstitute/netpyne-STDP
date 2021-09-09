@@ -32,8 +32,8 @@
     "verbose": 0,
     "stayStepLim": 0,
     "simtype": {
-        "ResumeSim": 0,
-        "ResumeSimFromFile": "results/20210714/synWeights_final.pkl"
+        "ResumeSim": 1,
+        "ResumeSimFromFile": "results/evol-20210801-1000it-1eps/synWeights_final.pkl"
     },
     "sim": {
         "duration": 2000,
@@ -51,8 +51,9 @@
         "saveCellConns": 1,
         "saveMotionFields": 0,
         "plotRaster": 1,
-        "targetedRL": 2,
-        "targetedNonEM": 1,
+        "targetedRL": 3,
+        "targetedNonEM": 0,
+        "targetedRLFctr":1.0,
         "targetedRLOppFctr": 0.5,
         "targetedRLDscntFctr": 0.5,
         "tstepPerAction": 50,
@@ -209,7 +210,7 @@
             "maxreward": 0.0
         },
         "AMPA": {
-            "wmax": 15,
+            "wmax": 200,
             "RLon": 1,
             "STDPon": 0,
             "RLlenhebb": 150,

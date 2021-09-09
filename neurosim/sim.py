@@ -612,21 +612,21 @@ class NeuroSim:
       if dconf['sim']['targetedRL']>=1:
         if dconf['sim']['targetedNonEM']>=1:
           if dconf['verbose']: print('Apply RL to nonEM')
-          for STDPmech in self.dSTDPmech['nonEM']: STDPmech.reward_punish(float(reward*dconf['sim']['targetedRLDscntFctr']))
+          for STDPmech in self.dSTDPmech['nonEM']: STDPmech.reward_punish(float(reward*dconf['sim']['targetedRLDscntFctr'])) #Factor for ES/EA layers
         if dconf['sim']['targetedRL']==1: #RL=1: Apply to all of EM
           for pop, pop_moves in self.dconf['pop_to_moves'].items():
             if dconf['verbose']: print('Apply RL to ', pop)
-            for STDPmech in self.dSTDPmech[pop]: STDPmech.reward_punish(reward)
+            for STDPmech in self.dSTDPmech[pop]: STDPmech.reward_punish(float(reward*dconf['sim']['targetedRLFctr'])) #Factor for EM layer
         elif dconf['sim']['targetedRL']>=2:
           for moveName, moveID in dconf['moves'].items():
             if actions[-1] == moveID:
               if dconf['verbose']: print('Apply RL to EM', moveName)
-              for STDPmech in self.dSTDPmech[moveName]: STDPmech.reward_punish(reward)
+              for STDPmech in self.dSTDPmech[moveName]: STDPmech.reward_punish(float(reward*dconf['sim']['targetedRLFctr'])) #Factor for active EM pop
               if dconf['sim']['targetedRL']>=3: 
                 for oppMoveName in dconf['moves'].keys():
                   if oppMoveName != moveName: #ADD: and oppMoveName fires
                     if dconf['verbose']: print('Apply -RL to EM', oppMoveName)
-                    for STDPmech in self.dSTDPmech[oppMoveName]: STDPmech.reward_punish(float(reward*-dconf['sim']['targetedRLOppFctr']))
+                    for STDPmech in self.dSTDPmech[oppMoveName]: STDPmech.reward_punish(float(reward*-dconf['sim']['targetedRLOppFctr'])) #Factor for inactive EM pops
       else:
         for STDPmech in self.dSTDPmech['all']: STDPmech.reward_punish(reward)
 
