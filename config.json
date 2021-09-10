@@ -19,7 +19,7 @@
             {"type": "rf_normal", "bins": 20, "mean": 0.00529333, "std": 0.09129902},
             {"type": "rf_normal", "bins": 20, "mean": 0.04752025, "std": 0.82070579}
         ],
-        "episodes": 1,
+        "episodes": 21,
         "unk_move": -1
     },
     "moves": {
@@ -52,12 +52,12 @@
         "recordStep": 1.0,
         "recordStim": 0,
         "recordWeightStepSize": 5000,
-        "normalizeSynInputs": 0,
+        "normalizeSynInputs": 1,
         "normalizeInStepSize": 25,
         "normalizeInPrint": 0,
-        "normalizeByOutputBalancing": 0,
+        "normalizeByOutputBalancing": 1,
         "normalizeOutBalMinMax": [0.1, 2],
-        "normalizeByGainControl": 0,
+        "normalizeByGainControl": 1,
         "normalizeByGainControlSteps": 500,
         "normalizeByGainControlEvery": 75,
         "normalizeByGainControlValue": 0.0001,
@@ -150,8 +150,8 @@
             "IML": 10
         },
         "popTargetFreq": {
-            "EA": 5.5,
-            "EM": 6.0
+            "EA": 9,
+            "EM": 12
         },
         "deactivateNMDA": 0,
 

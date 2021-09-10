@@ -213,8 +213,9 @@ def sample_run(
     (int(dir_fie.replace('run_', '')), True)
     for dir_fie in os.listdir(outputdir)
     if os.path.isdir(os.path.join(outputdir, dir_fie)) and dir_fie.startswith('run_')])
-  run_ids = [rid for rid, run in enumerate(allruns) if run[0] not in sampled]
-  run_id = run_ids[_pseudo_random() % len(run_ids)]
+  run_cnts = [rid for rid, run in enumerate(allruns) if run[0] not in sampled]
+  run_sel = run_cnts[_pseudo_random() % len(run_cnts)]
+  run_id = allruns[run_sel][0]
   print('Picked {}:'.format(run_id))
   sample = dict(zip(header, allruns[run_id]))
   print(sample)

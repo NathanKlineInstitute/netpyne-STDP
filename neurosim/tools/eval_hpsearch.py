@@ -5,8 +5,8 @@ import json
 import math
 import matplotlib.pyplot as plt
 
-def analyze_samples(wdir):
-  runs_json = os.path.join(wdir, 'runs.json')
+def analyze_samples(wdir, runs_json_fname='runs.json'):
+  runs_json = os.path.join(wdir, runs_json_fname)
   hpconfig_json = os.path.join(wdir, 'hpsearch_config.json')
   results_tsv = os.path.join(wdir, 'results.tsv')
 
@@ -82,11 +82,11 @@ def analyze_samples(wdir):
     outputfile = os.path.join(wdir, 'eval_params_{}.png'.format(result_key))
     plt.savefig(outputfile)
 
-def create_table(wdir, outputfile=None):
-  runs_json = os.path.join(wdir, 'runs.json')
+def create_table(wdir, outputfile=None, runs_json_fname='runs.json'):
+  runs_json = os.path.join(wdir, runs_json_fname)
   results_tsv = os.path.join(wdir, 'results.tsv')
 
-  outputfile = os.path.join(wdir, 'results_table2.tsv')
+  outputfile = os.path.join(wdir, 'results_table.tsv')
 
   runs = {}
   with open(runs_json) as f:

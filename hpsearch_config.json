@@ -7,10 +7,16 @@
         "sim:targetedRLMainFctr": [0.5, 0.8, 0.9, 1.0],
         "sim:targetedRLOppFctr": [0.5, 0.8, 0.9],
         "simtype:ResumeSimFromFile": [
-            "results/hpsearch-2021-09-08/initv4_168/synWeights_final.pkl",
-            "results/hpsearch-2021-09-08/initv4_7321/synWeights_final.pkl",
-            "results/hpsearch-2021-09-08/initv4_1338/synWeights_final.pkl",
-            "results/hpsearch-2021-09-08/initv3_2703/synWeights_final.pkl"]
+            "results/hpsearch-2021-09-09/initv5b1_run_0/synWeights_final.pkl",
+            "results/hpsearch-2021-09-09/initv5b2_run_432/synWeights_final.pkl",
+            "results/hpsearch-2021-09-09/initv5b3_run_456/synWeights_final.pkl",
+            "results/hpsearch-2021-09-09/initv5b4_run_572/synWeights_final.pkl",
+            "results/hpsearch-2021-09-09/initv5b5_run_564/synWeights_final.pkl",
+            "results/hpsearch-2021-09-09/initv5b6_run_74/synWeights_final.pkl"],
+        "critic:posRewardBias": [2.5, 2.8, 3.0],
+        "critic:angv_bias": [0.7, 0.8, 0.9, 1.0],
+        "critic:clear_flips": [false, true],
+        "critic:total_gain": [2.5, 3.0, 3.5]
     },
     "conditions": [
         ["STDP_RL_AMPA_RLhebbwt == - STDP_RL_AMPA_RLantiwt", 2],

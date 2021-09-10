@@ -75,7 +75,7 @@ Evaluate the model before and after training:
     
     WDIR=results/20210707
     py neurosim/main.py eval $WDIR --resume_tidx=0
-    py neurosim/main.py eval $WDIR --resume_tidx=-1 --duration 200
+    py neurosim/main.py eval $WDIR --resume_tidx=-1 --duration 250
 
     # To display the model run
     py neurosim/main.py eval $WDIR --resume_tidx=-1 --display
@@ -89,9 +89,7 @@ Optional: Maybe evaluate in depth
 
 Run all evaluation:
 
-    WDIR=results/20210907-ES1500it
-    py neurosim/tools/evaluate.py frequency $WDIR --timestep 10000
-    py neurosim/tools/evaluate.py variance $WDIR
+    WDIR=results/20210907
     py neurosim/tools/evaluate.py medians $WDIR
     py neurosim/tools/evaluate.py rewards $WDIR
     py neurosim/tools/evaluate.py rewards-vals $WDIR
@@ -103,9 +101,11 @@ Run all evaluation:
     py neurosim/tools/evaluate.py weights-adj $WDIR --index 0
     py neurosim/tools/evaluate.py weights-diffs $WDIR
     py neurosim/tools/evaluate.py weights-diffs $WDIR --relative
-
     py neurosim/tools/evaluate.py weights-ch $WDIR
     py neurosim/tools/evaluate.py weights-ch $WDIR --separate_movement True
+
+    py neurosim/tools/evaluate.py frequency $WDIR --timestep 10000
+    py neurosim/tools/evaluate.py variance $WDIR
 
     py neurosim/tools/evaluate.py boxplot $WDIR
     py neurosim/tools/evaluate.py perf $WDIR
@@ -160,5 +160,4 @@ Change `hpsearch_config.json` to the needed params
 Results are posted in `$WDIR/results.tsv`, then you can analyze with:
 
     py neurosim/tools/eval_hpsearch.py analyze $WDIR
-
     py neurosim/tools/eval_hpsearch.py combine $WDIR
