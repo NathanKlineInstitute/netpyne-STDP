@@ -76,6 +76,7 @@ Evaluate the model before and after training:
     WDIR=results/20210707
     py neurosim/main.py eval $WDIR --resume_tidx=0
     py neurosim/main.py eval $WDIR --resume_tidx=-1 --duration 250
+    py neurosim/main.py eval $WDIR --resume_tidx=-2 --env-seed 42 --eps-duration 5
 
     # To display the model run
     py neurosim/main.py eval $WDIR --resume_tidx=-1 --display

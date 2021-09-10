@@ -13,6 +13,9 @@ class AIGame:
     # make the environment - env is global so that it only gets created on
     # a single node (important when using MPI with > 1 node)
     env = gym.make(config['env']['name'])
+    if 'seed' in config['env']:
+      env.seed(config['env']['seed'])
+      env.action_space.np_random.seed(config['env']['seed'])
     env.reset()
     self.env = env
     self.do_render = config['env']['render']

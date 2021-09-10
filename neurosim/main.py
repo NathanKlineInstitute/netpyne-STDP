@@ -71,8 +71,13 @@ def _saved_timesteps(synWeights_file):
   df = readWeights(synWeights_file)
   return sorted(list(df['time'].unique()))
 
-def evaluate(eval_dir, duration=100, resume_tidx=-1,
-    display=False, verbose=False, sleep=False, saveData=False):
+def evaluate(eval_dir, duration=None, eps_duration=None, resume_tidx=-1,
+    display=False, verbose=False, sleep=False, saveData=False,
+    env_seed=None):
+  if (duration == None) and (eps_duration == None):
+    duration = 100
+  assert (duration == None) ^ (eps_duration == None)
+
   dconf_path = os.path.join(eval_dir, 'backupcfg_sim.json')
 
   synWeights_file = os.path.join(eval_dir, 'synWeights.pkl')
@@ -87,11 +92,13 @@ def evaluate(eval_dir, duration=100, resume_tidx=-1,
 
   if display:
     dconf['env']['render'] = 1
+  if env_seed != None:
+    dconf['env']['seed'] = env_seed
   dconf['simtype']['ResumeSim'] = 1
   dconf['simtype']['ResumeSimFromFile'] = synWeights_file
   dconf['simtype']['ResumeSimFromTs'] = float(timesteps[resume_tidx])
   dconf['verbose'] = 1 if verbose else 0
-  dconf['sim']['duration'] = duration
+  dconf['sim']['duration'] = duration if duration != None else eps_duration * 501
   dconf['sim']['saveWeights'] = 0
   dconf['sim']['doSaveData'] = 1 if saveData else 0
   dconf['sim']['plotRaster'] = 0
@@ -113,7 +120,13 @@ def evaluate(eval_dir, duration=100, resume_tidx=-1,
   backup_config(dconf)
 
   runner = NeuroSim(dconf)
-  runner.run()
+  if eps_duration != None:
+    runner.end_after_episode = eps_duration
+
+  try:
+    runner.run()
+  except SystemExit:
+    runner.save()
 
 
 if __name__ == '__main__':
