@@ -1,0 +1,509 @@
+{
+    "env": {
+        "name": "CartPole-v1",
+        "savemp4": 0,
+        "render": 0,
+        "observation_map": [
+            {
+                "type": "rf_normal",
+                "bins": 20,
+                "mean": -0.00645789,
+                "std": 1.0
+            },
+            {
+                "type": "rf_normal",
+                "bins": 20,
+                "mean": -0.03634136,
+                "std": 0.53989509
+            },
+            {
+                "type": "rf_normal",
+                "bins": 20,
+                "mean": 0.00529333,
+                "std": 0.09129902
+            },
+            {
+                "type": "rf_normal",
+                "bins": 20,
+                "mean": 0.04752025,
+                "std": 0.82070579
+            }
+        ],
+        "seed": 1235,
+        "episodes": 21,
+        "unk_move": -1
+    },
+    "moves": {
+        "LEFT": 0,
+        "RIGHT": 1
+    },
+    "pop_to_moves": {
+        "EM": [
+            "LEFT",
+            "RIGHT"
+        ]
+    },
+    "actionsPerPlay": 1,
+    "observationsToKeep": 100,
+    "rewardsToKeep": 100,
+    "critic": {
+        "biases": {
+            "angv": null
+        },
+        "max_reward": 1.0,
+        "total_gain": null,
+        "posRewardBias": null,
+        "clear_flips": null
+    },
+    "verbose": 0,
+    "stayStepLim": 0,
+    "simtype": {
+        "ResumeSim": 0,
+        "ResumeSimFromFile": "results/20210714/synWeights_final.pkl"
+    },
+    "sim": {
+        "duration": 500,
+        "dt": 0.6,
+        "verbose": 0,
+        "recordStep": 1.0,
+        "recordStim": 0,
+        "recordWeightStepSize": 1000,
+        "normalizeSynInputs": 1,
+        "normalizeInStepSize": 25,
+        "normalizeInPrint": 0,
+        "normalizeByOutputBalancing": 1,
+        "normalizeOutBalMinMax": [
+            0.1,
+            2
+        ],
+        "normalizeByGainControl": 1,
+        "normalizeByGainControlSteps": 500,
+        "normalizeByGainControlEvery": 75,
+        "normalizeByGainControlValue": 0.0001,
+        "normalizeVerbose": 0,
+        "RLFakeUpRule": 0,
+        "RLFakeDownRule": 0,
+        "RLFakeStayRule": 0,
+        "doquit": 1,
+        "doplot": 0,
+        "saveCellSecs": 0,
+        "saveCellConns": 1,
+        "saveMotionFields": 0,
+        "plotRaster": 1,
+        "targetedRL": 3,
+        "targetedRLMainFctr": 1.0,
+        "targetedRLOppFctr": null,
+        "targetedNonEM": null,
+        "targetedRLDscntFctr": null,
+        "tstepPerAction": 50,
+        "saveWeights": 1,
+        "resetEligTrace": 1
+    },
+    "cell": {
+        "E": {
+            "ahpwt": 1,
+            "tauahp": 400,
+            "RMP": -65,
+            "VTH": -40,
+            "refrac": 5,
+            "Vblock": -25,
+            "tauAM": 10,
+            "tauNM": 300,
+            "tauGA": 10,
+            "tauGA2": 20,
+            "tauAM2": 20,
+            "tauNM2": 300,
+            "tauRR": 8,
+            "RRWght": 0.75
+        },
+        "I": {
+            "ahpwt": 0.5,
+            "tauahp": 50,
+            "RMP": -63,
+            "VTH": -40,
+            "refrac": 2.5,
+            "Vblock": -10,
+            "tauAM": 10,
+            "tauNM": 300,
+            "tauGA": 10,
+            "tauGA2": 20,
+            "tauAM2": 20,
+            "tauNM2": 300,
+            "tauRR": 1.5,
+            "RRWght": 0.25
+        },
+        "IL": {
+            "ahpwt": 0.5,
+            "tauahp": 50,
+            "RMP": -65,
+            "VTH": -47,
+            "refrac": 2.5,
+            "Vblock": -10,
+            "tauAM": 10,
+            "tauNM": 300,
+            "tauGA": 10,
+            "tauGA2": 20,
+            "tauAM2": 20,
+            "tauNM2": 300,
+            "tauRR": 1.5,
+            "RRWght": 0.25
+        }
+    },
+    "net": {
+        "Gain": {
+            "EE": 2.0,
+            "EI": 3.0,
+            "IE": 2.0,
+            "II": 1.0
+        },
+        "ECellModel": "INTF7",
+        "ICellModel": "INTF7",
+        "scale": 1,
+        "noiseDamping": {
+            "E": 0.0,
+            "I": 0.0
+        },
+        "allpops": {
+            "ES": 80,
+            "EA": 40,
+            "IA": 10,
+            "IAL": 10,
+            "EM": 40,
+            "IM": 10,
+            "IML": 10
+        },
+        "popTargetFreq": {
+            "EA": 5.5,
+            "EM": 6.0
+        },
+        "deactivateNMDA": null,
+        "inputPop": "ES",
+        "STDPconns": {
+            "EE": 1
+        },
+        "InputMaxRate": 50.0,
+        "stimModW": 35,
+        "synMechParams": {
+            "AMPA": {
+                "mod": "Exp2Syn",
+                "tau1": 0.05,
+                "tau2": 5.3,
+                "e": 0
+            },
+            "NMDA": {
+                "mod": "Exp2Syn",
+                "tau1": 0.15,
+                "tau2": 166.0,
+                "e": 0
+            },
+            "GABA": {
+                "mod": "Exp2Syn",
+                "tau1": 0.07,
+                "tau2": 9.1,
+                "e": -80
+            }
+        },
+        "synToMech": {
+            "AM": "AMPA",
+            "NM": "NMDA",
+            "GA": "GABA",
+            "AM2": "AMPA",
+            "NM2": "NMDA",
+            "GA2": "GABA"
+        },
+        "cmat": {
+            "ES": {
+                "EA": {
+                    "AM2": 5.0,
+                    "NM2": 0.098,
+                    "conv": 25
+                }
+            },
+            "EA": {
+                "EA": {
+                    "AM2": 0.05,
+                    "NM2": 0.005,
+                    "conv": 0
+                },
+                "IA": {
+                    "AM2": 1.95,
+                    "NM2": 0.0195,
+                    "conv": 15
+                },
+                "IAL": {
+                    "AM2": 1.98,
+                    "NM2": 0.098,
+                    "conv": 15
+                },
+                "EM": {
+                    "AM2": 3.25,
+                    "NM2": 0.05,
+                    "conv": 20
+                }
+            },
+            "IA": {
+                "EA": {
+                    "GA": 9.0,
+                    "p": 0.4
+                },
+                "IA": {
+                    "GA": 4.5,
+                    "p": 0.1
+                },
+                "IAL": {
+                    "GA": 4.5,
+                    "p": 0.2
+                }
+            },
+            "IAL": {
+                "EA": {
+                    "GA2": 2.5,
+                    "p": 0.4
+                },
+                "IA": {
+                    "GA2": 2.25,
+                    "p": 0.2
+                },
+                "IAL": {
+                    "GA2": 5.5,
+                    "p": 0.1
+                }
+            },
+            "EM": {
+                "EM": {
+                    "AM2": 0.01,
+                    "NM2": 0.001,
+                    "conv": 0
+                },
+                "IM": {
+                    "AM2": 1.95,
+                    "NM2": 0.0195,
+                    "conv": 16
+                },
+                "IML": {
+                    "AM2": 0.98,
+                    "NM2": 0.098,
+                    "conv": 16
+                },
+                "EA": {
+                    "AM2": 0.5,
+                    "NM2": 0.01,
+                    "conv": 0
+                }
+            },
+            "IM": {
+                "EM": {
+                    "GA": 9.0,
+                    "p": 0.4
+                },
+                "IM": {
+                    "GA": 4.5,
+                    "p": 0.1
+                },
+                "IML": {
+                    "GA": 4.5,
+                    "p": 0.2
+                }
+            },
+            "IML": {
+                "EM": {
+                    "GA2": 2.5,
+                    "p": 0.4
+                },
+                "IM": {
+                    "GA2": 2.25,
+                    "p": 0.2
+                },
+                "IML": {
+                    "GA2": 5.5,
+                    "p": 0.1
+                }
+            }
+        },
+        "weightVar": 0.5,
+        "delays": {
+            "soma": [
+                1.8,
+                2.2
+            ],
+            "soma2": [
+                3.0,
+                12.0
+            ],
+            "dend": [
+                3.0,
+                12.0
+            ],
+            "STIMMOD": [
+                0.8,
+                1.2
+            ]
+        }
+    },
+    "STDP-RL": {
+        "AMPAI": {
+            "wbase": 0.4,
+            "wmax": 30,
+            "RLon": 1,
+            "STDPon": 0,
+            "RLlenhebb": 75,
+            "RLlenanti": 60,
+            "useRLexp": 1,
+            "RLhebbwt": 0.01,
+            "RLantiwt": 0.0,
+            "hebbwt": 0,
+            "antiwt": 0,
+            "tauhebb": 10,
+            "tauanti": 10,
+            "RLwindhebb": 50,
+            "RLwindanti": 50,
+            "softthresh": 0,
+            "verbose": 0,
+            "maxreward": 0.0
+        },
+        "AMPA": {
+            "wmax": 200,
+            "RLon": 1,
+            "STDPon": 0,
+            "RLlenhebb": 204,
+            "RLlenanti": 204,
+            "useRLexp": 0,
+            "RLhebbwt": null,
+            "RLantiwt": null,
+            "hebbwt": 0.0,
+            "antiwt": 0.0,
+            "tauhebb": 5,
+            "tauanti": 5,
+            "RLwindhebb": null,
+            "RLwindanti": null,
+            "softthresh": 0,
+            "verbose": 0,
+            "maxreward": 0.0
+        },
+        "NMDA": {
+            "wbase": 1e-06,
+            "wmax": 7.5e-05,
+            "RLon": 0,
+            "STDPon": 0,
+            "RLlenhebb": 1000,
+            "RLlenanti": 1000,
+            "useRLexp": 1,
+            "RLhebbwt": 4e-06,
+            "RLantiwt": -0.0,
+            "hebbwt": 0,
+            "antiwt": 0,
+            "tauhebb": 10,
+            "tauanti": 10,
+            "RLwindhebb": 50,
+            "RLwindanti": 50,
+            "softthresh": 0,
+            "verbose": 0
+        }
+    },
+    "noise": {
+        "EM": {
+            "AM": {
+                "w": 0,
+                "rate": 0
+            },
+            "NM": {
+                "w": 0,
+                "rate": 0
+            },
+            "GA": {
+                "w": 1.875,
+                "rate": 100
+            },
+            "AM2": {
+                "w": 3.938,
+                "rate": 200
+            },
+            "NM2": {
+                "w": 0,
+                "rate": 0
+            },
+            "GA2": {
+                "w": 1.875,
+                "rate": 100
+            }
+        },
+        "EA": {
+            "AM": {
+                "w": 0,
+                "rate": 0
+            },
+            "NM": {
+                "w": 0,
+                "rate": 0
+            },
+            "GA": {
+                "w": 1.875,
+                "rate": 100
+            },
+            "AM2": {
+                "w": 3.938,
+                "rate": 200
+            },
+            "NM2": {
+                "w": 0,
+                "rate": 0
+            },
+            "GA2": {
+                "w": 1.875,
+                "rate": 100
+            }
+        },
+        "IA": {
+            "AM": {
+                "w": 1.875,
+                "rate": 100
+            },
+            "NM": {
+                "w": 0,
+                "rate": 0
+            },
+            "GA": {
+                "w": 0,
+                "rate": 0
+            },
+            "AM2": {
+                "w": 4.125,
+                "rate": 200
+            },
+            "NM2": {
+                "w": 0,
+                "rate": 0
+            },
+            "GA2": {
+                "w": 1.875,
+                "rate": 100
+            }
+        },
+        "IAL": {
+            "AM": {
+                "w": 1.875,
+                "rate": 100
+            },
+            "NM": {
+                "w": 0,
+                "rate": 0
+            },
+            "GA": {
+                "w": 0,
+                "rate": 0
+            },
+            "AM2": {
+                "w": 3.0,
+                "rate": 200
+            },
+            "NM2": {
+                "w": 0,
+                "rate": 0
+            },
+            "GA2": {
+                "w": 1.875,
+                "rate": 100
+            }
+        }
+    }
+}
