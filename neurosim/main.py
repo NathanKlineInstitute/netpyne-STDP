@@ -86,7 +86,8 @@ def evaluate(eval_dir, duration=None, eps_duration=None, resume_tidx=-1,
     resume_tidx += len(timesteps)
   assert resume_tidx >= 0 and resume_tidx < len(timesteps)
 
-  outdir = os.path.join(eval_dir, 'evaluation_{}'.format(resume_tidx))
+  outdir = os.path.join(eval_dir, 'evaluation{}_{}'.format(
+    '_display' if display else '', resume_tidx))
   dconf = read_conf(dconf_path, outdir=outdir)
   init_wdir(dconf)
 

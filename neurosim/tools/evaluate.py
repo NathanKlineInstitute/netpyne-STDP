@@ -16,7 +16,7 @@ RANDOM_EVALUATION='results/random_cartpole_ActionsPerEpisode.txt'
 def _read_evaluations(wdir, include_random):
   evaluations = [
     (os.path.join(wdir, fname), int(fname.replace('evaluation_', '')))
-    for fname in os.listdir(wdir) if fname.startswith('evaluation_')]
+    for fname in os.listdir(wdir) if fname.startswith('evaluation_') and 'display' not in fname]
 
   results = {}
   for eval_dir, eval_ts in evaluations:

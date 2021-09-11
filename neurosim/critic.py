@@ -18,7 +18,6 @@ def _modulate_linear(mod_steps, reward, min_steps=1):
 class Critic:
 
   def __init__(self, dconf):
-    self.angv_bias = dconf['critic']['angv_bias']
     self.total_gain = dconf['critic']['total_gain']
     self.max_reward = dconf['critic']['max_reward']
     self.posRewardBias = 1.0
@@ -38,6 +37,14 @@ class Critic:
       self.mod_queue = deque(maxlen=self.mod_steps)
       if dconf['critic']['modulation']['type'] == 'linear':
         self.modulate = _modulate_linear
+    self.biases = False
+    if 'biases' in dconf['critic']:
+      biases = dconf['critic']['biases']
+      self.biases = True
+      self.biases_vec = np.array([biases[k] if k in biases else 1.0 for k in ['loc', 'vec', 'ang', 'angv']])
+    elif 'angv_bias' in dconf['critic']:
+      self.angv_bias = dconf['critic']['angv_bias']
+
     self.means = np.array([k['mean'] if 'mean' in k else 0.0 for k in dconf['env']['observation_map']])
     self.stds = np.array([k['std'] if 'std' in k else 1.0 for k in dconf['env']['observation_map']])
 
@@ -46,19 +53,16 @@ class Critic:
       return -self.max_reward / self.posRewardBias
     return -self.max_reward
 
-  # def _normalize(self, obs):
-  #   return (obs - self.means) / self.stds
-  # def _loss_inv(self, obs):
-  #   _, _, ang, angv = self._normalize(obs)
-  #   max_dev = 3.0 # its normalized
-  #   dist = np.abs(ang) + np.abs(angv) * self.angv_bias
-  #   max_dist = max_dev * (1 + self.angv_bias)
-  #   # return np.exp((max_dist - min(dist, max_dist)) / max_dist)
-  #   return (max_dist - min(dist, max_dist)) / max_dist
+  def _normalize(self, obs):
+    return (obs - self.means) / self.stds
 
   def _loss(self, obs):
-    _, _, ang, angv = obs
-    return math.sqrt(ang*ang + self.angv_bias*angv*angv)
+    if self.biases: # this is configuring the whole observation space
+      return np.sqrt(np.sum((self._normalize(obs) * self.biases_vec) ** 2))
+    else:
+      # old method of looking at only ang and angv
+      _, _, ang, angv = obs
+      return math.sqrt(ang*ang + self.angv_bias*angv*angv)
 
   def _balanced(self, obs):
     _, _, ang, angv = obs

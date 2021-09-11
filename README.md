@@ -76,16 +76,16 @@ Evaluate the model before and after training:
     WDIR=results/20210707
     py neurosim/main.py eval $WDIR --resume_tidx=0
     py neurosim/main.py eval $WDIR --resume_tidx=-1 --duration 250
-    py neurosim/main.py eval $WDIR --resume_tidx=-2 --env-seed 42 --eps-duration 5
+    py neurosim/main.py eval $WDIR --resume_tidx=-1 --env-seed 42 --eps-duration 105
 
     # To display the model run
-    py neurosim/main.py eval $WDIR --resume_tidx=-1 --display
+    py neurosim/main.py eval $WDIR --resume_tidx=-1 --display --env-seed 42
 
 Optional: Maybe evaluate in depth
 
-    for ((i=41;i<60;i+=1)); do
+    for ((i=1;i<10;i+=1)); do
         echo "Evaluating at $i"
-        py neurosim/main.py eval $WDIR --resume_tidx=$i
+        py neurosim/main.py eval $WDIR --resume_tidx=$i --env-seed 42 --eps-duration 105
     done
 
 Run all evaluation:
