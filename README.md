@@ -144,7 +144,7 @@ Continue training from a already trained model:
 
 Change `hpsearch_config.json` to the needed params
 
-    WDIR=results/hpsearch-2021-09-02-v2
+    WDIR=results/hpsearch-2021-09-11
 
     # Just for setup:
     py neurosim/hpsearch.py sample $WDIR --just-init
