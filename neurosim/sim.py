@@ -872,23 +872,21 @@ class NeuroSim:
           self.last_time = t
           sys.exit()
 
-      if self.STDP_active:
-         # specific for CartPole-v1. TODO: move to a diff file
-         if len(sim.AIGame.observations) == 0:
-           raise Exception('Failed to get an observation from the Game')
-         else:
-           reward = self.critic.calc_reward(
-             sim.AIGame.observations[-1],
-             sim.AIGame.observations[-2] if len(sim.AIGame.observations) > 1 else None,
-             is_unk_move)
+      # specific for CartPole-v1. TODO: move to a diff file
+      if len(sim.AIGame.observations) == 0:
+        raise Exception('Failed to get an observation from the Game')
+      else:
+        reward = self.critic.calc_reward(
+          sim.AIGame.observations[-1],
+          sim.AIGame.observations[-2] if len(sim.AIGame.observations) > 1 else None,
+          is_unk_move)
 
-         # use py_broadcast to avoid converting to/from Vector
-         sim.pc.py_broadcast(reward, 0)  # broadcast reward value to other nodes
+        # use py_broadcast to avoid converting to/from Vector
+        sim.pc.py_broadcast(reward, 0)  # broadcast reward value to other nodes
 
     else:  # other workers
-      if self.STDP_active:
-        # receive reward value from master node
-        reward = sim.pc.py_broadcast(None, 0)
+      # receive reward value from master node
+      reward = sim.pc.py_broadcast(None, 0)
 
 
     t2 = datetime.now() - t2
@@ -912,11 +910,10 @@ class NeuroSim:
       for ts in range(len(actions)):
         tvec_actions.append(t-self.tstepPerAction*(len(actions)-ts-1))
 
-      if self.STDP_active:
-        with open(sim.ActionsRewardsfilename, 'a') as fid3:
-          obs = '\t{}'.format(json.dumps(list(sim.AIGame.observations[-1]))) if self.saveEnvObs else ''
-          for action, t in zip(actions, tvec_actions):
-            fid3.write('%0.1f\t%0.1f\t%0.5f%s\n' % (t, action, reward, obs))
+      with open(sim.ActionsRewardsfilename, 'a') as fid3:
+        obs = '\t{}'.format(json.dumps(list(sim.AIGame.observations[-1]))) if self.saveEnvObs else ''
+        for action, t in zip(actions, tvec_actions):
+          fid3.write('%0.1f\t%0.1f\t%0.5f%s\n' % (t, action, reward, obs))
 
     # update firing rate of inputs to R population (based on game state)
     self.updateInputRates(sim)
@@ -930,7 +927,7 @@ class NeuroSim:
         print('Weights Recording Time:', t, 'NBsteps:', self.NBsteps,
               'recordWeightStepSize:', self.recordWeightStepSize)
       self.recordWeights(sim, t)
-    if self.normalizeSynInputs and self.NBsteps % self.normalizeInStepSize == 0:
+    if self.STDP_active and self.normalizeSynInputs and self.NBsteps % self.normalizeInStepSize == 0:
       self.normalizeInWeights(sim)
 
     t5 = datetime.now() - t5

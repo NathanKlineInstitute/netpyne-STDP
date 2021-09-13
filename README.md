@@ -65,9 +65,13 @@ Run tests:
 
     pytest tests
 
-Run ES:
+### Run ES
     
-    python3 neurosim/train_es.py
+    python3 neurosim/train_es.py train
+
+Or continue training model
+
+    python3 neurosim/train_es.py continue results/20210907-ES1500it --iterations 500
 
 ### Tools/Evaluation
 

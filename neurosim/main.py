@@ -123,6 +123,7 @@ def evaluate(eval_dir, duration=None, eps_duration=None, resume_tidx=-1,
   runner = NeuroSim(dconf)
   if eps_duration != None:
     runner.end_after_episode = eps_duration
+  runner.STDP_active = False
 
   try:
     runner.run()

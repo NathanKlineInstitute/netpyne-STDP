@@ -18,11 +18,14 @@ def _get_params(config):
   return params
 
 
-def trace(wdir):
+def _extract(wdir, path_prefix=None):
   configs = []
   wdirs = [wdir]
   while True:
-    config_fname = os.path.join(wdirs[-1], 'backupcfg_sim.json')
+    current_wdir = wdirs[-1]
+    if path_prefix:
+      current_wdir = os.path.join(path_prefix, current_wdir)
+    config_fname = os.path.join(current_wdir, 'backupcfg_sim.json')
     with open(config_fname) as f:
       config = json.load(f)
     configs.append(config)
@@ -34,24 +37,33 @@ def trace(wdir):
 
   configs.reverse()
   wdirs.reverse()
+  return wdirs, configs
 
+def _extract_params(wdirs, configs):
   all_params = []
   keys = []
-  print('wdirs:')
   for wdir, config in zip(wdirs, configs):
-    print(wdir)
     params = _get_params(config)
     all_params.append(params)
     keys.extend(params.keys())
 
-  print('params:')
   keys = sorted(list(set(keys)))
+  return all_params, keys
+
+def trace(wdir):
+  wdirs, configs = _extract(wdir)
+
+  print('wdirs:')
+  for wdir in wdirs:
+    print(wdir)
+
+  all_params, keys = _extract_params(wdirs, configs)
+
+  print('params:')
   for key in keys:
     values = [params[key] if key in params else None for params in all_params]
     if len(set(values)) > 1:
       print(key, values)
-
-
 
 
 if __name__ == '__main__':

@@ -1,4 +1,5 @@
 import os, sys
+import fire
 
 import numpy as np
 from tqdm import tqdm
@@ -42,7 +43,7 @@ def init(dconf):
   init_wdir(dconf)
   return dconf
 
-def train(dconf):
+def train(dconf=None):
     dconf = init(dconf)
     ITERATIONS = dconf['ES']['iterations'] # How many iterations to train for
     POPULATION_SIZE = dconf['ES']['population_size'] # How many perturbations of weights to try per iteration
@@ -145,5 +146,24 @@ def train(dconf):
     netpyne.sim.simData['spkt'] = spkts
     neurosim.save()
 
+def continue_main(wdir, iterations=100, index=None):
+  dconf_path = os.path.join(wdir, 'backupcfg_sim.json')
+
+  outdir = os.path.join(wdir, 'continue_{}'.format(1 if index == None else index))
+  dconf = read_conf(dconf_path, outdir=outdir)
+  synWeights_file = os.path.join(wdir, 'synWeights.pkl')
+
+  dconf['simtype']['ResumeSim'] = 1
+  dconf['simtype']['ResumeSimFromFile'] = synWeights_file
+  if iterations != None:
+    dconf['ES']['iterations'] = iterations
+  dconf['sim']['plotRaster'] = 0
+
+  train(dconf)
+
+
 if __name__ == "__main__":
-    train(None)
+  fire.Fire({
+      'train': train,
+      'continue': continue_main
+  })
