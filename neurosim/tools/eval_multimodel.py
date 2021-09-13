@@ -18,7 +18,6 @@ def _get_params(config):
   return params
 
 
-
 def trace(wdir):
   configs = []
   wdirs = [wdir]

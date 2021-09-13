@@ -215,9 +215,9 @@ def sample_run(
     if os.path.isdir(os.path.join(outputdir, dir_fie)) and dir_fie.startswith('run_')])
   run_cnts = [rid for rid, run in enumerate(allruns) if run[0] not in sampled]
   run_sel = run_cnts[_pseudo_random() % len(run_cnts)]
-  run_id = allruns[run_sel][0]
+  sample = dict(zip(header, allruns[run_sel]))
+  run_id = sample['run_id']
   print('Picked {}:'.format(run_id))
-  sample = dict(zip(header, allruns[run_id]))
   print(sample)
 
   # setup the config

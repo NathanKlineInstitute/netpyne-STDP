@@ -44,8 +44,8 @@
     "verbose": 0,
     "stayStepLim": 0,
     "simtype": {
-        "ResumeSim": 0,
-        "ResumeSimFromFile": "results/20210714/synWeights_final.pkl"
+        "ResumeSim": 1,
+        "ResumeSimFromFile": "results/hpsearch-2021-09-11/best/4_run_32346/synWeights_final.pkl"
     },
     "sim": {
         "duration": 500,

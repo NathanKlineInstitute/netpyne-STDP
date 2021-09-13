@@ -83,7 +83,7 @@ Evaluate the model before and after training:
 
 Optional: Maybe evaluate in depth
 
-    for ((i=1;i<10;i+=1)); do
+    for ((i=0;i<30;i+=10)); do
         echo "Evaluating at $i"
         py neurosim/main.py eval $WDIR --resume_tidx=$i --env-seed 42 --eps-duration 105
     done
@@ -144,7 +144,7 @@ Continue training from a already trained model:
 
 Change `hpsearch_config.json` to the needed params
 
-    WDIR=results/hpsearch-2021-09-11
+    WDIR=results/hpsearch-2021-09-12
 
     # Just for setup:
     py neurosim/hpsearch.py sample $WDIR --just-init
