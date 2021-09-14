@@ -65,7 +65,6 @@ def train(dconf=None):
 
     # randomly initialize best weights to the first weights generated
     best_weights = neurosim.getWeightArray(netpyne.sim)
-    neurosim.recordWeights(netpyne.sim, 0)
 
     fres_train = neurosim.outpath('es_train.txt')
     fres_eval = neurosim.outpath('es_eval.txt')

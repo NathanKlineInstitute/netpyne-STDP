@@ -80,7 +80,12 @@ Evaluate the model before and after training:
     WDIR=results/20210707
     py neurosim/main.py eval $WDIR --resume_tidx=0
     py neurosim/main.py eval $WDIR --resume_tidx=-1 --duration 250
-    py neurosim/main.py eval $WDIR --resume_tidx=-1 --env-seed 42 --eps-duration 105
+
+    # To evaluate and use for poster/presentation:
+    py neurosim/main.py eval $WDIR --resume_tidx=-1 \
+        --env-seed 42 \
+        --eps-duration 105 \
+        --save-data
 
     # To display the model run
     py neurosim/main.py eval $WDIR --resume_tidx=-1 --display --env-seed 42
@@ -148,7 +153,7 @@ Continue training from a already trained model:
 
 Change `hpsearch_config.json` to the needed params
 
-    WDIR=results/hpsearch-2021-09-12
+    WDIR=results/hpsearch-2021-09-13
 
     # Just for setup:
     py neurosim/hpsearch.py sample $WDIR --just-init
@@ -166,3 +171,42 @@ Results are posted in `$WDIR/results.tsv`, then you can analyze with:
 
     py neurosim/tools/eval_hpsearch.py analyze $WDIR
     py neurosim/tools/eval_hpsearch.py combine $WDIR
+
+### Evaluation of best models:
+
+STDP model process:
+
+    WDIR=results/hpsearch-2021-09-01/run_106756
+    WDIR=results/hpsearch-2021-09-04/best/1_run_2703
+    WDIR=results/hpsearch-2021-09-06/best/1_run_168
+
+ES model:
+
+    WDIR=results/20210907-ES1500it
+
+#### To trace the model
+
+Use this on the latest step of the model
+
+    py neurosim/tools/eval_multimodel.py trace $WDIR
+
+### To generate all results:
+
+    BSTDP_WDIR=results/hpsearch-2021-09-06/best/1_run_168
+    BES_WDIR=results/20210907-ES1500it
+    BEFORE_CONF="Before Training:${BES_WDIR}:0"
+    BSTDP_CONF="STDP-RL Trained Model:${BSTDP_WDIR}:-1"
+    BES_CONF="ES Trained Model:${BES_WDIR}:-1"
+    OUTDIR=results/final-results-2021-09
+
+    py neurosim/tools/eval_multimodel.py boxplot "${BEFORE_CONF},${BSTDP_CONF},${BES_CONF}" --outdir=$OUTDIR
+
+    py neurosim/tools/evaluate.py frequency ${BSTDP_WDIR}/evaluation_8 --timestep 10000
+    py neurosim/tools/evaluate.py frequency ${BES_WDIR}/evaluation_15 --timestep 10000
+    py neurosim/tools/evaluate.py frequency ${BES_WDIR}/evaluation_0 --timestep 10000
+    py neurosim/tools/evaluate.py variance ${BSTDP_WDIR}/evaluation_8
+    py neurosim/tools/evaluate.py variance ${BES_WDIR}/evaluation_15
+    py neurosim/tools/evaluate.py variance ${BES_WDIR}/evaluation_0
+
+    py neurosim/tools/eval_multimodel.py spk-freq "${BEFORE_CONF},${BSTDP_CONF},${BES_CONF}" --outdir=$OUTDIR
+

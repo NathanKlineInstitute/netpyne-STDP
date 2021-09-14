@@ -34,6 +34,7 @@
     "rewardsToKeep": 100,
     "critic": {
         "biases": {
+            "ang": 1.0,
             "angv": 1.0
         },
         "max_reward": 1.0,
@@ -45,10 +46,10 @@
     "stayStepLim": 0,
     "simtype": {
         "ResumeSim": 1,
-        "ResumeSimFromFile": "results/hpsearch-2021-09-11/best/4_run_32346/synWeights_final.pkl"
+        "ResumeSimFromFile": "results/hpsearch-2021-09-06/best/1_run_168/synWeights_final.pkl"
     },
     "sim": {
-        "duration": 500,
+        "duration": 1000,
         "dt": 0.6,
         "verbose": 0,
         "recordStep": 1.0,

@@ -1,21 +1,18 @@
 {
     "params": {
-        "STDP-RL:AMPA:RLhebbwt": [0.025, 0.02, 0.015, 0.01],
-        "STDP-RL:AMPA:RLantiwt": [-0.025, -0.02, -0.015, -0.01],
-        "STDP-RL:AMPA:RLwindhebb": [5, 25],
-        "STDP-RL:AMPA:RLwindanti": [5, 25],
+        "STDP-RL:AMPA:RLhebbwt": [0.02, 0.015, 0.01, 0.005],
+        "STDP-RL:AMPA:RLantiwt": [-0.02, -0.015, -0.01, -0.005],
         "sim:targetedNonEM": [0, 1],
-        "sim:targetedRLDscntFctr": [0.0, 0.5, 0.9],
+        "sim:targetedRLDscntFctr": [0.0, 0.5, 0.8, 0.9],
         "sim:targetedRLOppFctr": [0.5, 0.7, 0.8],
-        "critic:biases:angv": [1.5, 2.0, 3.0],
+        "critic:biases:ang": [0.5, 1.0, 2.0],
+        "critic:biases:angv": [0.5, 1.0, 2.0],
         "critic:clear_flips": [false, true],
-        "critic:posRewardBias": [1.0, 2.0, 3.0],
-        "critic:total_gain": [1.0, 2.0, 3.0],
-        "net:deactivateNMDA": [false, true]
+        "critic:posRewardBias": [1.0, 2.0, 2.8],
+        "critic:total_gain": [1.0, 2.0, 3.0]
     },
     "conditions": [
         ["STDP_RL_AMPA_RLhebbwt == - STDP_RL_AMPA_RLantiwt", 2],
-        ["STDP_RL_AMPA_RLwindhebb == STDP_RL_AMPA_RLwindanti", 4],
-        ["(sim_targetedNonEM == 0 and sim_targetedRLDscntFctr == 0.0) or (sim_targetedNonEM == 1 and sim_targetedRLDscntFctr > 0.0)", 6]
+        ["(sim_targetedNonEM == 0 and sim_targetedRLDscntFctr == 0.0) or (sim_targetedNonEM == 1 and sim_targetedRLDscntFctr > 0.0)", 4]
     ]
 }

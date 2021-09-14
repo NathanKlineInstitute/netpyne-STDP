@@ -72,7 +72,7 @@ def _saved_timesteps(synWeights_file):
   return sorted(list(df['time'].unique()))
 
 def evaluate(eval_dir, duration=None, eps_duration=None, resume_tidx=-1,
-    display=False, verbose=False, sleep=False, saveData=False,
+    display=False, verbose=False, sleep=False, save_data=False,
     env_seed=None):
   if (duration == None) and (eps_duration == None):
     duration = 100
@@ -101,7 +101,7 @@ def evaluate(eval_dir, duration=None, eps_duration=None, resume_tidx=-1,
   dconf['verbose'] = 1 if verbose else 0
   dconf['sim']['duration'] = duration if duration != None else eps_duration * 501
   dconf['sim']['saveWeights'] = 0
-  dconf['sim']['doSaveData'] = 1 if saveData else 0
+  dconf['sim']['doSaveData'] = 1 if save_data else 0
   dconf['sim']['plotRaster'] = 0
   dconf['sim']['verbose'] = 1 if verbose else 0
   dconf['sim']['sleeptrial'] = sleep if sleep else 0

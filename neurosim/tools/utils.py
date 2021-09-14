@@ -37,3 +37,16 @@ def _get_spike_aggs(sim, sorted_min_ids, timestep):
       spike_aggs[pop][bucket] = 0
     spike_aggs[pop][bucket] += 1
   return spike_aggs
+
+
+def _get_spike_aggs_all(sim, sorted_min_ids):
+  spkid = sim['simData']['spkid']
+  spkt = sim['simData']['spkt']
+
+  spike_aggs = {}
+  for cid, ct in zip(spkid, spkt):
+    pop = _get_pop_name(cid, sorted_min_ids)
+    if pop not in spike_aggs:
+      spike_aggs[pop] = 0
+    spike_aggs[pop] += 1
+  return spike_aggs

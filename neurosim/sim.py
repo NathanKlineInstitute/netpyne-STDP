@@ -18,7 +18,7 @@ from matplotlib import pyplot as plt
 from cells import intf7
 from game_interface import GameInterface
 from critic import Critic
-from utils.conns import getconv, getSec, getInitDelay, getDelay, setdminID, setrecspikes
+from utils.conns import getconv, getSec, getInitDelay, getDelay, getdminID, setrecspikes
 from utils.plots import plotRaster, plotWeights, saveActionsPerEpisode
 from utils.sync import syncdata_alltoall
 from utils.weights import saveSynWeights, readWeights, getWeightIndex, getInitSTDPWeight
@@ -234,7 +234,7 @@ class NeuroSim:
     # setup variables to record for each cell (spikes, V traces, etc)
     sim.setupRecording()
 
-    setdminID(sim, self.allpops)
+    sim.simData['dminID'] = getdminID(sim, self.allpops)
     tPerPlay = self.tstepPerAction * self.actionsPerPlay
 
     # self.InitializeInputRates(sim)# <-- Do not activate this!

@@ -40,7 +40,7 @@ def getDelay(dconf, prety, poty, sy, sec=None):
   return getInitDelay(dconf, sec)
 
 
-def setdminID(sim, lpop):
+def getdminID(sim, lpop):
   # setup min ID for each population in lpop
   # gather cell tags; see https://github.com/Neurosim-lab/netpyne/blob/development/netpyne/sim/gather.py
   alltags = sim._gatherAllCellTags()
@@ -48,8 +48,7 @@ def setdminID(sim, lpop):
   for tinds in range(len(alltags)):
     if alltags[tinds]['pop'] in lpop:
       dGIDs[alltags[tinds]['pop']].append(tinds)
-  sim.simData['dminID'] = {pop: np.amin(
-      dGIDs[pop]) for pop in lpop if len(dGIDs[pop]) > 0}
+  return {pop: np.amin(dGIDs[pop]) for pop in lpop if len(dGIDs[pop]) > 0}
 
 
 def setrecspikes(dconf, sim):
