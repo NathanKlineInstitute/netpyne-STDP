@@ -362,7 +362,8 @@ class NeuroSim:
             'numCells': self.dnumc[poty],
             'rate': 'variable',
             'noise': 0,
-            'start': 0}
+            'start': 0,
+            'interval': 1e12}
         blist = [[i, i] for i in range(self.dnumc[poty])]
         self.netParams.connParams[stimty+'->'+poty] = {
             'preConds': {'pop': stimty},
