@@ -87,6 +87,18 @@ Evaluate the model before and after training:
         --eps-duration 105 \
         --save-data
 
+    # To evaluate one specific episode over and over again
+    # for EPISODE_ID in 4 7 12 16 49 60 66 78 83
+    for EPISODE_ID in 4 7 12 16 49 66 78 83
+    do
+        py neurosim/main.py eval $WDIR --resume_tidx=-1 \
+            --env-seed 42 \
+            --eps-duration 25 \
+            --save-data \
+            --rerun-episode ${EPISODE_ID}
+    done
+
+
     # To display the model run
     py neurosim/main.py eval $WDIR --resume_tidx=-1 --display --env-seed 42
 
@@ -96,6 +108,10 @@ Optional: Maybe evaluate in depth
         echo "Evaluating at $i"
         py neurosim/main.py eval $WDIR --resume_tidx=$i --env-seed 42 --eps-duration 105
     done
+
+Evaluate how the model is responding to one neuron firing:
+    
+    py neurosim/main.py eval $WDIR --resume_tidx=-1 --eps-duration 2 --mock-env
 
 Run all evaluation:
 
@@ -210,3 +226,15 @@ Use this on the latest step of the model
 
     py neurosim/tools/eval_multimodel.py spk-freq "${BEFORE_CONF},${BSTDP_CONF},${BES_CONF}" --outdir=$OUTDIR
 
+    py neurosim/tools/eval_multimodel.py steps-per-eps $BSTDP_WDIR --wdir-name "STDP-RL Model" --outdir=$OUTDIR
+    py neurosim/tools/eval_multimodel.py steps-per-eps $BES_WDIR --wdir-name "ES Model" --outdir=$OUTDIR
+    py neurosim/tools/eval_multimodel.py steps-per-eps $BES_WDIR --wdir-name "ES Model" --outdir=$OUTDIR --merge-es
+
+    py neurosim/tools/eval_multimodel.py select-eps \
+            ${BSTDP_WDIR}/evaluation_8,${BES_WDIR}/evaluation_15
+
+    py neurosim/tools/eval_multimodel.py eval-selected-eps \
+            ${BSTDP_CONF},${BES_CONF} \
+            --outdir=$OUTDIR \
+            --sort-by 16,7,78,66,12,49,83,60,4
+            

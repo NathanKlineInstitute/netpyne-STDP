@@ -34,6 +34,8 @@
     "rewardsToKeep": 100,
     "critic": {
         "biases": {
+            "loc": 1.0,
+            "vel": 1.0,
             "ang": 1.0,
             "angv": 1.0
         },
@@ -46,7 +48,7 @@
     "stayStepLim": 0,
     "simtype": {
         "ResumeSim": 1,
-        "ResumeSimFromFile": "results/hpsearch-2021-09-06/best/1_run_168/synWeights_final.pkl"
+        "ResumeSimFromFile": "results/hpsearch-2021-09-04/best/1_run_2703/synWeights_final.pkl"
     },
     "sim": {
         "duration": 1000,
@@ -75,9 +77,9 @@
         "saveMotionFields": 0,
         "plotRaster": 1,
         "targetedRL": 3,
-        "targetedRLMainFctr": 1.0,
+        "targetedNonEM": 1,
+        "targetedRLMainFctr": 0.8,
         "targetedRLOppFctr": 0.8,
-        "targetedNonEM": 0,
         "targetedRLDscntFctr": 0.5,
         "tstepPerAction": 50,
         "saveWeights": 1,
@@ -153,8 +155,8 @@
             "IML": 10
         },
         "popTargetFreq": {
-            "EA": 9,
-            "EM": 12
+            "EA": 6.0,
+            "EM": 7.1
         },
         "deactivateNMDA": 0,
 
@@ -244,8 +246,8 @@
             "RLlenhebb": 204,
             "RLlenanti": 204,
             "useRLexp": 0,
-            "RLhebbwt": 0.01,
-            "RLantiwt": -0.01,
+            "RLhebbwt": 0.03,
+            "RLantiwt": -0.03,
             "hebbwt": 0.0,
             "antiwt": 0.0,
             "tauhebb": 5,
