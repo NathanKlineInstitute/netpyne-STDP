@@ -73,7 +73,7 @@ def _saved_timesteps(synWeights_file):
 
 def evaluate(eval_dir, duration=None, eps_duration=None, resume_tidx=-1,
     display=False, verbose=False, sleep=False, save_data=False,
-    env_seed=None):
+    env_seed=None, rerun_episode=None, mock_env=False):
   if (duration == None) and (eps_duration == None):
     duration = 100
   assert (duration == None) ^ (eps_duration == None)
@@ -88,6 +88,13 @@ def evaluate(eval_dir, duration=None, eps_duration=None, resume_tidx=-1,
 
   outdir = os.path.join(eval_dir, 'evaluation{}_{}'.format(
     '_display' if display else '', resume_tidx))
+  if rerun_episode != None:
+    if not rerun_episode:
+      raise Exception('rerun_episode is 1-indexed!')
+    outdir = os.path.join(eval_dir, 'eval_{}_rerunEp{}'.format(
+      resume_tidx, rerun_episode))
+  if mock_env:
+    outdir = os.path.join(eval_dir, 'evalmock_{}'.format(resume_tidx))
   dconf = read_conf(dconf_path, outdir=outdir)
   init_wdir(dconf)
 
@@ -95,14 +102,18 @@ def evaluate(eval_dir, duration=None, eps_duration=None, resume_tidx=-1,
     dconf['env']['render'] = 1
   if env_seed != None:
     dconf['env']['seed'] = env_seed
+  if rerun_episode != None:
+    dconf['env']['rerunEpisode'] = rerun_episode
+  if mock_env:
+    dconf['env']['mock'] = 1
   dconf['simtype']['ResumeSim'] = 1
   dconf['simtype']['ResumeSimFromFile'] = synWeights_file
   dconf['simtype']['ResumeSimFromTs'] = float(timesteps[resume_tidx])
   dconf['verbose'] = 1 if verbose else 0
-  dconf['sim']['duration'] = duration if duration != None else eps_duration * 501
+  dconf['sim']['duration'] = duration if duration != None else eps_duration * 26
   dconf['sim']['saveWeights'] = 0
-  dconf['sim']['doSaveData'] = 1 if save_data else 0
-  dconf['sim']['plotRaster'] = 0
+  dconf['sim']['doSaveData'] = 1 if save_data or mock_env else 0
+  dconf['sim']['plotRaster'] = 1 if mock_env else 0
   dconf['sim']['verbose'] = 1 if verbose else 0
   dconf['sim']['sleeptrial'] = sleep if sleep else 0
   dconf['sim']['normalizeByGainControl'] = 0

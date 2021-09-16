@@ -41,7 +41,7 @@ class Critic:
     if 'biases' in dconf['critic']:
       biases = dconf['critic']['biases']
       self.biases = True
-      self.biases_vec = np.array([biases[k] if k in biases else 1.0 for k in ['loc', 'vec', 'ang', 'angv']])
+      self.biases_vec = np.array([biases[k] if k in biases else 1.0 for k in ['loc', 'vel', 'ang', 'angv']])
     elif 'angv_bias' in dconf['critic']:
       self.angv_bias = dconf['critic']['angv_bias']
 

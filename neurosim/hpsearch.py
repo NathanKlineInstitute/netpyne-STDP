@@ -8,7 +8,8 @@ import numpy as np
 from datetime import datetime
 import pickle as pkl
 
-from neurosim.main import main
+from conf import init_wdir
+from sim import NeuroSim
 from neurosim.tools.utils import _get_pop_name, _extract_sorted_min_ids
 
 MEDIAN_STEPS = [21,51,101]
@@ -222,7 +223,25 @@ def sample_run(
 
   # setup the config
   config = _config_setup(config, sample, outputdir)
-  main(config)
+  
+  # Copied from main.py so that I can trigger SysExit with save
+  outdir = config['sim']['outdir']
+  if os.path.isdir(outdir):
+    evaluations = [fname
+      for fname in os.listdir(outdir)
+      if fname.startswith('evaluation_') and os.path.isdir(os.path.join(outdir, fname))]
+    if len(evaluations) > 0:
+      raise Exception(' '.join([
+          'You have run evaluations on {}: {}.'.format(outdir, evaluations),
+          'This will rewrite!',
+          'Please delete to continue!']))
+  init_wdir(config)
+  runner = NeuroSim(config)
+  try:
+    runner.run()
+  except SystemExit:
+    print('Early stopping!')
+    runner.save()
 
   # write results then exit
   medians = _actions_medians(config['sim']['outdir'], MEDIAN_STEPS)

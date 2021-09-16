@@ -251,15 +251,15 @@ def rewards_val_steps(wdir, outputfile=None):
   plt.savefig(outputfile)
 
 def _displayAdj(A):
-    A[A == 0] = np.NaN
-    vmin = np.amin(A[A > 0])
-    vmax = np.amax(A[A > 0])
-        
-    plt.figure(figsize=(10,10))
+  A[A == 0] = np.NaN
+  vmin = np.amin(A[np.logical_not(np.isnan(A))])
+  vmax = np.amax(A[np.logical_not(np.isnan(A))])
+      
+  plt.figure(figsize=(10,10))
 
-    plt.imshow(A, cmap='plasma', interpolation='nearest', vmin=vmin, vmax=vmax)
-    plt.clim(vmin, vmax)
-    plt.colorbar()
+  plt.imshow(A, cmap='plasma', interpolation='nearest', vmin=vmin, vmax=vmax)
+  plt.clim(vmin, vmax)
+  plt.colorbar()
 
 def eval_moves(wdir, steps=[100, 1000], outputfile=None,
     unk_moves=False, abs_move_diff=False, abs_move_diff_norm=False):
@@ -437,7 +437,9 @@ def stdp_weights_diffs(wdir, index1=0, index2=-1, relative=False, outputfile=Non
 
   matrix = adj[indices[1]] - adj[indices[0]]
   if relative:
-    matrix = matrix / adj[indices[0]]
+    bt = adj[indices[0]]
+    bt[bt == 0] = 1e-4
+    matrix = matrix / bt
   _displayAdj(matrix)
   plt.savefig(outputfile)
 

@@ -75,6 +75,7 @@ class NeuroSim:
     self.targetedNonEM = _get_param(dconf['sim'], 'targetedNonEM', 0)
     self.saveEnvObs = _get_param(dconf['sim'], 'saveEnvObs', default=1)
     self.resetEligTrace = _get_param(dconf['sim'], 'resetEligTrace', default=0)
+    self.earlyStoppingCriteria = _get_param(dconf['sim'], 'earlyStoppingCriteria', default=0)
 
     self.allpops = list(dconf['net']['allpops'].keys())
     self.inputPop = dconf['net']['inputPop']
@@ -189,6 +190,10 @@ class NeuroSim:
       from aigame import AIGame
       sim.AIGame = AIGame(self.dconf)  # only create AIGame on node 0
       sim.GameInterface = GameInterface(sim.AIGame, self.dconf)
+      if 'mock' in self.dconf['env'] and self.dconf['env']['mock']:
+        from mocked import MockAIGame, MockGameInterface
+        sim.AIGame = MockAIGame(self.dconf)  # only create AIGame on node 0
+        sim.GameInterface = MockGameInterface(sim.AIGame, self.dconf)
 
     self.critic = Critic(self.dconf)
 
@@ -855,6 +860,7 @@ class NeuroSim:
       if game_done:
         ep_cnt = dconf['env']['episodes']
         eval_str = ''
+        eval_ep = None
         if len(sim.AIGame.count_steps) > ep_cnt:
           # take the steps of the latest `ep_cnt` episodes
           counted = [
@@ -870,6 +876,9 @@ class NeuroSim:
         self.current_episode += 1
         if self.end_after_episode and self.end_after_episode <= self.current_episode:
           self.last_time = t
+          sys.exit()
+
+        if self.earlyStoppingCriteria and eval_ep and eval_ep < self.earlyStoppingCriteria:
           sys.exit()
 
       # specific for CartPole-v1. TODO: move to a diff file
