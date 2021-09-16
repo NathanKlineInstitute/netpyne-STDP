@@ -92,7 +92,7 @@ def train(dconf=None):
         for i in range(POPULATION_SIZE):
             neurosim.setWeightArray(netpyne.sim, best_weights * (1 + perturbations[i]))
             run_episodes(neurosim)
-            run_duration = neurosim.last_time
+            run_duration = neurosim.last_times[-1]
 
             # save the spike and V data
             spkids.extend(netpyne.sim.simData['spkid'])

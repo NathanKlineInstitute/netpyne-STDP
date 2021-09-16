@@ -76,6 +76,7 @@ class NeuroSim:
     self.saveEnvObs = _get_param(dconf['sim'], 'saveEnvObs', default=1)
     self.resetEligTrace = _get_param(dconf['sim'], 'resetEligTrace', default=0)
     self.earlyStoppingCriteria = _get_param(dconf['sim'], 'earlyStoppingCriteria', default=0)
+    self.last_times = deque(maxlen=self.actionsPerPlay + 1)
 
     self.allpops = list(dconf['net']['allpops'].keys())
     self.inputPop = dconf['net']['inputPop']
@@ -759,8 +760,8 @@ class NeuroSim:
     # Get move frequencies by population
     freq = []
     for ts in range(int(self.actionsPerPlay)):
-      ts_beg = t-self.tstepPerAction*(self.actionsPerPlay-ts)
-      ts_end = t-self.tstepPerAction*(self.actionsPerPlay-ts-1)
+      ts_beg = self.last_times[ts]
+      ts_end = self.last_times[ts+1]
       cgids_map = self.getCellGidsMap(sim)
       spikes = self.getSpikesWithInterval([ts_beg, ts_end], cgids_map)
       # Extract the move
@@ -828,6 +829,7 @@ class NeuroSim:
     """ training interface between simulation and game environment
     """
     dconf = self.dconf
+    self.last_times.append(t)
 
     t1 = datetime.now()
 
@@ -875,7 +877,6 @@ class NeuroSim:
 
         self.current_episode += 1
         if self.end_after_episode and self.end_after_episode <= self.current_episode:
-          self.last_time = t
           sys.exit()
 
         if self.earlyStoppingCriteria and eval_ep and eval_ep < self.earlyStoppingCriteria:
