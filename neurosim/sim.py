@@ -574,7 +574,6 @@ class NeuroSim:
           for cell in sim.net.cells:
             if cell.gid in sim.net.pops[pop].cellGids:
               cell.hPointp.interval = 1e12
-              cell.hPointp.start = 0  # np.random.uniform(0,1200)
 
   def updateInputRates(self, sim):
     input_rates = sim.GameInterface.input_firing_rates()

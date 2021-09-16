@@ -184,7 +184,7 @@ NET_RECEIVE (w) {
 			interval_diff = 0
 			next_invl()
 			transition = 1
-			net_send(event,5)
+			net_send(0, 5) : Send a spike right away
 		}
 		if (interval > last_interval) {
 			interval_diff = interval - last_interval
