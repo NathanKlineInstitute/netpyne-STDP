@@ -1,0 +1,20 @@
+{
+    "params": {
+        "STDP-RL:AMPA:RLhebbwt": [0.02, 0.015, 0.01, 0.005],
+        "STDP-RL:AMPA:RLantiwt": [-0.02, -0.015, -0.01, -0.005],
+        "sim:targetedNonEM": [0, 1],
+        "sim:targetedRLDscntFctr": [0.0, 0.5, 0.8, 0.9],
+        "sim:targetedRLMainFctr": [0.5, 0.8, 0.9, 1.0],
+        "sim:targetedRLOppFctr": [0.5, 0.8, 0.9],
+        "simtype:ResumeSimFromFile": [
+            "results/hpsearch-2021-09-08/initv4_168/synWeights_final.pkl",
+            "results/hpsearch-2021-09-08/initv4_7321/synWeights_final.pkl",
+            "results/hpsearch-2021-09-08/initv4_1338/synWeights_final.pkl",
+            "results/hpsearch-2021-09-08/initv3_2703/synWeights_final.pkl"]
+    },
+    "conditions": [
+        ["STDP_RL_AMPA_RLhebbwt == - STDP_RL_AMPA_RLantiwt", 2],
+        ["(sim_targetedNonEM == 0 and sim_targetedRLDscntFctr == 0.0) or (sim_targetedNonEM == 1 and sim_targetedRLDscntFctr > 0.0)", 4],
+        ["sim_targetedRLMainFctr >= sim_targetedRLOppFctr", 6]
+    ]
+}

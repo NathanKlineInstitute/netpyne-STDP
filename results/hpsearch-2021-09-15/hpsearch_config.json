@@ -1,0 +1,31 @@
+{
+    "params": {
+        "STDP-RL:AMPA:RLlenhebb": [51, 153, 204, 255],
+        "STDP-RL:AMPA:RLlenanti": [51, 153, 204, 255],
+        "STDP-RL:AMPA:RLhebbwt": [0.025, 0.02, 0.01],
+        "STDP-RL:AMPA:RLantiwt": [-0.025, -0.02, -0.01],
+        "STDP-RL:AMPA:RLwindhebb": [5, 25, 45, 65],
+        "STDP-RL:AMPA:RLwindanti": [5, 25, 45, 65],
+        "sim:targetedNonEM": [0, 1],
+        "sim:targetedRLDscntFctr": [0.0, 0.5, 0.8, 0.9],
+        "sim:targetedRLOppFctr": [0.5, 0.8, 1.0],
+
+        "critic:biases:loc": [0.0, 0.5, 1.0, 2.0],
+        "critic:biases:vel": [0.0, 0.5, 1.0, 2.0],
+        "critic:biases:ang": [0.25, 0.5, 1.0, 2.0],
+        "critic:biases:angv": [0.25, 0.5, 1.0, 2.0],
+
+        "critic:clear_flips": [false, true],
+        "critic:posRewardBias": [1.0, 2.0, 2.8],
+        "critic:total_gain": [0.2, 0.5, 1.0, 2.0],
+        "sim:normalizeByGainControlValue": [0.0001, 0.0002, 0.0004]
+    },
+    "conditions": [
+        ["STDP_RL_AMPA_RLlenhebb == STDP_RL_AMPA_RLlenanti", 2],
+        ["STDP_RL_AMPA_RLhebbwt == - STDP_RL_AMPA_RLantiwt", 4],
+        ["STDP_RL_AMPA_RLwindhebb == STDP_RL_AMPA_RLwindanti", 6],
+        ["(sim_targetedNonEM == 0 and sim_targetedRLDscntFctr == 0.0) or (sim_targetedNonEM == 1 and sim_targetedRLDscntFctr > 0.0)", 8],
+        ["critic_biases_loc == critic_biases_vel", 11],
+        ["critic_biases_ang == critic_biases_angv", 13]
+    ]
+}

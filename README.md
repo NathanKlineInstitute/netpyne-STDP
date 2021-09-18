@@ -104,7 +104,7 @@ Evaluate the model before and after training:
 
 Optional: Maybe evaluate in depth
 
-    for ((i=0;i<30;i+=10)); do
+    for ((i=0;i<=20;i+=4)); do
         echo "Evaluating at $i"
         py neurosim/main.py eval $WDIR --resume_tidx=$i --env-seed 42 --eps-duration 105
     done
