@@ -1,5 +1,7 @@
 import os
 import fire
+import csv
+import numpy as np
 
 from conf import read_conf, init_wdir, backup_config
 from sim import NeuroSim
@@ -71,9 +73,30 @@ def _saved_timesteps(synWeights_file):
   df = readWeights(synWeights_file)
   return sorted(list(df['time'].unique()))
 
+def print_timesteps(synWeights_file):
+  timesteps = _saved_timesteps(synWeights_file)
+  print(timesteps)
+
+def _find_best_timestep(wdir, timesteps, step=100):
+  actions_per_episode = []
+  with open(os.path.join(wdir, 'ActionsPerEpisode.txt')) as f:
+    for row in csv.reader(f, delimiter='\t'):
+      actions_per_episode.append(int(float(row[1])))
+
+  training_medians = []
+  max_median = 0.0
+  best_idx = 0
+  for idx in range(len(actions_per_episode) - step):
+    curr_med = np.median(actions_per_episode[idx:idx+step])
+    if max_median < curr_med:
+      max_median = curr_med
+      best_idx = idx+step
+  total_steps = np.sum(actions_per_episode[:best_idx+1])
+  return [i for i, t in enumerate(timesteps) if t <= total_steps * 50.0][-1]
+
 def evaluate(eval_dir, duration=None, eps_duration=None, resume_tidx=-1,
     display=False, verbose=False, sleep=False, save_data=False,
-    env_seed=None, rerun_episode=None, mock_env=False):
+    env_seed=None, rerun_episode=None, mock_env=False, resume_best_training=False):
   if (duration == None) and (eps_duration == None):
     duration = 100
   assert (duration == None) ^ (eps_duration == None)
@@ -84,6 +107,8 @@ def evaluate(eval_dir, duration=None, eps_duration=None, resume_tidx=-1,
   timesteps = _saved_timesteps(synWeights_file)
   if resume_tidx < 0:
     resume_tidx += len(timesteps)
+  if resume_best_training:
+    resume_tidx = _find_best_timestep(eval_dir, timesteps)
   assert resume_tidx >= 0 and resume_tidx < len(timesteps)
 
   outdir = os.path.join(eval_dir, 'evaluation{}_{}'.format(
@@ -146,5 +171,6 @@ if __name__ == '__main__':
   fire.Fire({
       'run': main,
       'continue': continue_main,
-      'eval': evaluate
+      'eval': evaluate,
+      'timesteps': print_timesteps
   })

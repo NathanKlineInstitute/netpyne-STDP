@@ -33,7 +33,12 @@
     "observationsToKeep": 100,
     "rewardsToKeep": 100,
     "critic": {
-        "angv_bias": 0.5,
+        "biases": {
+            "loc": 0.0,
+            "vel": 0.0,
+            "ang": 0.091,
+            "angv": 0.58
+        },
         "total_gain": 3.0,
         "max_reward": 1.0,
         "posRewardBias": 1.5,
@@ -42,8 +47,9 @@
     "verbose": 0,
     "stayStepLim": 0,
     "simtype": {
-        "ResumeSim": 0,
-        "ResumeSimFromFile": "results/20210917-rstep1/continue_1/synWeights_final.pkl"
+        "ResumeSim": 1,
+        "ResumeSimFromFile": "results/20210920/synWeights.pkl",
+        "ResumeSimFromTs": null
     },
     "sim": {
         "duration": 2000,

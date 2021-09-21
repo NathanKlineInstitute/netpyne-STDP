@@ -13,10 +13,27 @@ from neurosim.tools.utils import _get_pop_name, _extract_sorted_min_ids, _get_sp
 
 RANDOM_EVALUATION='results/random_cartpole_ActionsPerEpisode.txt'
 
-def _read_evaluations(wdir, include_random):
-  evaluations = [
-    (os.path.join(wdir, fname), int(fname.replace('evaluation_', '')))
-    for fname in os.listdir(wdir) if fname.startswith('evaluation_') and 'display' not in fname]
+def _read_evaluations(wdir, include_random, inside_dirs=False):
+  if inside_dirs:
+    results = {}
+    for fname in os.listdir(wdir):
+      new_wdir = os.path.join(wdir, fname)
+      if os.path.isdir(new_wdir):
+        evals = _read_evaluations(new_wdir, include_random=False)
+        for eval_ts, res in evals.items():
+          results['{}-{}'.format(fname, eval_ts)] = res
+
+    if include_random:
+      with open(RANDOM_EVALUATION) as f:
+        results['-1'] = [int(float(eps)) for _,eps in csv.reader(f, delimiter='\t')]
+    return results
+
+  evaluations = []
+  for fname in os.listdir(wdir):
+    if fname.startswith('evaluation_') and 'display' not in fname:
+      evaluations.append((
+        os.path.join(wdir, fname),
+        int(fname.replace('evaluation_', ''))))
 
   results = {}
   for eval_dir, eval_ts in evaluations:
@@ -30,20 +47,22 @@ def _read_evaluations(wdir, include_random):
 
   return results
 
-def boxplot(wdir, include_random=True, outputfile=None):
+def boxplot(wdir, include_random=True, outputfile=None, inside_dirs=False):
   if not outputfile:
     outputfile = os.path.join(wdir, 'evaluations_boxplot.png')
 
-  results = _read_evaluations(wdir, include_random)
+  results = _read_evaluations(wdir, include_random, inside_dirs)
 
-  with open(os.path.join(wdir, 'synWeights.pkl'), 'br') as f:
-      synWeights = pkl.load(f)
-      
-  preid = list(synWeights.keys())[0]
-  postid = list(synWeights[preid].keys())[0]
+  ts = None
+  if not inside_dirs:
+    with open(os.path.join(wdir, 'synWeights.pkl'), 'br') as f:
+        synWeights = pkl.load(f)
+        
+    preid = list(synWeights.keys())[0]
+    postid = list(synWeights[preid].keys())[0]
 
-  steps = len(synWeights[preid][postid])
-  ts = [s for s,v in synWeights[preid][postid]]
+    steps = len(synWeights[preid][postid])
+    ts = [s for s,v in synWeights[preid][postid]]
 
   sorted_results = sorted(list(results.items()), key=lambda x:x[0])
 
@@ -54,7 +73,7 @@ def boxplot(wdir, include_random=True, outputfile=None):
   ax = fig.add_subplot(111)
   bp = ax.boxplot(data)
   ticks = (['random_choice'] if include_random else []) + \
-      ['step {} (at {} s)'.format(l, round(ts[l] / 1000, 4)) for l in labels if l >= 0]
+      ['step {} (at {} s)'.format(l, round(ts[l] / 1000, 4) if ts else '') for l in labels if l != '-1' and l != -1]
   ax.set_xticklabels(
       ticks,
       rotation = 80)
@@ -206,6 +225,7 @@ def actions_medians(wdir, steps=[21,51,101], outputfile=None, just_return=False)
   plt.legend(['individual'] + ['median of {}'.format(STEP) for STEP in training_medians.keys()])
   plt.xlabel('episode')
   plt.ylabel('actions per episode')
+  plt.grid()
 
   plt.savefig(outputfile)
 
