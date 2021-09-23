@@ -182,7 +182,7 @@ Change `hpsearch_config.json` to the needed params
     py neurosim/hpsearch.py sample $WDIR
     
     # run 100 samples
-    for ((i=0;i<200;i+=1)); do
+    for ((i=0;i<100;i+=1)); do
         echo "Sampling $i th run"
         time py neurosim/hpsearch.py sample $WDIR
     done
@@ -234,6 +234,8 @@ Use this on the latest step of the model
     py neurosim/tools/eval_multimodel.py train-perf $BES_WDIR --wdir-name "ES Model" --outdir=$OUTDIR
     py neurosim/tools/eval_multimodel.py train-perf $BES_WDIR --wdir-name "ES Model" --outdir=$OUTDIR --merge-es
     py neurosim/tools/eval_multimodel.py train-perf-comb "${BSTDP_CONF},${BES_CONF}" --outdir=$OUTDIR
+
+    py neurosim/tools/eval_multimodel.py train-unk-moves "${BSTDP_CONF},${BES_CONF}" --outdir=$OUTDIR
 
     py neurosim/tools/eval_multimodel.py select-eps \
             ${BSTDP_WDIR}/evaluation_8,${BES_WDIR}/evaluation_15

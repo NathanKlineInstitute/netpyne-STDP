@@ -162,6 +162,16 @@ def _get_agg(tr_results, step, func, overlap=True):
     tr_agg.append(func(tr_results[idx:idx+step]))
   return tr_agg
 
+def _get_avg_fast(tr_results, step):
+  tr_agg = []
+  current_sum = sum(tr_results[:step])
+  current_avg_by = step
+  tr_agg.append(current_sum / current_avg_by)
+  for idx in range(1, len(tr_results) - step):
+    current_sum += tr_results[idx+step-1] - tr_results[idx-1]
+    tr_agg.append(current_sum / current_avg_by)
+  return tr_agg
+
 def steps_per_eps(wdir, wdir_name, outdir, merge_es=False, steps=[100]):
   outputfile = os.path.join(
     outdir,
@@ -199,7 +209,7 @@ def steps_per_eps(wdir, wdir_name, outdir, merge_es=False, steps=[100]):
 
     plt.legend(['iteration max', 'iteration average', 'iteration min'] +
       ['median of {} iteration averages'.format(step) for step in tr_medians.keys()] +
-      ['averages of {} iteration averages'.format(step) for step in tr_medians.keys()])
+      ['averages of {} iteration averages'.format(step) for step in tr_averages.keys()])
     plt.xlabel('iteration ({} episodes)'.format(STEP))
 
     plt.savefig(outputfile)
@@ -218,7 +228,7 @@ def steps_per_eps(wdir, wdir_name, outdir, merge_es=False, steps=[100]):
 
   plt.legend(['individual'] +
     ['median of {}'.format(STEP) for STEP in tr_medians.keys()] +
-    ['averages of {}'.format(STEP) for STEP in tr_medians.keys()])
+    ['averages of {}'.format(STEP) for STEP in tr_averages.keys()])
   plt.xlabel('episode')
 
   plt.savefig(outputfile)
@@ -233,9 +243,6 @@ def steps_per_eps_combined(wdirs, outdir, steps=[100]):
   wdirs = [wdir.split(':') for wdir in wdirs]
 
   fig, axs = plt.subplots(ncols=2, nrows=1, figsize=(20,10))
-  plt.ylim(0, 510)
-  plt.grid(axis='y')
-  plt.ylabel('steps/actions per episode')
   plt.suptitle('Performance during training')
 
   all_train_steps = []
@@ -260,7 +267,7 @@ def steps_per_eps_combined(wdirs, outdir, steps=[100]):
 
     curr_legend = ['individual'] + \
       ['median of {}'.format(STEP) for STEP in tr_medians.keys()] + \
-      ['averages of {}'.format(STEP) for STEP in tr_medians.keys()]
+      ['averages of {}'.format(STEP) for STEP in tr_averages.keys()]
 
     for idx in range(len(wdirs)):
       if idx != widx:
@@ -270,8 +277,66 @@ def steps_per_eps_combined(wdirs, outdir, steps=[100]):
 
     ax.legend(curr_legend)
     ax.set_xlabel('episode')
+    ax.set_ylabel('steps/actions per episode')
+    ax.set_ylim(0, 510)
+    ax.grid(axis='y', alpha=0.5)
     ax.set_title('{} Performance'.format(wdir_name.replace('Trained ', '')))
 
+  plt.tight_layout()
+  plt.savefig(outputfile)
+
+
+def undecided_moves(wdirs, outdir, steps=[100, 1000]):
+  outputfile = os.path.join(
+    outdir, 'undecided_moves_during_training.png')
+
+  if type(wdirs) == str:
+    wdirs = wdirs.split(',')
+  wdirs = [wdir.split(':') for wdir in wdirs]
+
+  fig, axs = plt.subplots(ncols=2, nrows=1, figsize=(20,10))
+  plt.suptitle('Undecided moves percentages during training')
+
+  def _len_moves(idx):
+    return len(all_unk_moves[idx][steps[0]]) + steps[0]
+
+  all_unk_moves = []
+  for _, wdir, _ in wdirs:
+    val_moves = []
+    for wdir_step, _ in zip(*_extract_hpsteps(wdir)):
+        with open(os.path.join(wdir_step, 'MotorOutputs.txt')) as f:
+          for toks in csv.reader(f, delimiter='\t'):
+            _, l, r = [int(float(tok)) for tok in toks]
+            val_moves.append(1 if l == r else 0)
+    tr_agg = {STEP: _get_avg_fast(val_moves, STEP) for STEP in steps}
+    all_unk_moves.append(tr_agg)
+
+  all_vals = [v for vals in all_unk_moves for vs in vals.values() for v in vs]
+  miny, maxy = np.amin(all_vals), np.amax(all_vals)
+
+  for widx, ax, (wdir_name, wdir, _), tr_agg in zip(range(len(wdirs)), axs, wdirs, all_unk_moves):
+    for STEP, averages in tr_agg.items():
+        ax.plot([t + STEP for t in range(len(averages))], averages)
+
+    curr_legend = ['averages of {}'.format(STEP) for STEP in tr_agg.keys()]
+
+    lw = _len_moves(widx)
+    for idx in range(len(wdirs)):
+      if idx != widx:
+        lidx = _len_moves(idx)
+        if lidx < lw:
+          ax.axvline(x=lidx, c='r')
+          curr_legend.append('{} total moves'.format(
+            wdirs[idx][0].replace('Trained ', '')))
+
+    ax.legend(curr_legend)
+    ax.set_ylim(miny, maxy)
+    ax.set_xlabel('moves')
+    ax.set_ylabel('percentage of undecided moves')
+    ax.set_title('{} Undecided moves'.format(wdir_name.replace('Trained ', '')))
+    ax.grid(axis='y')
+
+  plt.tight_layout()
   plt.savefig(outputfile)
 
 def select_episodes(wdirs, cnt=7):
@@ -374,6 +439,7 @@ if __name__ == '__main__':
       'spk-freq': spiking_frequencies_table,
       'train-perf': steps_per_eps,
       'train-perf-comb': steps_per_eps_combined,
+      'train-unk-moves': undecided_moves,
       'select-eps': select_episodes,
       'eval-selected-eps': save_episodes_eval
   })
