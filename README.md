@@ -245,3 +245,7 @@ Use this on the latest step of the model
             --outdir=$OUTDIR \
             --sort-by 16,7,78,66,12,49,83,60,4
             
+
+    # Weights:
+    py neurosim/tools/eval_multimodel_weights.py changes \
+                "${BSTDP_CONF},${BES_CONF}" --outdir=$OUTDIR

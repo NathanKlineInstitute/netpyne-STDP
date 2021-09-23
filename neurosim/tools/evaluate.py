@@ -9,7 +9,8 @@ import pickle as pkl
 import numpy as np
 
 from neurosim.utils.weights import readWeights
-from neurosim.tools.utils import _get_pop_name, _extract_sorted_min_ids, _get_spike_aggs
+from neurosim.tools.utils import _get_pop_name, _extract_sorted_min_ids, \
+                _get_spike_aggs, _group_by_pop
 
 RANDOM_EVALUATION='results/random_cartpole_ActionsPerEpisode.txt'
 
@@ -463,20 +464,6 @@ def stdp_weights_diffs(wdir, index1=0, index2=-1, relative=False, outputfile=Non
   _displayAdj(matrix)
   plt.savefig(outputfile)
 
-def _group_by_pop(synWeights, sorted_min_ids):
-  new_map = {}
-  for n1, n1conns in synWeights.items():
-      n1pop = _get_pop_name(n1, sorted_min_ids)
-      for n2, wl in n1conns.items():
-          n2pop = _get_pop_name(n2, sorted_min_ids)
-          conn_name = '{}->{}'.format(n1pop, n2pop)
-          for idx,(t,w) in enumerate(wl):
-              if conn_name not in new_map:
-                  new_map[conn_name] = []
-              if idx == len(new_map[conn_name]):
-                  new_map[conn_name].append([])
-              new_map[conn_name][idx].append(w)
-  return new_map
 
 def stdp_weights_changes(wdir, separate_movement=False, outputfile=None, display=False):
   with open(os.path.join(wdir, 'synWeights.pkl'), 'rb') as f:

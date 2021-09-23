@@ -50,3 +50,18 @@ def _get_spike_aggs_all(sim, sorted_min_ids):
       spike_aggs[pop] = 0
     spike_aggs[pop] += 1
   return spike_aggs
+
+def _group_by_pop(synWeights, sorted_min_ids):
+  new_map = {}
+  for n1, n1conns in synWeights.items():
+      n1pop = _get_pop_name(n1, sorted_min_ids)
+      for n2, wl in n1conns.items():
+          n2pop = _get_pop_name(n2, sorted_min_ids)
+          conn_name = '{}->{}'.format(n1pop, n2pop)
+          for idx,(t,w) in enumerate(wl):
+              if conn_name not in new_map:
+                  new_map[conn_name] = []
+              if idx == len(new_map[conn_name]):
+                  new_map[conn_name].append([])
+              new_map[conn_name][idx].append(w)
+  return new_map
