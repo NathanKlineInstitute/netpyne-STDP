@@ -90,6 +90,7 @@ class NeuroSim:
     # connection matrix (for classes, synapses, probabilities [probabilities not used for topological conn])
     self.cmat = dconf['net']['cmat']
     self.deactivateNMDA = _get_param(dconf['net'], 'deactivateNMDA')
+    self.nsloc_version = _get_param(dconf['net'], 'nsloc_version', default='NSLOC_V1')
 
     # Network parameters
     netParams = specs.NetParams()
@@ -358,7 +359,7 @@ class NeuroSim:
         stimty = 'stimMod'+poty
         lstimty.append(stimty)
         self.netParams.popParams[stimty] = {
-            'cellModel': 'NSLOC',
+            'cellModel': self.nsloc_version,
             'numCells': self.dnumc[poty],
             'rate': 'variable',
             'noise': 0,

@@ -100,7 +100,8 @@ Evaluate the model before and after training:
 
 
     # To display the model run
-    py neurosim/main.py eval $WDIR --resume_tidx=-1 --display --env-seed 42 --eps-duration 105
+    py neurosim/main.py eval $WDIR --resume_tidx=-1 --display --env-seed 42 \
+        --eps-duration 105
 
 Optional: Maybe evaluate in depth
 

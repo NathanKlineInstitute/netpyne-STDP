@@ -1,10 +1,10 @@
-: $Id: nsloc.mod,v 1.7 2013/06/20  salvad $
+: $Id: nsloc_v2.mod,v 1.7 2013/06/20  salvad $
 : from nrn/src/nrnoc/netstim.mod
 : modified to use as proprioceptive units in arm2dms model
 
 NEURON	{
-  ARTIFICIAL_CELL NSLOC
-  RANGE interval, number, start, xloc, yloc, zloc, id, type, subtype, fflag, mlenmin, mlenmax, checkInterval, ispike
+  ARTIFICIAL_CELL NSLOC_V2
+  RANGE interval, number, start, xloc, yloc, zloc, id, type, subtype, fflag, mlenmin, mlenmax, checkInterval, ispike, version
   RANGE noise
   THREADSAFE : only true if every instance has its own distinct Random
   POINTER donotuse
@@ -24,6 +24,7 @@ PARAMETER {
     fflag           = 1             : don't change -- indicates that this is an artcell
     check_interval = 1.0 (ms) : time between checking if interval has changed
     ispike = 0
+    version = 2
 }
 
 ASSIGNED {
