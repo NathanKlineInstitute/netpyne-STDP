@@ -155,6 +155,13 @@ def spiking_frequencies_table(wdirs, outdir):
     for row in table:
       writer.writerow(row)
 
+
+def _get_agg(tr_results, step, func, overlap=True):
+  tr_agg = []
+  for idx in range(0, len(tr_results) - step, 1 if overlap else step):
+    tr_agg.append(func(tr_results[idx:idx+step]))
+  return tr_agg
+
 def steps_per_eps(wdir, wdir_name, outdir, merge_es=False, steps=[100]):
   outputfile = os.path.join(
     outdir,
@@ -167,12 +174,6 @@ def steps_per_eps(wdir, wdir_name, outdir, merge_es=False, steps=[100]):
   for wdir_steps in all_wdir_steps:
     with open(os.path.join(wdir_steps, 'ActionsPerEpisode.txt')) as f:
         training_results.extend([int(float(eps)) for _,eps in csv.reader(f, delimiter='\t')])
-
-  def _get_agg(tr_results, step, func, overlap=True):
-    tr_agg = []
-    for idx in range(0, len(tr_results) - step, 1 if overlap else step):
-      tr_agg.append(func(tr_results[idx:idx+step]))
-    return tr_agg
 
   plt.figure(figsize=(10,10))
   plt.ylim(0, 510)
@@ -219,6 +220,57 @@ def steps_per_eps(wdir, wdir_name, outdir, merge_es=False, steps=[100]):
     ['median of {}'.format(STEP) for STEP in tr_medians.keys()] +
     ['averages of {}'.format(STEP) for STEP in tr_medians.keys()])
   plt.xlabel('episode')
+
+  plt.savefig(outputfile)
+
+
+def steps_per_eps_combined(wdirs, outdir, steps=[100]):
+  outputfile = os.path.join(
+    outdir, 'steps_per_episode_during_training.png')
+
+  if type(wdirs) == str:
+    wdirs = wdirs.split(',')
+  wdirs = [wdir.split(':') for wdir in wdirs]
+
+  fig, axs = plt.subplots(ncols=2, nrows=1, figsize=(20,10))
+  plt.ylim(0, 510)
+  plt.grid(axis='y')
+  plt.ylabel('steps/actions per episode')
+  plt.suptitle('Performance during training')
+
+  all_train_steps = []
+  for _, wdir, _ in wdirs:
+    all_wdir_steps, _ = _extract_hpsteps(wdir)
+
+    training_results = []
+    for wdir_steps in all_wdir_steps:
+      with open(os.path.join(wdir_steps, 'ActionsPerEpisode.txt')) as f:
+          training_results.extend([int(float(eps)) for _,eps in csv.reader(f, delimiter='\t')])
+    all_train_steps.append(training_results)
+
+  for widx, ax, (wdir_name, wdir, _), train_res in zip(range(len(wdirs)), axs, wdirs, all_train_steps):
+    tr_medians = {STEP: _get_agg(train_res, STEP, np.median) for STEP in steps}
+    tr_averages = {STEP: _get_agg(train_res, STEP, np.average) for STEP in steps}
+
+    ax.plot(list(range(len(train_res))), train_res, '.')
+    for STEP, medians in tr_medians.items():
+        ax.plot([t + STEP for t in range(len(medians))], medians)
+    for STEP, averages in tr_averages.items():
+        ax.plot([t + STEP for t in range(len(averages))], averages)
+
+    curr_legend = ['individual'] + \
+      ['median of {}'.format(STEP) for STEP in tr_medians.keys()] + \
+      ['averages of {}'.format(STEP) for STEP in tr_medians.keys()]
+
+    for idx in range(len(wdirs)):
+      if idx != widx:
+        if len(all_train_steps[idx]) < len(train_res):
+          ax.axvline(x=len(all_train_steps[idx]), c='r')
+          curr_legend.append('{} Training Episodes'.format(wdirs[idx][0].replace('Trained ', '')))
+
+    ax.legend(curr_legend)
+    ax.set_xlabel('episode')
+    ax.set_title('{} Performance'.format(wdir_name.replace('Trained ', '')))
 
   plt.savefig(outputfile)
 
@@ -320,7 +372,8 @@ if __name__ == '__main__':
       'trace': trace,
       'boxplot': boxplot,
       'spk-freq': spiking_frequencies_table,
-      'steps-per-eps': steps_per_eps,
+      'train-perf': steps_per_eps,
+      'train-perf-comb': steps_per_eps_combined,
       'select-eps': select_episodes,
       'eval-selected-eps': save_episodes_eval
   })

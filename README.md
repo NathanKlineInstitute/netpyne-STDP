@@ -230,9 +230,10 @@ Use this on the latest step of the model
 
     py neurosim/tools/eval_multimodel.py spk-freq "${BEFORE_CONF},${BSTDP_CONF},${BES_CONF}" --outdir=$OUTDIR
 
-    py neurosim/tools/eval_multimodel.py steps-per-eps $BSTDP_WDIR --wdir-name "STDP-RL Model" --outdir=$OUTDIR
-    py neurosim/tools/eval_multimodel.py steps-per-eps $BES_WDIR --wdir-name "ES Model" --outdir=$OUTDIR
-    py neurosim/tools/eval_multimodel.py steps-per-eps $BES_WDIR --wdir-name "ES Model" --outdir=$OUTDIR --merge-es
+    py neurosim/tools/eval_multimodel.py train-perf $BSTDP_WDIR --wdir-name "STDP-RL Model" --outdir=$OUTDIR
+    py neurosim/tools/eval_multimodel.py train-perf $BES_WDIR --wdir-name "ES Model" --outdir=$OUTDIR
+    py neurosim/tools/eval_multimodel.py train-perf $BES_WDIR --wdir-name "ES Model" --outdir=$OUTDIR --merge-es
+    py neurosim/tools/eval_multimodel.py train-perf-comb "${BSTDP_CONF},${BES_CONF}" --outdir=$OUTDIR
 
     py neurosim/tools/eval_multimodel.py select-eps \
             ${BSTDP_WDIR}/evaluation_8,${BES_WDIR}/evaluation_15
