@@ -115,7 +115,22 @@ Optional: Maybe evaluate in depth
 
 Evaluate how the model is responding to one neuron firing:
     
-    py neurosim/main.py eval $WDIR --resume_tidx=-1 --eps-duration 2 --mock-env
+    py neurosim/main.py eval $WDIR --resume_tidx=-1 --eps-duration 2 \
+        --mock-env
+
+    # For a more comprehensive approach to run on all steps
+
+    mkdir $WDIR/evalmockAllStates
+    STEPS=20
+    for ((i=0;i<$STEPS;i+=1)); do
+        echo "Evaluating Step $i / $STEPS"
+        py neurosim/main.py eval $WDIR --resume_tidx=-1 --eps-duration 1 \
+            --mock-env 2 \
+            --duration 1300 \
+            --mock_curr_step $i \
+            --mock_total_steps $STEPS \
+            --outdir $WDIR/evalmockAllStates/step_${i}
+    done
 
 Run all evaluation:
 
