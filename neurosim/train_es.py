@@ -50,6 +50,9 @@ def train(dconf=None):
     SIGMA = dconf['ES']['sigma'] # 0.1 # standard deviation of perturbations applied to each member of population
     LEARNING_RATE = dconf['ES']['learning_rate'] # 1 # what percentage of the return normalized perturbations to add to best_weights
 
+    EVAL_FREQUENCY = dconf['ES']['eval_freq'] # How often to run evaluations on best_weights
+    EVAL_SAMPLES = dconf['ES']['eval_samples'] # Sample size for eval
+
     # How much to decay the learning rate and sigma by each episode. In theory
     # this should lead to better
     LR_DECAY = dconf['ES']['decay_lr'] # 1
@@ -127,6 +130,15 @@ def train(dconf=None):
         # decay sigma and the learning rate
         SIGMA *= SIGMA_DECAY
         LEARNING_RATE *= LR_DECAY
+
+        if EVAL_FREQUENCY > 0 and iteration % EVAL_FREQUENCY == 0:
+            print("Evaluating best weights ... ")
+            neurosim.setWeightArray(netpyne.sim, best_weights)
+            eval_total_fitness = 0
+            for episode in range(EVAL_SAMPLES):
+                run_episodes(neurosim)
+                eval_total_fitness += np.mean(neurosim.epCount[-neurosim.end_after_episode:])
+            print("Best weights performance: ", eval_total_fitness / EVAL_SAMPLES)
 
         if (iteration + 1) % SAVE_WEIGHTS_EVERY_ITER == 0:
             print("\nSaving best weights after iteration", iteration)

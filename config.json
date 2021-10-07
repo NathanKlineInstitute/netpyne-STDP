@@ -2,6 +2,8 @@
     "ES": {
         "iterations": 1500,
         "population_size": 10,
+        "eval_freq": 5,
+        "eval_samples": 5,
         "sigma": 0.1,
         "learning_rate": 1.0,
         "decay_lr": 1.0,
