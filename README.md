@@ -264,3 +264,6 @@ Use this on the latest step of the model
     # Weights:
     py neurosim/tools/eval_multimodel_weights.py changes \
                 "${BSTDP_CONF},${BES_CONF}" --outdir=$OUTDIR
+
+    # Observation Space Receptive Fields
+    py neurosim/tools/eval_obsspace.py rf $OUTDIR
