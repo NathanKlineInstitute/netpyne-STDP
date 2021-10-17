@@ -26,8 +26,8 @@ def init(dconf):
   # Initialize the model with dconf config
   if not dconf:
       dconf = read_conf()
-  dconf['sim']['duration'] = 1e6
-  dconf['sim']['recordWeightStepSize'] = 1e6
+  dconf['sim']['duration'] = 1e4
+  dconf['sim']['recordWeightStepSize'] = 1e4
 
   outdir = dconf['sim']['outdir']
   if os.path.isdir(outdir):
