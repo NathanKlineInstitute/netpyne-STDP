@@ -119,11 +119,11 @@ def evaluate(eval_dir, duration=None, eps_duration=None, resume_tidx=-1,
     if rerun_episode != None:
       if not rerun_episode:
         raise Exception('rerun_episode is 1-indexed!')
-      outdir = os.path.join(eval_dir, 'eval_{}_rerunEp{}'.format(
-        resume_tidx, rerun_episode))
+      outdir = os.path.join(eval_dir, 'eval_{}_rerunEp{}{}'.format(
+        resume_tidx, rerun_episode, '_display' if display else ''))
     if mock_env:
-      outdir = os.path.join(eval_dir, 'evalmock{}_{}'.format(
-        '' if mock_env == True else 'AllStates', resume_tidx))
+      outdir = os.path.join(eval_dir, 'evalmock{}_{}{}'.format(
+        '' if mock_env == True else 'AllStates', resume_tidx, '_display' if display else ''))
   dconf = read_conf(dconf_path, outdir=outdir)
   init_wdir(dconf)
 
