@@ -105,21 +105,21 @@ def boxplot(wdirs, outdir, include_random=True):
     results.append([name, _evaluation_actions_per_episode(wdir, int(idx))])
 
 
-  labels = [k for k,v in results]
+  labels = [k.replace(' ', '\n') for k,v in results]
   data = [v for k,v in results]
 
-  fig = plt.figure(figsize=(10, 10))
+  fig = plt.figure(figsize=(5, 5))
   # ax = fig.add_subplot(111)
   # bp = ax.boxplot(data)
   ax = sns.boxplot(data=data)
-  ax = sns.swarmplot(data=data, color=".25")
-  ax.set_xticklabels(labels, rotation=10)
-  ax.set_ylabel('steps/actions per episode')
-  ax.set_title('Evaluation of models')
+  ax = sns.swarmplot(data=data, color=".25", size=2.0)
+  ax.set_xticklabels(labels)
+  ax.set_ylabel('Actions per episode')
+  # ax.set_title('Evaluation of models')
 
-  plt.grid(axis='y')
+  plt.grid(axis='y', alpha=0.4)
   plt.tight_layout()
-  plt.savefig(outputfile)
+  plt.savefig(outputfile, dpi=300)
 
 def spiking_frequencies_table(wdirs, outdir):
   outputfile = os.path.join(outdir, 'spiking_frequencies.tsv')
@@ -242,8 +242,8 @@ def steps_per_eps_combined(wdirs, outdir, steps=[100]):
     wdirs = wdirs.split(',')
   wdirs = [wdir.split(':') for wdir in wdirs]
 
-  fig, axs = plt.subplots(ncols=2, nrows=1, figsize=(20,10))
-  plt.suptitle('Performance during training')
+  fig, axs = plt.subplots(ncols=2, nrows=1, figsize=(8,4))
+  # plt.suptitle('Performance during training')
 
   all_train_steps = []
   for _, wdir, _ in wdirs:
@@ -273,17 +273,17 @@ def steps_per_eps_combined(wdirs, outdir, steps=[100]):
       if idx != widx:
         if len(all_train_steps[idx]) < len(train_res):
           ax.axvline(x=len(all_train_steps[idx]), c='r')
-          curr_legend.append('{} Training Episodes'.format(wdirs[idx][0].replace('Trained ', '')))
+          curr_legend.append('{} Episodes'.format(wdirs[idx][0].replace('After ', '')))
 
     ax.legend(curr_legend)
     ax.set_xlabel('episode')
-    ax.set_ylabel('steps/actions per episode')
+    ax.set_ylabel('Actions per episode')
     ax.set_ylim(0, 510)
     ax.grid(axis='y', alpha=0.5)
-    ax.set_title('{} Performance'.format(wdir_name.replace('Trained ', '')))
+    ax.set_title('{} Performance'.format(wdir_name.replace('After ', '')))
 
   plt.tight_layout()
-  plt.savefig(outputfile)
+  plt.savefig(outputfile, dpi=300)
 
 
 def undecided_moves(wdirs, outdir, steps=[100, 1000]):
@@ -381,7 +381,7 @@ def save_episodes_eval(wdirs, outdir, sort_by=None):
     evals = {}
     for fdir in os.listdir(wdir):
       fpath = os.path.join(wdir, fdir)
-      if os.path.isdir(fpath) and 'rerunEp' in fdir:
+      if os.path.isdir(fpath) and 'rerunEp' in fdir and 'display' not in fdir:
         eval_id = int(fdir.split('_')[1])
         ep_id = int(fdir.replace('eval_{}_rerunEp'.format(eval_id), ''))
         if eval_id not in evals:
@@ -415,21 +415,25 @@ def save_episodes_eval(wdirs, outdir, sort_by=None):
       with open(os.path.join(fpath, 'ActionsPerEpisode.txt')) as f:
         for row in csv.reader(f, delimiter='\t'):
           actions_per_episode = int(float(row[1]))
-          table.append([wdirs[wdir_idx][0], idx, actions_per_episode])
+          table.append([
+            wdirs[wdir_idx][0].replace('After ', '').replace('Training', 'Trained'),
+            idx,
+            actions_per_episode])
 
   model_col = 'Model'
-  ep_col = 'Episode ID'
-  acts_col = 'actions per episode'
+  ep_col = 'Unique Initial Game States'
+  acts_col = 'Actions per episode'
   df = pd.DataFrame(data=table, columns=[model_col, ep_col, acts_col])
 
-  plt.figure(figsize=(12, 8))
+  plt.figure(figsize=(9, 6))
   ax = sns.boxplot(
       x=ep_col, y=acts_col, hue=model_col,
       palette=["g", "r"], data=df)
-  ax.set_xticklabels(ep_ids)
+  # ax.set_xticklabels(ep_ids)
+  ax.set_xticklabels(['$S_{r%s}$' % (i+1) for i in range(len(ep_ids))])
   sns.despine(offset=10, trim=True)
   plt.grid(alpha=0.3)
-  plt.savefig(outputfile)
+  plt.savefig(outputfile, dpi=300)
 
 
 if __name__ == '__main__':

@@ -108,9 +108,11 @@ Optional: Maybe evaluate in depth
     py neurosim/main.py eval $WDIR --resume_best_training --env-seed 42 \
         --eps-duration 105
 
-    for ((i=30;i<=40;i+=5)); do
+    for ((i=8;i>=0;i-=1)); do
         echo "Evaluating at $i"
-        py neurosim/main.py eval $WDIR --resume_tidx=$i --env-seed 42 --eps-duration 105
+        py neurosim/main.py eval $WDIR --resume_tidx=$i --env-seed 42 \
+            --eps-duration 105 \
+            --save-data
     done
 
 Evaluate how the model is responding to one neuron firing:
@@ -228,42 +230,42 @@ Use this on the latest step of the model
 ### To generate all results:
 
     BSTDP_WDIR=results/hpsearch-2021-09-06/best/1_run_168
-    BES_WDIR=results/20210907-ES1500it
-    BEFORE_CONF="Before Training:${BES_WDIR}:0"
-    BSTDP_CONF="STDP-RL Trained Model:${BSTDP_WDIR}:-1"
-    BES_CONF="ES Trained Model:${BES_WDIR}:-1"
+    BEVOL_WDIR=results/20210907-ES1500it
+    BEFORE_CONF="Before Training:${BEVOL_WDIR}:0"
+    BSTDP_CONF="After STDP-RL Training:${BSTDP_WDIR}:-1"
+    BEVOL_CONF="After EVOL Training:${BEVOL_WDIR}:-1"
     OUTDIR=results/final-results-2021-09
 
-    py neurosim/tools/eval_multimodel.py boxplot "${BEFORE_CONF},${BSTDP_CONF},${BES_CONF}" --outdir=$OUTDIR
+    py neurosim/tools/eval_multimodel.py boxplot "${BEFORE_CONF},${BSTDP_CONF},${BEVOL_CONF}" --outdir=$OUTDIR
 
     py neurosim/tools/evaluate.py frequency ${BSTDP_WDIR}/evaluation_8 --timestep 10000
-    py neurosim/tools/evaluate.py frequency ${BES_WDIR}/evaluation_15 --timestep 10000
-    py neurosim/tools/evaluate.py frequency ${BES_WDIR}/evaluation_0 --timestep 10000
+    py neurosim/tools/evaluate.py frequency ${BEVOL_WDIR}/evaluation_15 --timestep 10000
+    py neurosim/tools/evaluate.py frequency ${BEVOL_WDIR}/evaluation_0 --timestep 10000
     py neurosim/tools/evaluate.py variance ${BSTDP_WDIR}/evaluation_8
-    py neurosim/tools/evaluate.py variance ${BES_WDIR}/evaluation_15
-    py neurosim/tools/evaluate.py variance ${BES_WDIR}/evaluation_0
+    py neurosim/tools/evaluate.py variance ${BEVOL_WDIR}/evaluation_15
+    py neurosim/tools/evaluate.py variance ${BEVOL_WDIR}/evaluation_0
 
-    py neurosim/tools/eval_multimodel.py spk-freq "${BEFORE_CONF},${BSTDP_CONF},${BES_CONF}" --outdir=$OUTDIR
+    py neurosim/tools/eval_multimodel.py spk-freq "${BEFORE_CONF},${BSTDP_CONF},${BEVOL_CONF}" --outdir=$OUTDIR
 
     py neurosim/tools/eval_multimodel.py train-perf $BSTDP_WDIR --wdir-name "STDP-RL Model" --outdir=$OUTDIR
-    py neurosim/tools/eval_multimodel.py train-perf $BES_WDIR --wdir-name "ES Model" --outdir=$OUTDIR
-    py neurosim/tools/eval_multimodel.py train-perf $BES_WDIR --wdir-name "ES Model" --outdir=$OUTDIR --merge-es
-    py neurosim/tools/eval_multimodel.py train-perf-comb "${BSTDP_CONF},${BES_CONF}" --outdir=$OUTDIR
+    py neurosim/tools/eval_multimodel.py train-perf $BEVOL_WDIR --wdir-name "ES Model" --outdir=$OUTDIR
+    py neurosim/tools/eval_multimodel.py train-perf $BEVOL_WDIR --wdir-name "ES Model" --outdir=$OUTDIR --merge-es
+    py neurosim/tools/eval_multimodel.py train-perf-comb "${BSTDP_CONF},${BEVOL_CONF}" --outdir=$OUTDIR
 
-    py neurosim/tools/eval_multimodel.py train-unk-moves "${BSTDP_CONF},${BES_CONF}" --outdir=$OUTDIR
+    py neurosim/tools/eval_multimodel.py train-unk-moves "${BSTDP_CONF},${BEVOL_CONF}" --outdir=$OUTDIR
 
     py neurosim/tools/eval_multimodel.py select-eps \
-            ${BSTDP_WDIR}/evaluation_8,${BES_WDIR}/evaluation_15
+            ${BSTDP_WDIR}/evaluation_8,${BEVOL_WDIR}/evaluation_15
 
     py neurosim/tools/eval_multimodel.py eval-selected-eps \
-            ${BSTDP_CONF},${BES_CONF} \
+            ${BSTDP_CONF},${BEVOL_CONF} \
             --outdir=$OUTDIR \
             --sort-by 16,7,78,66,12,49,83,60,4
             
 
     # Weights:
     py neurosim/tools/eval_multimodel_weights.py changes \
-                "${BSTDP_CONF},${BES_CONF}" --outdir=$OUTDIR
+                "${BSTDP_CONF},${BEVOL_CONF}" --outdir=$OUTDIR
 
     # Observation Space Receptive Fields
     py neurosim/tools/eval_obsspace.py rf $OUTDIR
