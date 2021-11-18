@@ -231,12 +231,14 @@ Use this on the latest step of the model
 
     BSTDP_WDIR=results/hpsearch-2021-09-06/best/1_run_168
     BEVOL_WDIR=results/20210907-ES1500it
+    BCOMB_WDIR=results/evol-stdp-rl
     BEFORE_CONF="Before Training:${BEVOL_WDIR}:0"
     BSTDP_CONF="After STDP-RL Training:${BSTDP_WDIR}:-1"
     BEVOL_CONF="After EVOL Training:${BEVOL_WDIR}:-1"
+    BCOMB_CONF="After EVOL+STDP-RL Training:${BCOMB_WDIR}:-1"
     OUTDIR=results/final-results-2021-09
 
-    py neurosim/tools/eval_multimodel.py boxplot "${BEFORE_CONF},${BSTDP_CONF},${BEVOL_CONF}" --outdir=$OUTDIR
+    py neurosim/tools/eval_multimodel.py boxplot "${BEFORE_CONF},${BSTDP_CONF},${BEVOL_CONF},${BCOMB_CONF}" --outdir=$OUTDIR
 
     py neurosim/tools/evaluate.py frequency ${BSTDP_WDIR}/evaluation_8 --timestep 10000
     py neurosim/tools/evaluate.py frequency ${BEVOL_WDIR}/evaluation_15 --timestep 10000

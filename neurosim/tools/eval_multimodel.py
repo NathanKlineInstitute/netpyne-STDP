@@ -108,12 +108,12 @@ def boxplot(wdirs, outdir, include_random=True):
   labels = [k.replace(' ', '\n') for k,v in results]
   data = [v for k,v in results]
 
-  fig = plt.figure(figsize=(5, 5))
+  fig = plt.figure(figsize=(6, 6))
   # ax = fig.add_subplot(111)
   # bp = ax.boxplot(data)
   ax = sns.boxplot(data=data)
   ax = sns.swarmplot(data=data, color=".25", size=2.0)
-  ax.set_xticklabels(labels)
+  ax.set_xticklabels(labels, rotation=5)
   ax.set_ylabel('Actions per episode')
   # ax.set_title('Evaluation of models')
 
