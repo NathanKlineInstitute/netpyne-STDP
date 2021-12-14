@@ -78,9 +78,9 @@ class ROSImage:
 		print("Set up ready")
 		#ProcessImage
 		if not rospy.is_shutdown():
-			displayNode()
-			height, width = getImageSize(height, width)
-			pImage = processImage(pImage, height, width) # 5x5 image of average color
+			self.displayNode()
+			height, width = self.getImageSize(height, width)
+			pImage = self.processImage(pImage, height, width) # 5x5 image of average color
 			print(pImage)
 			imageList = pImage.reshape(25)
 			rate.sleep()
