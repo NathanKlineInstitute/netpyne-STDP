@@ -20,10 +20,6 @@ class ROSImage:
 		self.imageTopic = '/camera/rgb/image_raw' # ROS topic name
 		self.done = False
 
-#
-#Functions
-#
-
 	# Callback for image topic
 	def callbackImage(self, img): #Called automatically for each new image
 		self.currentImage = self.Bridge.imgmsg_to_cv2(img, 'bgr8')
@@ -36,7 +32,6 @@ class ROSImage:
 		cv2.imshow('Turtlebot Camera', self.currentImage)
 		cv2.waitKey(1) # HAVE to do this for image to show in window
 		return
-		
 		
 	# Get height and width
 	def getImageSize(self,h,w):
@@ -74,7 +69,7 @@ class ROSImage:
 		rospy.init_node('displayNode',anonymous=True)
 		print("Stop 1")
 		# launch the subscriber callback to store the image
-		imageSub = rospy.Subscriber(self.imageTopic,Image,callbackImage)
+		imageSub = rospy.Subscriber(self.imageTopic,Image,self.callbackImage)
 		print("Stop 2")
 		rospy.sleep(0.5) # wait for callback to catch up
 		print("Stop 3")
