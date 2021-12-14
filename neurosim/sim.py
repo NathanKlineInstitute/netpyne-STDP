@@ -859,7 +859,7 @@ class NeuroSim:
       is_unk_move = len([a for a in actions if a == self.unk_move]) > 0
       actions = [a if a != self.unk_move else sim.AIGame.randmove()
         for a in actions]
-      rewards, game_done = sim.AIGame.playGame(actions)
+      game_done = sim.AIGame.playGame(actions)
       if game_done:
         ep_cnt = dconf['env']['episodes']
         eval_str = ''
@@ -887,11 +887,11 @@ class NeuroSim:
       if len(sim.AIGame.observations) == 0:
         raise Exception('Failed to get an observation from the Game')
       else:
-        reward = self.critic.calc_reward(
-          sim.AIGame.observations[-1],
-          sim.AIGame.observations[-2] if len(sim.AIGame.observations) > 1 else None,
-          is_unk_move)
-
+        #reward = self.critic.calc_reward(
+        #  sim.AIGame.observations[-1],
+        #  sim.AIGame.observations[-2] if len(sim.AIGame.observations) > 1 else None,
+        #  is_unk_move)
+        reward = 1.0
         # use py_broadcast to avoid converting to/from Vector
         sim.pc.py_broadcast(reward, 0)  # broadcast reward value to other nodes
 

@@ -12,24 +12,26 @@
         "save_weights_every_iter": 100
     },
     "env": {
-        "name": "CartPole-v1",
+        "name": "white.world",
         "savemp4": 0,
-        "render": 0,
         "observation_map": [
             {"type": "rf_normal", "bins": 20, "mean": -0.00645789, "std": 1.0},
             {"type": "rf_normal", "bins": 20, "mean": -0.03634136, "std": 0.53989509},
             {"type": "rf_normal", "bins": 20, "mean": 0.00529333, "std": 0.09129902},
             {"type": "rf_normal", "bins": 20, "mean": 0.04752025, "std": 0.82070579}
         ],
-        "episodes": 21,
+        "episodes": 4,
         "unk_move": -1
     },
     "moves": {
-        "LEFT": 0,
-        "RIGHT": 1
+        "Prey & Orient": 0,
+        "Prey & Snap": 1,
+        "Predator": 2
     },
     "pop_to_moves": {
-        "EM": ["LEFT", "RIGHT"]
+        "EPO": ["Prey & Orient"],
+        "EPS": ["Prey & Snap"],
+        "IPd": ["Predator"]
     },
     "actionsPerPlay": 1,
     "observationsToKeep": 100,
