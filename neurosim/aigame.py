@@ -28,6 +28,7 @@ class AIGame:
 
   def playGame(self, actions):
     done = False
+    camera=ROSImage()
     if not self.tstart:
       self.tstart = datetime.now()
 
@@ -36,9 +37,9 @@ class AIGame:
       # for each action generated
       caction = actions[adx]
 
-      observation= ROSImage.getImage()
+      observation= camera.getImage()
       self.observations.append(observation)
-      done = ROSImage.done
+      done = camera.done
       self.count_steps[-1] += 1
 
       if done:
