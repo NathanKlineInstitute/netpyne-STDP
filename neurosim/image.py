@@ -37,7 +37,7 @@ def callbackImage(img): #Called automatically for each new image
 def displayNode():
 	global gCurrentImage
 	#make a CV2 window to display image
-	cv2.namedWindow('Turtlebot Camera', cv2.WINDOW_AUTOSIZE)	
+	cv2.namedWindow('Turtlebot Camera', cv2.WINDOW_NORMAL)	
 	cv2.imshow('Turtlebot Camera', gCurrentImage)
 	cv2.waitKey(1) # HAVE to do this for image to show in window
 	return
