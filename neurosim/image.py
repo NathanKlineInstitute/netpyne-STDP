@@ -54,7 +54,7 @@ class ROSImage:
 			for j in range(5): # width
 				w_start = int(j*w_inc)
 				w_end = int((j+1)*w_inc)
-				pImage[i][j]=np.average(bwImage[h_start:h_end, w_start:w_end])/255 #avg and normalize
+				pImage[i][j]=1.0 - np.average(bwImage[h_start:h_end, w_start:w_end])/255 #avg and normalize, reverse color
 		return(pImage)
 		
 
