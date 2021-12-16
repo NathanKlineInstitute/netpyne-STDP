@@ -110,6 +110,7 @@ class GameInterface:
 
   def input_firing_rates(self):
     vals = []
+    '''
     for idx, obsVal in enumerate(self.AIGame.observations[-1]):
       if self.obs_map[idx]['type'].startswith('rf_'):
         # Create a receptive field (rf)
@@ -122,7 +123,11 @@ class GameInterface:
           maxVal=self._get_limit(idx, 'max'),
           minRate=0, maxRate=self.inputMaxRate,
           func=self.obs_func[idx]))
-
+    '''
+    print('Debugging: \n', self.AIGame.observations[-1])
+    for obsVal in self.AIGame.observations[-1]:
+      vals.append(_map_observation_to_fr(obsVal,
+          minVal=0, maxVal=1, minRate=0, maxRate=self.inputMaxRate))
     assert len(vals) <= self.inputPopSize, 'Population size is smaller than needed inputs'
     rates = np.tile(
       np.array(vals),
