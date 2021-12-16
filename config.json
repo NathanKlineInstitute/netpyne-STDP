@@ -160,8 +160,11 @@
             "IPd": 30
         },
         "popTargetFreq": {
-            "EA": 5.5,
-            "EM": 6.0
+            "EA1": 5.5,
+            "EA2": 5.5,
+            "EPO": 6.0,
+            "EPS": 6.0,
+            "IPd": 6.0
         },
         "deactivateNMDA": 0,
 
