@@ -925,6 +925,9 @@ class NeuroSim:
         obs = '\t{}'.format(json.dumps(list(sim.AIGame.observations[-1]))) if self.saveEnvObs else ''
         for action, t in zip(actions, tvec_actions):
           fid3.write('%0.1f\t%0.1f\t%0.5f%s\n' % (t, action, reward, obs))
+    # ADDED BY DAVIDD FOR DEBUGGING
+    if dconf['verbose']:
+      print(self.AIGame.observations[-1])
 
     # update firing rate of inputs to R population (based on game state)
     self.updateInputRates(sim)
