@@ -887,11 +887,8 @@ class NeuroSim:
       if len(sim.AIGame.observations) == 0:
         raise Exception('Failed to get an observation from the Game')
       else:
-        #reward = self.critic.calc_reward(
-        #  sim.AIGame.observations[-1],
-        #  sim.AIGame.observations[-2] if len(sim.AIGame.observations) > 1 else None,
-        #  is_unk_move)
-        reward = 1.0
+        reward = self.critic.calc_reward(actions[-1], self.dconf['env']['idealMove'])
+
         # use py_broadcast to avoid converting to/from Vector
         sim.pc.py_broadcast(reward, 0)  # broadcast reward value to other nodes
 

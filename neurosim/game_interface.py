@@ -124,7 +124,6 @@ class GameInterface:
           minRate=0, maxRate=self.inputMaxRate,
           func=self.obs_func[idx]))
     '''
-    print('Debugging: \n', self.AIGame.observations[-1])
     for obsVal in self.AIGame.observations[-1]:
       vals.append(_map_observation_to_fr(obsVal,
           minVal=0, maxVal=1, minRate=0, maxRate=self.inputMaxRate))

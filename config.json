@@ -14,14 +14,9 @@
     "env": {
         "name": "white.world",
         "savemp4": 0,
-        "observation_map": [
-            {"type": "rf_normal", "bins": 20, "mean": -0.00645789, "std": 1.0},
-            {"type": "rf_normal", "bins": 20, "mean": -0.03634136, "std": 0.53989509},
-            {"type": "rf_normal", "bins": 20, "mean": 0.00529333, "std": 0.09129902},
-            {"type": "rf_normal", "bins": 20, "mean": 0.04752025, "std": 0.82070579}
-        ],
         "episodes": 4,
-        "unk_move": -1
+        "unk_move": -1,
+        "idealMove": 2
     },
     "moves": {
         "Prey & Orient": 0,
@@ -37,16 +32,9 @@
     "observationsToKeep": 100,
     "rewardsToKeep": 100,
     "critic": {
-        "biases": {
-            "loc": 0.0,
-            "vel": 0.0,
-            "ang": 0.091,
-            "angv": 0.58
-        },
         "total_gain": 3.0,
         "max_reward": 1.0,
-        "posRewardBias": 1.5,
-        "clear_flips": false
+        "posRewardBias": 1.5
     },
     "verbose": 0,
     "stayStepLim": 0,
@@ -56,7 +44,7 @@
         "ResumeSimFromTs": null
     },
     "sim": {
-        "duration": 200,
+        "duration": 20,
         "dt": 0.6,
         "verbose": 0,
         "recordStep": 1.0,
