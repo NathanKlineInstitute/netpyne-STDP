@@ -90,40 +90,13 @@ class GameInterface:
 
   def __init__(self, aigame, config):
     self.AIGame = aigame
-    self.obs_map = config['env']['observation_map']
-    self.obs_func = [_parse_obs_map(func_def) for func_def in config['env']['observation_map']]
-    self.obs_rf = [_parse_rf_map(func_def) for func_def in config['env']['observation_map']]
     self.inputMaxRate = config['net']['InputMaxRate']
     self.inputPop = config['net']['inputPop']
     self.inputPopSize = config['net']['allpops'][self.inputPop]
 
-  def _get_limit(self, idx, limit_type='min'):
-    if limit_type in self.obs_map[idx]:
-      return self.obs_map[idx][limit_type]
-    else:
-      obs_space = self.AIGame.env.observation_space
-      if limit_type == 'min':
-        return obs_space.low[idx]
-      elif limit_type == 'max':
-        return obs_space.high[idx]
-
-
   def input_firing_rates(self):
     vals = []
-    '''
-    for idx, obsVal in enumerate(self.AIGame.observations[-1]):
-      if self.obs_map[idx]['type'].startswith('rf_'):
-        # Create a receptive field (rf)
-        vals.extend(_map_observation_to_rf(obsVal,
-          minRate=0, maxRate=self.inputMaxRate,
-          func=self.obs_rf[idx]))
-      else:
-        vals.append(_map_observation_to_fr(obsVal,
-          minVal=self._get_limit(idx, 'min'),
-          maxVal=self._get_limit(idx, 'max'),
-          minRate=0, maxRate=self.inputMaxRate,
-          func=self.obs_func[idx]))
-    '''
+
     for obsVal in self.AIGame.observations[-1]:
       vals.append(_map_observation_to_fr(obsVal,
           minVal=0, maxVal=1, minRate=0, maxRate=self.inputMaxRate))
