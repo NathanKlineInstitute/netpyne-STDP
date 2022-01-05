@@ -18,8 +18,9 @@ def _modulate_linear(mod_steps, reward, min_steps=1):
 class Critic:
 
   def __init__(self, dconf):
-    self.total_gain = dconf['critic']['total_gain']
-    self.max_reward = dconf['critic']['max_reward']
+    self.type = dconf['critic']['type'] if 'type' in dconf['critic'] else 'v1'
+    self.total_gain = dconf['critic']['total_gain'] if 'total_gain' in dconf['critic'] else None
+    self.max_reward = dconf['critic']['max_reward'] if 'max_reward' in dconf['critic'] else None
     self.posRewardBias = 1.0
     self.negRewardBias = 1.0
     if 'posRewardBias' in dconf['critic']:
@@ -68,7 +69,13 @@ class Critic:
     _, _, ang, angv = obs
     return np.abs(ang) < 0.01 and np.abs(angv) < 0.01
 
-  def calc_reward(self, curr_obs, prev_obs=None, is_unk_move=False):
+  def calc_reward(self, curr_obs, prev_obs=None, is_unk_move=False, game_done_eps=False):
+    if self.type == 'allpos':
+      if is_unk_move:
+        return self.negRewardBias
+      if game_done_eps > 0:
+        return game_done_eps / 500.0 - 1.0 # reward of -1 to 0
+      return self.posRewardBias
     if type(prev_obs) != np.ndarray:
       if type(curr_obs) != np.ndarray:
         raise Exception('Wrong format for observations!')

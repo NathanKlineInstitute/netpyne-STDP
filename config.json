@@ -35,12 +35,7 @@
     "observationsToKeep": 100,
     "rewardsToKeep": 100,
     "critic": {
-        "biases": {
-            "loc": 0.0,
-            "vel": 0.0,
-            "ang": 0.091,
-            "angv": 0.58
-        },
+        "angv_bias": 0.7,
         "total_gain": 3.0,
         "max_reward": 1.0,
         "posRewardBias": 1.5,
@@ -49,12 +44,12 @@
     "verbose": 0,
     "stayStepLim": 0,
     "simtype": {
-        "ResumeSim": 1,
+        "ResumeSim": 0,
         "ResumeSimFromFile": "results/20210920/synWeights.pkl",
         "ResumeSimFromTs": null
     },
     "sim": {
-        "duration": 2000,
+        "duration": 500,
         "dt": 0.6,
         "verbose": 0,
         "recordStep": 1.0,
@@ -82,7 +77,7 @@
         "targetedRL": 3,
         "targetedNonEM": 0,
         "targetedRLMainFctr": 1.0,
-        "targetedRLOppFctr": 1.0,
+        "targetedRLOppFctr": 0.8,
         "targetedRLDscntFctr": 0.5,
         "tstepPerAction": 50,
         "saveWeights": 1,
@@ -162,6 +157,7 @@
             "EM": 6.0
         },
         "deactivateNMDA": 0,
+        "nsloc_version": "NSLOC_V2",
 
         "inputPop": "ES",
         "STDPconns": {
@@ -225,7 +221,7 @@
         "AMPAI": {
             "wbase": 0.4,
             "wmax": 30,
-            "RLon": 1,
+            "RLon": 0,
             "STDPon": 0,
             "RLlenhebb": 75,
             "RLlenanti": 60,
@@ -246,8 +242,8 @@
             "wmax": 200,
             "RLon": 1,
             "STDPon": 0,
-            "RLlenhebb": 255,
-            "RLlenanti": 255,
+            "RLlenhebb": 250,
+            "RLlenanti": 250,
             "useRLexp": 0,
             "RLhebbwt": 0.02,
             "RLantiwt": -0.02,
@@ -255,8 +251,8 @@
             "antiwt": 0.0,
             "tauhebb": 5,
             "tauanti": 5,
-            "RLwindhebb": 25,
-            "RLwindanti": 25,
+            "RLwindhebb": 3,
+            "RLwindanti": 3,
             "softthresh": 0,
             "verbose": 0,
             "maxreward": 0.0
@@ -281,31 +277,5 @@
             "verbose": 0
         }
     },
-    "noise": {
-        "EM": {
-                "AM": {"w":0, "rate":0},
-                "NM": {"w":0, "rate":0},
-                "GA": {"w":1.875, "rate": 100},
-                "AM2": {"w": 3.938, "rate": 200},
-                "NM2": {"w": 0, "rate": 0},
-                "GA2": {"w": 1.875, "rate": 100}},
-        "EA": {"AM": {"w":0, "rate":0},
-                "NM": {"w":0, "rate":0},
-                "GA": {"w":1.875, "rate": 100},
-                "AM2": {"w": 3.938, "rate": 200},
-                "NM2": {"w": 0, "rate": 0},
-                "GA2": {"w": 1.875, "rate": 100}},
-        "IA": {"AM": {"w":1.875, "rate": 100},
-                "NM": {"w":0, "rate":0},
-                "GA": {"w":0, "rate":0},
-                "AM2": {"w": 4.125, "rate": 200},
-                "NM2": {"w": 0, "rate": 0},
-                "GA2": {"w": 1.875, "rate": 100}},
-        "IAL": {"AM": {"w":1.875, "rate": 100},
-                "NM": {"w":0, "rate":0},
-                "GA": {"w":0, "rate":0},
-                "AM2": {"w": 3.0, "rate": 200},
-                "NM2": {"w": 0, "rate": 0},
-                "GA2": {"w": 1.875, "rate": 100}}
-    }
+    "noise": {}
 }

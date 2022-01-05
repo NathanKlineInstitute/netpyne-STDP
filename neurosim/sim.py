@@ -73,6 +73,9 @@ class NeuroSim:
     self.actionsPerPlay = dconf['actionsPerPlay']
     self.targetedRL = _get_param(dconf['sim'], 'targetedRL', 0)
     self.targetedNonEM = _get_param(dconf['sim'], 'targetedNonEM', 0)
+    self.targetedRLMainFctr = _get_param(dconf['sim'], 'targetedRLMainFctr', 1.0)
+    self.targetedRLDscntFctr = _get_param(dconf['sim'], 'targetedRLDscntFctr', 1.0)
+    self.targetedRLOppFctr = _get_param(dconf['sim'], 'targetedRLOppFctr', 1.0)
     self.saveEnvObs = _get_param(dconf['sim'], 'saveEnvObs', default=1)
     self.resetEligTrace = _get_param(dconf['sim'], 'resetEligTrace', default=0)
     self.earlyStoppingCriteria = _get_param(dconf['sim'], 'earlyStoppingCriteria', default=0)
@@ -103,6 +106,9 @@ class NeuroSim:
     # Simulation options
     # Duration of the simulation, in seconds
     simConfig.duration = dconf['sim']['duration'] * 1000
+    seeds = _get_param(dconf['sim'], 'seeds',
+                       default={'conn': 1, 'stim': 1, 'loc': 1})
+    simConfig.seeds = seeds
     # Internal integration timestep to use
     simConfig.dt = dconf['sim']['dt']
     # make sure temperature is set. otherwise we're at squid temperature
@@ -668,7 +674,7 @@ class NeuroSim:
         if dconf['verbose']: print('Apply RL to nonEM')
         for preCGid, STDPmech in self.dSTDPmech['nonEM']:
           STDPmech.reward_punish(
-            float(reward*dconf['sim']['targetedRLDscntFctr']) * outNormScale(preCGid))
+            float(reward * self.targetedRLDscntFctr) * outNormScale(preCGid))
       if self.targetedRL == 1: #RL=1: Apply to all of EM
         for pop, pop_moves in dconf['pop_to_moves'].items():
           if dconf['verbose']: print('Apply RL to ', pop)
@@ -679,14 +685,14 @@ class NeuroSim:
           if actions[-1] == moveID:
             if dconf['verbose']: print('Apply RL to EM', moveName)
             for preCGid, STDPmech in self.dSTDPmech[moveName]:
-              STDPmech.reward_punish(reward * (dconf['sim']['targetedRLMainFctr']) * outNormScale(preCGid))
+              STDPmech.reward_punish(reward * self.targetedRLMainFctr * outNormScale(preCGid))
             if self.targetedRL >= 3: 
               for oppMoveName in dconf['moves'].keys():
                 if oppMoveName != moveName: #ADD: and oppMoveName fires
                   if dconf['verbose']: print('Apply -RL to EM', oppMoveName)
                   for preCGid, STDPmech in self.dSTDPmech[oppMoveName]:
                     STDPmech.reward_punish(
-                      reward * (-dconf['sim']['targetedRLOppFctr']) * outNormScale(preCGid))
+                      reward * (-self.targetedRLOppFctr) * outNormScale(preCGid))
     else:
       cell_scales = {}
       for preCGid, STDPmech in self.dSTDPmech['all']:
@@ -860,6 +866,7 @@ class NeuroSim:
       actions = [a if a != self.unk_move else sim.AIGame.randmove()
         for a in actions]
       rewards, game_done = sim.AIGame.playGame(actions)
+      ep_cnt = None
       if game_done:
         ep_cnt = dconf['env']['episodes']
         eval_str = ''
@@ -890,7 +897,8 @@ class NeuroSim:
         reward = self.critic.calc_reward(
           sim.AIGame.observations[-1],
           sim.AIGame.observations[-2] if len(sim.AIGame.observations) > 1 else None,
-          is_unk_move)
+          is_unk_move,
+          ep_cnt if game_done else 0)
 
         # use py_broadcast to avoid converting to/from Vector
         sim.pc.py_broadcast(reward, 0)  # broadcast reward value to other nodes

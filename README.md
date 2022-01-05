@@ -186,6 +186,18 @@ Continue training from a already trained model:
         --best-wdir results/20210801-1000it-1eps/500s-evaluation_10 \
         --critic-config config.json
 
+### Train the same config on many network configs
+
+    WDIR=results/seedrun-2022-01-03
+    mkdir $WDIR
+
+    python3 neurosim/main.py seedrun $WDIR --conn-seed 2542033
+
+    for ((i=0;i<100;i+=1)); do
+        echo "Running $i th seed"
+        python3 neurosim/main.py seedrun $WDIR 
+    done
+
 ### Run Hyperparameter search
 
 Change `hpsearch_config.json` to the needed params
@@ -260,7 +272,7 @@ Use this on the latest step of the model
             ${BSTDP_WDIR}/evaluation_8,${BEVOL_WDIR}/evaluation_15
 
     py neurosim/tools/eval_multimodel.py eval-selected-eps \
-            ${BSTDP_CONF},${BEVOL_CONF} \
+            ${BSTDP_CONF},${BEVOL_CONF},${BCOMB_CONF} \
             --outdir=$OUTDIR \
             --sort-by 16,7,78,66,12,49,83,60,4
             

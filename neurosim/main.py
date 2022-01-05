@@ -5,12 +5,13 @@ import numpy as np
 
 from conf import read_conf, init_wdir, backup_config
 from sim import NeuroSim
+from neurosim.utils.random import pseudo_random
 from utils.weights import readWeights
 
 
-def main(dconf=None):
+def main(dconf=None, fnjson=None):
   if not dconf:
-    dconf = read_conf()
+    dconf = read_conf(fnjson)
 
   outdir = dconf['sim']['outdir']
   if os.path.isdir(outdir):
@@ -22,6 +23,22 @@ def main(dconf=None):
           'You have run evaluations on {}: {}.'.format(outdir, evaluations),
           'This will rewrite!',
           'Please delete to continue!']))
+
+  init_wdir(dconf)
+
+  runner = NeuroSim(dconf)
+  runner.run()
+
+def main_seedrun(wdir, conn_seed=None):
+  conn_seed = conn_seed if conn_seed else pseudo_random()
+  outdir = os.path.join(wdir, 'run_seed{}'.format(conn_seed))
+  dconf = read_conf(outdir=outdir)
+
+  outdir = dconf['sim']['outdir']
+  if os.path.isdir(outdir):
+    raise Exception('You already tried this seed')
+
+  dconf['sim']['seeds'] = {"conn": conn_seed, "stim": 1, "loc": 1}
 
   init_wdir(dconf)
 
@@ -174,11 +191,11 @@ def evaluate(eval_dir, duration=None, eps_duration=None, resume_tidx=-1,
   except SystemExit:
     runner.save()
 
-
 if __name__ == '__main__':
   fire.Fire({
       'run': main,
       'continue': continue_main,
       'eval': evaluate,
-      'timesteps': print_timesteps
+      'timesteps': print_timesteps,
+      'seedrun': main_seedrun
   })

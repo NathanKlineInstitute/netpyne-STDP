@@ -11,6 +11,7 @@ import pickle as pkl
 from conf import init_wdir
 from sim import NeuroSim
 from neurosim.tools.utils import _get_pop_name, _extract_sorted_min_ids
+from sim.utils.random import pseudo_random
 
 MEDIAN_STEPS = [21,51,101]
 FREQ_POPS = ['EM', 'EA']
@@ -62,13 +63,17 @@ def _config_replace(config, param_name, param_val):
 
   return _repl(config)
 
-def _config_setup(config, sample, outputdir):
+def _config_setup(config, sample, outputdir, random_network=False):
   # Setup the config:
   #   - so it writes to the correct place
   #   - it has the correct hyperparameters
   for param_name, param_val in sample.items():
     if param_name != 'run_id':
       config = _config_replace(config, param_name, param_val)
+
+  if random_network:
+    conn_seed = pseudo_random()
+    config['sim']["seeds"] = {"conn": conn_seed, "stim": 1, "loc": 1}
 
   config['sim']['outdir'] = os.path.join(outputdir, 'run_{}'.format(sample['run_id']))
   return config
@@ -117,27 +122,13 @@ def _frequencies(wdir, freq_pops):
   pop_size = dconf['net']['allpops']
   return [float(spike_aggs[p]) / duration / pop_size[p] for p in freq_pops]
 
-def _pseudo_random(digits=7, iters=2):
-  # Used the Middle square method (MSM) for generating pseudorandom numbers
-  # use own random function to not mess up with the seed
-  current_time = str(datetime.now().timestamp()).replace('.', '')
-  seed = int(current_time[-digits:])
-  def _iter(nr):
-    new_nr = str(nr * nr)
-    imin = max(int((len(new_nr) - 7) / 2), 1)
-    imax = min(len(new_nr)-1, imin + digits)
-    return int(('0' * digits) + new_nr[imin:imax])
-  nr = seed
-  for _ in range(iters):
-    nr = _iter(nr)
-  return nr
-
 
 def sample_run(
     outputdir,
     hpconfig_file='hpsearch_config.json',
     config_file='config.json',
-    just_init=False):
+    just_init=False,
+    random_network=False):
 
   runs_tsv = os.path.join(outputdir, 'runs.tsv')
   runs_json = os.path.join(outputdir, 'runs.json')
@@ -215,14 +206,14 @@ def sample_run(
     for dir_fie in os.listdir(outputdir)
     if os.path.isdir(os.path.join(outputdir, dir_fie)) and dir_fie.startswith('run_')])
   run_cnts = [rid for rid, run in enumerate(allruns) if run[0] not in sampled]
-  run_sel = run_cnts[_pseudo_random() % len(run_cnts)]
+  run_sel = run_cnts[pseudo_random() % len(run_cnts)]
   sample = dict(zip(header, allruns[run_sel]))
   run_id = sample['run_id']
   print('Picked {}:'.format(run_id))
   print(sample)
 
   # setup the config
-  config = _config_setup(config, sample, outputdir)
+  config = _config_setup(config, sample, outputdir, random_network)
   
   # Copied from main.py so that I can trigger SysExit with save
   outdir = config['sim']['outdir']

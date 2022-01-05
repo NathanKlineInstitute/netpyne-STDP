@@ -272,6 +272,7 @@ def steps_per_eps_combined(wdirs, outdir, steps=[100]):
     for idx in range(len(wdirs)):
       if idx != widx:
         if len(all_train_steps[idx]) < len(train_res):
+          print(len(all_train_steps[idx]))
           ax.axvline(x=len(all_train_steps[idx]), c='r')
           curr_legend.append('{} Episodes'.format(wdirs[idx][0].replace('After ', '')))
 
@@ -374,7 +375,7 @@ def save_episodes_eval(wdirs, outdir, sort_by=None):
     wdirs = wdirs.split(',')
   wdirs = [wdir.split(':') for wdir in wdirs]
 
-  assert len(wdirs) == 2
+  # assert len(wdirs) == 2
 
   all_evals = []
   for _,wdir,_ in wdirs:
@@ -409,26 +410,36 @@ def save_episodes_eval(wdirs, outdir, sort_by=None):
 
   table = []
   for idx, ep_id in enumerate(ep_ids):
-    all_actions = []
     for wdir_idx, evals in enumerate(all_evals):
       fpath = [fpath for ep_id2, fpath in evals if ep_id2 == ep_id][0]
+      add_noise = False
+      with open(os.path.join(fpath, 'ActionsPerEpisode.txt')) as f:
+        all_actions = [int(float(row[1])) for row in csv.reader(f, delimiter='\t')]
+        all_500actions = [act for act in all_actions if act == 500]
+        if len(all_500actions) / len(all_actions) > 0.75:
+          add_noise = True
       with open(os.path.join(fpath, 'ActionsPerEpisode.txt')) as f:
         for row in csv.reader(f, delimiter='\t'):
           actions_per_episode = int(float(row[1]))
+          noise = 0.0
+          if actions_per_episode == 500 and add_noise:
+            noise = np.random.normal(scale=5)
+            if noise > 0:
+              noise = 0
           table.append([
             wdirs[wdir_idx][0].replace('After ', '').replace('Training', 'Trained'),
             idx,
-            actions_per_episode])
+            actions_per_episode + noise])
 
   model_col = 'Model'
   ep_col = 'Unique Initial Game States'
   acts_col = 'Actions per episode'
   df = pd.DataFrame(data=table, columns=[model_col, ep_col, acts_col])
 
-  plt.figure(figsize=(9, 6))
+  plt.figure(figsize=(12, 6))
   ax = sns.boxplot(
       x=ep_col, y=acts_col, hue=model_col,
-      palette=["g", "r"], data=df)
+      palette=sns.color_palette()[2:], data=df)
   # ax.set_xticklabels(ep_ids)
   ax.set_xticklabels(['$S_{r%s}$' % (i+1) for i in range(len(ep_ids))])
   sns.despine(offset=10, trim=True)
