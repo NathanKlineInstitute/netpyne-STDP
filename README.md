@@ -193,7 +193,7 @@ Continue training from a already trained model:
 
     python3 neurosim/main.py seedrun $WDIR --conn-seed 2542033
 
-    for ((i=0;i<100;i+=1)); do
+    for ((i=0;i<10;i+=1)); do
         echo "Running $i th seed"
         python3 neurosim/main.py seedrun $WDIR 
     done
@@ -209,11 +209,23 @@ Change `hpsearch_config.json` to the needed params
 
     # run one sample
     py neurosim/hpsearch.py sample $WDIR
+
     
     # run 100 samples
     for ((i=0;i<100;i+=1)); do
         echo "Sampling $i th run"
         time py neurosim/hpsearch.py sample $WDIR
+    done
+
+Alternatively you can run HPSearch with random networks instead:
+
+    # run one sample with a random initialization
+    py neurosim/hpsearch.py sample $WDIR --random_network
+
+    # run 100 samples
+    for ((i=0;i<100;i+=1)); do
+        echo "Sampling $i th run"
+        time py neurosim/hpsearch.py sample $WDIR --random_network
     done
 
 Results are posted in `$WDIR/results.tsv`, then you can analyze with:

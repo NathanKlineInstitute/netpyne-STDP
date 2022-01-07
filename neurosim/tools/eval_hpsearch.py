@@ -5,10 +5,10 @@ import json
 import math
 import matplotlib.pyplot as plt
 
-def analyze_samples(wdir, runs_json_fname='runs.json'):
+def analyze_samples(wdir, runs_json_fname='runs.json', results_file='results.tsv'):
   runs_json = os.path.join(wdir, runs_json_fname)
   hpconfig_json = os.path.join(wdir, 'hpsearch_config.json')
-  results_tsv = os.path.join(wdir, 'results.tsv')
+  results_tsv = os.path.join(wdir, results_file)
 
   runs = {}
   with open(runs_json) as f:
@@ -20,7 +20,7 @@ def analyze_samples(wdir, runs_json_fname='runs.json'):
   with open(results_tsv) as f:
     for row in csv.DictReader(f, delimiter='\t'):
       for k in row.keys():
-        if k.startswith('max_'):
+        if k.startswith('max_') or k.startswith('freq_'):
           row[k] = float(row[k])
         elif k == 'run_id':
           row[k] = int(row[k])
@@ -29,7 +29,7 @@ def analyze_samples(wdir, runs_json_fname='runs.json'):
   del runs
   print('Found {} results'.format(len(results)))
 
-  result_keys = [rkey for rkey in results[0].keys() if rkey.startswith('max_')]
+  result_keys = [rkey for rkey in results[0].keys() if rkey.startswith('max_') or rkey.startswith('freq_')]
 
   with open(hpconfig_json) as f:
     hpconfig = json.load(f)

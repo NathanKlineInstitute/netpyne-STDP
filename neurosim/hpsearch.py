@@ -11,7 +11,7 @@ import pickle as pkl
 from conf import init_wdir
 from sim import NeuroSim
 from neurosim.tools.utils import _get_pop_name, _extract_sorted_min_ids
-from sim.utils.random import pseudo_random
+from neurosim.utils.random import pseudo_random
 
 MEDIAN_STEPS = [21,51,101]
 FREQ_POPS = ['EM', 'EA']
