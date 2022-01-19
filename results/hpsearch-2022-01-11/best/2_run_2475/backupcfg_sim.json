@@ -46,19 +46,20 @@
     "observationsToKeep": 100,
     "rewardsToKeep": 100,
     "critic": {
-        "type": "allpos",
-        "posRewardBias": 0.01,
-        "negRewardBias": null
+        "angv_bias": 1.0,
+        "total_gain": 3.0,
+        "max_reward": 1.0,
+        "posRewardBias": 1.5,
+        "clear_flips": false
     },
     "verbose": 0,
     "stayStepLim": 0,
     "simtype": {
-        "ResumeSim": 0,
-        "ResumeSimFromFile": "results/20210920/synWeights.pkl",
-        "ResumeSimFromTs": null
+        "ResumeSim": 1,
+        "ResumeSimFromFile": "results/hpsearch-2022-01-02/best/1_run_3139/synWeights_final.pkl"
     },
     "sim": {
-        "duration": 1000,
+        "duration": 2000,
         "dt": 0.6,
         "verbose": 0,
         "recordStep": 1.0,
@@ -86,14 +87,20 @@
         "saveCellConns": 1,
         "saveMotionFields": 0,
         "plotRaster": 1,
-        "targetedRL": 0,
-        "targetedNonEM": 0,
+        "targetedRL": 3,
+        "targetedNonEM": 1,
         "targetedRLMainFctr": 1.0,
         "targetedRLOppFctr": 1.0,
-        "targetedRLDscntFctr": 1.0,
+        "targetedRLDscntFctr": 0.5,
         "tstepPerAction": 50,
         "saveWeights": 1,
-        "resetEligTrace": 1
+        "resetEligTrace": 1,
+        "seeds": {
+            "conn": 2542033,
+            "stim": 1,
+            "loc": 1
+        },
+        "outdir": "results/hpsearch-2022-01-11/run_2475"
     },
     "cell": {
         "E": {
@@ -362,17 +369,17 @@
             "wmax": 200,
             "RLon": 1,
             "STDPon": 0,
-            "RLlenhebb": null,
-            "RLlenanti": null,
+            "RLlenhebb": 250,
+            "RLlenanti": 250,
             "useRLexp": 0,
-            "RLhebbwt": null,
-            "RLantiwt": null,
+            "RLhebbwt": 0.001,
+            "RLantiwt": -0.001,
             "hebbwt": 0.0,
             "antiwt": 0.0,
             "tauhebb": 5,
             "tauanti": 5,
-            "RLwindhebb": null,
-            "RLwindanti": null,
+            "RLwindhebb": 5,
+            "RLwindanti": 5,
             "softthresh": 0,
             "verbose": 0,
             "maxreward": 0.0

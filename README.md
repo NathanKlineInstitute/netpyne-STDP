@@ -188,15 +188,26 @@ Continue training from a already trained model:
 
 ### Train the same config on many network configs
 
-    WDIR=results/seedrun-2022-01-03
+    WDIR=results/seedrun_m1-2022-01-16
     mkdir $WDIR
 
     python3 neurosim/main.py seedrun $WDIR --conn-seed 2542033
 
-    for ((i=0;i<10;i+=1)); do
+    for ((i=0;i<20;i+=1)); do
         echo "Running $i th seed"
-        python3 neurosim/main.py seedrun $WDIR 
+        python3 neurosim/main.py seedrun $WDIR --fnjson $WDIR/config.json
     done
+
+Evaluate seedrun:
+
+    python3 neurosim/tools/eval_seedrun.py analyze $WDIR
+
+Continue seedrun:
+    
+    cp results/hpsearch-2022-01-11/best/1_run_2371/backupcfg_sim.json results/seedrun_m1-2022-01-16/config2.json
+    py neurosim/main.py cont_seedrun $WDIR/run_seed1139028 $WDIR/config2.json
+
+    
 
 ### Run Hyperparameter search
 

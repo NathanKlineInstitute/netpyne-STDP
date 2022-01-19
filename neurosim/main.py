@@ -29,10 +29,10 @@ def main(dconf=None, fnjson=None):
   runner = NeuroSim(dconf)
   runner.run()
 
-def main_seedrun(wdir, conn_seed=None):
+def main_seedrun(wdir, fnjson=None, conn_seed=None):
   conn_seed = conn_seed if conn_seed else pseudo_random()
   outdir = os.path.join(wdir, 'run_seed{}'.format(conn_seed))
-  dconf = read_conf(outdir=outdir)
+  dconf = read_conf(fnjson, outdir=outdir)
 
   outdir = dconf['sim']['outdir']
   if os.path.isdir(outdir):
@@ -85,6 +85,27 @@ def continue_main(wdir, duration=None, index=None,
   runner = NeuroSim(dconf)
   runner.run()
 
+def continue_seedrun(wdir, fnjson, index=None):
+  dconf_path = os.path.join(wdir, 'backupcfg_sim.json')
+
+  synWeights_file = os.path.join(wdir, 'synWeights.pkl')
+  timesteps = _saved_timesteps(synWeights_file)
+  dconf_orig = read_conf(dconf_path)
+
+  outdir = os.path.join(wdir, 'continue_{}'.format(1 if index == None else index))
+  dconf = read_conf(fnjson, outdir=outdir)
+  dconf['sim']['seeds'] = dconf_orig['sim']['seeds']
+
+  init_wdir(dconf)
+
+  dconf['simtype']['ResumeSim'] = 1
+  dconf['simtype']['ResumeSimFromFile'] = synWeights_file
+  dconf['simtype']['ResumeSimFromTs'] = float(timesteps[-1])
+
+  backup_config(dconf)
+
+  runner = NeuroSim(dconf)
+  runner.run()
 
 def _saved_timesteps(synWeights_file):
   df = readWeights(synWeights_file)
@@ -197,5 +218,6 @@ if __name__ == '__main__':
       'continue': continue_main,
       'eval': evaluate,
       'timesteps': print_timesteps,
-      'seedrun': main_seedrun
+      'seedrun': main_seedrun,
+      'cont_seedrun': continue_seedrun
   })

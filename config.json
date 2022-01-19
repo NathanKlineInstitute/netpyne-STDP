@@ -81,7 +81,8 @@
         "targetedRLDscntFctr": 0.5,
         "tstepPerAction": 50,
         "saveWeights": 1,
-        "resetEligTrace": 1
+        "resetEligTrace": 1,
+        "seeds": {"conn": 1, "stim": 1, "loc": 1}
     },
     "cell": {
         "E": {"ahpwt": 1,

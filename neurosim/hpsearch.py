@@ -128,7 +128,8 @@ def sample_run(
     hpconfig_file='hpsearch_config.json',
     config_file='config.json',
     just_init=False,
-    random_network=False):
+    random_network=False,
+    init_seed_dir=False):
 
   runs_tsv = os.path.join(outputdir, 'runs.tsv')
   runs_json = os.path.join(outputdir, 'runs.json')
@@ -214,6 +215,11 @@ def sample_run(
 
   # setup the config
   config = _config_setup(config, sample, outputdir, random_network)
+  if init_seed_dir:
+    seed_dirs = [sdir for sdir in os.listdir(init_seed_dir) if sdir.startswith('run_seed')]
+    seed_dir_id = pseudo_random() % len(seed_dirs)
+    seed_dir = os.path.join(init_seed_dir, seed_dirs[seed_dir_id], 'synWeights.pkl')
+    config['simtype']['ResumeSimFromFile'] = seed_dir
   
   # Copied from main.py so that I can trigger SysExit with save
   outdir = config['sim']['outdir']
