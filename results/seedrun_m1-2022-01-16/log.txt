@@ -46,3 +46,46 @@ Run the models
         echo "Running $seedrunname"
         py neurosim/main.py cont_seedrun $WDIR/${seedrunname}/continue_1 $WDIR/config3.json
     done
+
+Measure the results
+
+    python3 neurosim/tools/eval_seedrun.py analyze $WDIR --modifier continue_1/continue_1
+
+# Continue running for 2000s more
+
+    for seedrunname in run_seed1257804 run_seed1307018 run_seed1394398 run_seed1932160 run_seed204437 run_seed2544501 run_seed3295562 run_seed410936 run_seed4968112 run_seed513563 run_seed5140568 run_seed5381445 run_seed5397326 run_seed6285813 run_seed6623146 run_seed7050182 run_seed7070236 run_seed7892276 run_seed9300610 run_seed9641694
+    do
+        echo "Running $seedrunname"
+        py neurosim/main.py continue $WDIR/${seedrunname}/continue_1/continue_1 --index 2
+    done
+
+Measure
+
+    python3 neurosim/tools/eval_seedrun.py analyze $WDIR --modifier continue_1/continue_1/continue_2
+
+# Even more 2000s
+
+    for seedrunname in run_seed1257804 run_seed1307018 run_seed1394398 run_seed1932160 run_seed204437 run_seed2544501 run_seed3295562 run_seed410936 run_seed4968112 run_seed513563 run_seed5140568 run_seed5381445 run_seed5397326 run_seed6285813 run_seed6623146 run_seed7050182 run_seed7070236 run_seed7892276 run_seed9300610 run_seed9641694
+    do
+        echo "Running $seedrunname"
+        py neurosim/main.py continue $WDIR/${seedrunname}/continue_1/continue_1/continue_2 --index 2
+    done
+
+Measure
+
+    python3 neurosim/tools/eval_seedrun.py analyze $WDIR --modifier continue_1/continue_1/continue_2/continue_2
+
+Get train performance
+
+    py neurosim/tools/eval_seedrun.py train-perf $WDIR --modifier continue_1/continue_1/continue_2/continue_2 --stype median --steps 101
+    py neurosim/tools/eval_seedrun.py train-perf $WDIR --modifier continue_1/continue_1/continue_2/continue_2 --stype median --steps 200 --parts 2
+
+    py neurosim/tools/eval_seedrun.py train-perf $WDIR --modifier continue_1/continue_1/continue_2/continue_2 --stype avg --steps 100
+
+# Even more 5000s
+
+    for seedrunname in run_seed1394398 run_seed5397326 run_seed5140568 run_seed6285813 run_seed410936 run_seed204437 run_seed1257804 run_seed1307018 run_seed1932160 run_seed2544501 run_seed3295562 run_seed4968112 run_seed513563 run_seed5381445 run_seed6623146 run_seed7050182 run_seed7070236 run_seed7892276 run_seed9300610 run_seed9641694
+    do
+        echo "Running $seedrunname"
+        py neurosim/main.py continue $WDIR/${seedrunname}/continue_1/continue_1/continue_2/continue_2 --duration 5000 --index 2
+    done
