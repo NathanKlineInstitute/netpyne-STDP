@@ -89,3 +89,11 @@ Get train performance
         echo "Running $seedrunname"
         py neurosim/main.py continue $WDIR/${seedrunname}/continue_1/continue_1/continue_2/continue_2 --duration 5000 --index 2
     done
+
+Measure:
+    
+    python3 neurosim/tools/eval_seedrun.py analyze $WDIR --modifier continue_1/continue_1/continue_2/continue_2/continue_2
+
+Train perf:
+
+    py neurosim/tools/eval_seedrun.py train-perf $WDIR --modifier continue_1/continue_1/continue_2/continue_2/continue_2 --stype median --steps 200 --parts 2

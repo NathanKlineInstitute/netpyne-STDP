@@ -22,12 +22,12 @@ def run_episodes(neurosim):
     sys.stdout = sys.__stdout__
     return
 
-def init(dconf):
+def init(dconf, fnjson=None):
   # Initialize the model with dconf config
   if not dconf:
-      dconf = read_conf()
-  dconf['sim']['duration'] = 1e4
-  dconf['sim']['recordWeightStepSize'] = 1e4
+      dconf = read_conf(fnjson)
+  dconf['sim']['duration'] = 1e10
+  dconf['sim']['recordWeightStepSize'] = 1e10
 
   outdir = dconf['sim']['outdir']
   if os.path.isdir(outdir):
@@ -43,8 +43,8 @@ def init(dconf):
   init_wdir(dconf)
   return dconf
 
-def train(dconf=None):
-    dconf = init(dconf)
+def train(dconf=None, fnjson=None):
+    dconf = init(dconf, fnjson)
     ITERATIONS = dconf['ES']['iterations'] # How many iterations to train for
     POPULATION_SIZE = dconf['ES']['population_size'] # How many perturbations of weights to try per iteration
     SIGMA = dconf['ES']['sigma'] # 0.1 # standard deviation of perturbations applied to each member of population
@@ -150,6 +150,7 @@ def train(dconf=None):
         print("\nSaving best weights after training", iteration)
         neurosim.setWeightArray(netpyne.sim, best_weights)
         neurosim.recordWeights(netpyne.sim, ITERATIONS)
+
 
     neurosim.dconf['sim']['duration'] = total_time / 1000
     netpyne.sim.simData['V_soma'] = V_somas
