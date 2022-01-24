@@ -20,13 +20,13 @@ A closed-loop neuronal network model that senses dynamic visual information from
     - `tools/` folder of evaluation tools
     - `cells/` folder for defined cells
 
-- `mod/` the compiled NEURON objects
-
+- `mod/` the NEURON objects that will get compiled by `nvrnivmodl`
+- `x86_64/` the compiled NEURON objects
 
 
 ### Install on Mac
 
-install python 3.8
+install python >3.7 (previous versions might not work)
 
 install ffmpeg
 
@@ -44,10 +44,6 @@ activate the environment
 install all dependencies:
 
     pip install -r requirements.txt
-
-Add needed dirs
-
-    mkdir data
 
 Compile mod files
 
