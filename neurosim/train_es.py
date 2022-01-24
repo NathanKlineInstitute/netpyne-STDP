@@ -8,6 +8,7 @@ from sim import NeuroSim
 from conf import read_conf, init_wdir
 from aigame import AIGame
 from game_interface import GameInterface
+from utils.weights import readWeights
 import netpyne
 
 # Wrapper for netpyne simulation that catched the sys.exit() after one episode (if activated)
@@ -158,6 +159,10 @@ def train(dconf=None, fnjson=None):
     netpyne.sim.simData['spkt'] = spkts
     neurosim.save()
 
+def _saved_timesteps(synWeights_file):
+  df = readWeights(synWeights_file)
+  return sorted(list(df['time'].unique()))
+
 def continue_main(wdir, iterations=100, index=None):
   dconf_path = os.path.join(wdir, 'backupcfg_sim.json')
 
@@ -165,8 +170,10 @@ def continue_main(wdir, iterations=100, index=None):
   dconf = read_conf(dconf_path, outdir=outdir)
   synWeights_file = os.path.join(wdir, 'synWeights.pkl')
 
+  timesteps = _saved_timesteps(synWeights_file)
   dconf['simtype']['ResumeSim'] = 1
   dconf['simtype']['ResumeSimFromFile'] = synWeights_file
+  dconf['simtype']['ResumeSimFromTs'] = float(timesteps[-1])
   if iterations != None:
     dconf['ES']['iterations'] = iterations
   dconf['sim']['plotRaster'] = 0
