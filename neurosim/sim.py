@@ -76,7 +76,7 @@ class NeuroSim:
     self.targetedRLMainFctr = _get_param(dconf['sim'], 'targetedRLMainFctr', 1.0)
     self.targetedRLDscntFctr = _get_param(dconf['sim'], 'targetedRLDscntFctr', 1.0)
     self.targetedRLOppFctr = _get_param(dconf['sim'], 'targetedRLOppFctr', 1.0)
-    self.saveEnvObs = _get_param(dconf['sim'], 'saveEnvObs', default=1)
+    self.saveEnvObs = _get_param(dconf['sim'], 'saveEnvObs', default=0)
     self.resetEligTrace = _get_param(dconf['sim'], 'resetEligTrace', default=0)
     self.earlyStoppingCriteria = _get_param(dconf['sim'], 'earlyStoppingCriteria', default=0)
     self.last_times = deque(maxlen=self.actionsPerPlay + 1)
