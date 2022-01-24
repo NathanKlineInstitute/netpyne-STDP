@@ -23,7 +23,6 @@ A closed-loop neuronal network model that senses dynamic visual information from
 - `mod/` the NEURON objects that will get compiled by `nvrnivmodl`
 - `x86_64/` the compiled NEURON objects
 
-
 ### Install on Mac
 
 install python >3.7 (previous versions might not work)
@@ -48,6 +47,33 @@ install all dependencies:
 Compile mod files
 
     nrnivmodl mod
+
+### Install on Ubuntu 18.04
+
+Running this on a VM on gcloud:
+
+    # install pacakges
+    sudo apt-get install python3.8 python3.8-distutils cmake libz-dev ffmpeg
+    
+    # install pip and create the environment
+    curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
+    python3.8 get-pip.py
+    python3.8 -m pip install virtualenv
+    python3.8 -m virtualenv venv
+
+    # activate
+    source ./venv/bin/activate
+    export PYTHONPATH="`pwd`"
+
+    # install requirements
+    pip install -r requirements.txt
+
+    # compile neuron
+    nrnivmodl mod
+
+Then run commands with screen to avoid network disconnecting
+
+    screen -L -Logfile logfile.log ... 
 
 ### run
 
