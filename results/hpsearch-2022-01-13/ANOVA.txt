@@ -1,0 +1,38 @@
+## 1st HPSearch
+
+AMPA-RLlenhebb  p:  0.021900766667837943   maxvar/minvar=  2.1693458019619234
+AMPA-RLhebbwt  p:  0.05253397500200325   maxvar/minvar=  2.0675762827928446
+AMPA-RLwindhebb  p:  0.013334417099094142   maxvar/minvar=  3.3024963843659987
+Targeted_RL_Type  p:  1.0658656584300628e-08   maxvar/minvar=  5.4785103798705235
+Targeted_RL_Opp_EM  p:  0.12043601519829855   maxvar/minvar=  1.4697224574206653
+Non_Motor_RL  p:  0.7694056150118113   maxvar/minvar=  1.149966698378094
+Critic Positivity Bias  p:  0.39511260159854333   maxvar/minvar=  1.5935581952073152
+Critic Angv Bias  p:  0.43066389701204877   maxvar/minvar=  1.4758603457483854
+
+
+## 2nd HPSearch
+
+Initialization model  p:  0.00012509583169645097   maxvar/minvar=  1.6401311019738336
+AMPA-RLhebbwt  p:  1.241031370506251e-05   maxvar/minvar=  2.0120901507966424
+AMPA-RLwindhebb  p:  0.027380963096561645   maxvar/minvar=  1.8124251836515928
+Non_Motor_RL  p:  0.6395039794986126   maxvar/minvar=  1.2210606105333435
+Targeted_RL_Opp_EM  p:  0.4389450073609453   maxvar/minvar=  1.9713218786736875
+Targeted_RL_Non_Motor  p:  0.2510387329597287   maxvar/minvar=  1.3401820301462324
+Critic Positivity Bias  p:  0.632764760166286   maxvar/minvar=  1.3479748593339809
+Critic Angv Bias  p:  0.04304635496151517   maxvar/minvar=  1.7227679172137653
+
+Initialization model ***
+
+
+## 3rd HPsearch
+
+Initialization model  p:  0.00023297219896743895   maxvar/minvar=  1.3308175395274968
+AMPA-RLhebbwt  p:  0.00014115732317246464   maxvar/minvar=  2.546876282866874
+Non_Motor_RL  p:  0.005164321902433825   maxvar/minvar=  1.2465921882065032
+Targeted_RL_Opp_EM  p:  0.7297389196590781   maxvar/minvar=  1.086130390079562
+Targeted_RL_Non_Motor  p:  0.05318164940680507   maxvar/minvar=  1.186367639061183
+Critic Positivity Bias  p:  0.9237771312245617   maxvar/minvar=  1.1882267740145644
+Critic Angv Bias  p:  0.03505584728907012   maxvar/minvar=  1.2582570593299807
+
+Initialization model ***
+Non_Motor_RL **

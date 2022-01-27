@@ -11,6 +11,7 @@ import numpy as np
 import pandas as pd
 
 from neurosim.tools.utils import _get_spike_aggs_all, _extract_sorted_min_ids
+from neurosim.utils.agg import _get_agg, _get_avg_fast, _extract_hpsteps
 
 RANDOM_EVALUATION='results/random_cartpole_ActionsPerEpisode.txt'
 
@@ -29,26 +30,6 @@ def _get_params(config):
   return params
 
 
-def _extract_hpsteps(wdir, path_prefix=None):
-  configs = []
-  wdirs = [wdir]
-  while True:
-    current_wdir = wdirs[-1]
-    if path_prefix:
-      current_wdir = os.path.join(path_prefix, current_wdir)
-    config_fname = os.path.join(current_wdir, 'backupcfg_sim.json')
-    with open(config_fname) as f:
-      config = json.load(f)
-    configs.append(config)
-    if config['simtype']['ResumeSim']:
-      wdirs.append(
-        os.path.dirname(config['simtype']['ResumeSimFromFile']))
-    else:
-      break
-
-  configs.reverse()
-  wdirs.reverse()
-  return wdirs, configs
 
 def _extract_params(wdirs, configs):
   all_params = []
@@ -156,23 +137,9 @@ def spiking_frequencies_table(wdirs, outdir):
       writer.writerow(row)
 
 
-def _get_agg(tr_results, step, func, overlap=True):
-  tr_agg = []
-  for idx in range(0, len(tr_results) - step, 1 if overlap else step):
-    tr_agg.append(func(tr_results[idx:idx+step]))
-  return tr_agg
 
-def _get_avg_fast(tr_results, step):
-  tr_agg = []
-  current_sum = sum(tr_results[:step])
-  current_avg_by = step
-  tr_agg.append(current_sum / current_avg_by)
-  for idx in range(1, len(tr_results) - step):
-    current_sum += tr_results[idx+step-1] - tr_results[idx-1]
-    tr_agg.append(current_sum / current_avg_by)
-  return tr_agg
-
-def steps_per_eps(wdir, wdir_name, outdir, merge_es=False, steps=[100]):
+def steps_per_eps(wdir, wdir_name, outdir, merge_es=False, steps=[100],
+                  delimit_wdirs=False):
   outputfile = os.path.join(
     outdir,
     'steps_per_episode_during_training_{}{}.png'.format(
@@ -180,10 +147,13 @@ def steps_per_eps(wdir, wdir_name, outdir, merge_es=False, steps=[100]):
 
   all_wdir_steps, _ = _extract_hpsteps(wdir)
 
+  steps_per_wdir = []
   training_results = []
   for wdir_steps in all_wdir_steps:
     with open(os.path.join(wdir_steps, 'ActionsPerEpisode.txt')) as f:
-        training_results.extend([int(float(eps)) for _,eps in csv.reader(f, delimiter='\t')])
+        eps = [int(float(eps)) for _,eps in csv.reader(f, delimiter='\t')]
+        training_results.extend(eps)
+        steps_per_wdir.append(len(eps))
 
   plt.figure(figsize=(10,10))
   plt.ylim(0, 510)
@@ -225,6 +195,12 @@ def steps_per_eps(wdir, wdir_name, outdir, merge_es=False, steps=[100]):
       plt.plot([t + STEP for t in range(len(medians))], medians)
   for STEP, averages in tr_averages.items():
       plt.plot([t + STEP for t in range(len(averages))], averages)
+
+  if delimit_wdirs:
+    total_eps = 0
+    for epscnt in steps_per_wdir:
+      total_eps += epscnt
+      plt.axvline(x=total_eps, c='r')
 
   plt.legend(['individual'] +
     ['median of {}'.format(STEP) for STEP in tr_medians.keys()] +

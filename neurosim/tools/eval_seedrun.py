@@ -8,7 +8,8 @@ import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
 
-from neurosim.tools.eval_multimodel import _get_agg, _extract_hpsteps
+from neurosim.utils.agg import _get_agg, _extract_hpsteps
+
 
 def analyze_samples(wdir, modifier=None):
   seedruns = [(wd.replace('run_seed', ''), os.path.join(wdir, wd))
@@ -52,6 +53,7 @@ def analyze_samples(wdir, modifier=None):
 
   plt.figure(figsize=(10,6))
   plt.grid(axis='y', alpha=0.3)
+  # print(aggs_by_step)
   ax = sns.boxplot(data=aggs_by_step)
   ax.set_xticklabels(labels, rotation=5)
   ax.set_ylim(mins[curr_min], maxes[curr_max])
@@ -60,40 +62,42 @@ def analyze_samples(wdir, modifier=None):
   outputfile = os.path.join(wdir, 'eval_seeds{}.png'.format('' if not modifier else '_' + modifier.replace('/', '_')))
   plt.savefig(outputfile)
 
-# def create_table(wdir, outputfile=None, runs_json_fname='runs.json'):
-#   runs_json = os.path.join(wdir, runs_json_fname)
-#   results_tsv = os.path.join(wdir, 'results.tsv')
 
-#   outputfile = os.path.join(wdir, 'results_table.tsv')
+def show_analyze_once(wdir, modifier=None, steps=100, stype='avg'):
+  seedruns = [(wd.replace('run_seed', ''), os.path.join(wdir, wd))
+    for wd in os.listdir(wdir) if wd.startswith('run_seed')]
 
-#   runs = {}
-#   with open(runs_json) as f:
-#     for line in f:
-#       run = json.loads(line)
-#       runs[run['run_id']] = run
+  if modifier:
+    seedruns = [(seed, os.path.join(seedrun_f, modifier)) for seed, seedrun_f in seedruns]
 
-#   results = []
-#   with open(results_tsv) as f:
-#     for row in csv.DictReader(f, delimiter='\t'):
-#       for k in row.keys():
-#         if k.startswith('max_'):
-#           row[k] = float(row[k])
-#         elif k == 'run_id':
-#           row[k] = int(row[k])
-#       run_id = row['run_id']
-#       for k,v in runs[run_id].items():
-#         row[k] = v
-#       results.append(row)
-#   del runs
-#   print('Found {} results'.format(len(results)))
+  assert stype in ['avg', 'median']
+  aggs_seed = {}
+  for seed, seedrun_f in seedruns:
+    tr_res = _extract_steps_per_ep(seedrun_f, steps, stype)
+    aggs_seed[seed] = max(tr_res)
 
-#   results = sorted(results, key=lambda x:x['max_average_s100'], reverse=True)
-#   with open(outputfile, 'w') as out:
-#     writer = csv.writer(out, delimiter='\t')
-#     header = [k for k in results[0].keys()]
-#     writer.writerow(header)
-#     for row in results:
-#       writer.writerow([row[h] for h in header])
+  label = 'MAX {} over {}steps'.format(
+    'average' if stype == 'avg' else stype, steps)
+
+  maxes = [200, 300, 500, 501]
+  curr_max = 0
+  for amax in aggs_seed.values():
+    while maxes[curr_max] < amax:
+      curr_max += 1
+
+  plt.figure(figsize=(2.5,7))
+  plt.grid(axis='y', alpha=0.3)
+  aggs_by_step = [list(aggs_seed.values())]
+  ax = sns.boxplot(data=aggs_by_step)
+  ax = sns.swarmplot(data=aggs_by_step, color=".25", size=10.0)
+  ax.set_xticklabels([label]) # , rotation=5
+  ax.set_ylim(0, maxes[curr_max])
+  # plt.title('Variance in performance of {} different initial network configurations'.format(len(akeys)))
+  # plt.show()
+  outputfile = os.path.join(wdir, 'eval_{}{}_seeds{}.png'.format(
+    stype, steps,'' if not modifier else '_' + modifier.replace('/', '_')))
+  plt.tight_layout()
+  plt.savefig(outputfile, dpi=300)
 
 
 def _extract_steps_per_ep(wdir, steps, stype):
@@ -109,7 +113,7 @@ def _extract_steps_per_ep(wdir, steps, stype):
   return _get_agg(training_results, steps, func)
 
 
-def steps_per_eps(wdir, steps=100, stype='avg', modifier=None, parts=1):
+def steps_per_eps(wdir, steps=100, stype='avg', modifier=None, parts=1, seed_nrs=False):
   assert stype in ['avg', 'median']
 
   seedruns = [(wd.replace('run_seed', ''), os.path.join(wdir, wd))
@@ -120,20 +124,23 @@ def steps_per_eps(wdir, steps=100, stype='avg', modifier=None, parts=1):
 
   for p in range(parts):
     seedruns_batch = seedruns
+    pstep = 0
     if parts > 1:
       pstep = int(len(seedruns) / parts)
       seedruns_batch = seedruns[p * pstep:min((p+1)*pstep, len(seedruns))]
 
-    plt.figure(figsize=(10,10))
+    plt.figure(figsize=(7,7))
     plt.ylim(0, 200)
-    plt.grid(axis='y')
-    plt.ylabel('steps/actions per episode')
-    plt.title('Performance during training, evaluated using {} over {} episodes'.format(stype, steps))
+    plt.grid(axis='y', alpha=0.4)
+    plt.ylabel('steps per episode ({} over {} episodes)'.format(
+      'average' if stype == 'avg' else stype, steps))
+    # plt.title('Performance during training, evaluated using {} over {} episodes'.format(stype, steps))
     for seed, seedrun_wdir in seedruns_batch:
       tr_res = _extract_steps_per_ep(seedrun_wdir, steps, stype)
       plt.plot(tr_res)
 
-    plt.legend([seed for seed,_ in seedruns_batch])
+    plt.legend(['model seed: {}'.format(sidx+1+pstep*p if seed_nrs else seed)
+      for sidx, (seed,_) in enumerate(seedruns_batch)])
     plt.xlabel('episode')
 
     outputfile = os.path.join(
@@ -141,12 +148,14 @@ def steps_per_eps(wdir, steps=100, stype='avg', modifier=None, parts=1):
       'steps_per_episode{}_{}_{}_{}.png'.format(
         '' if parts == 1 else '_{}of{}'.format(p+1, parts),
         stype, steps, modifier.replace('/', '_')))
-    plt.savefig(outputfile)
+    plt.tight_layout()
+    plt.savefig(outputfile, dpi=300)
 
 
 if __name__ == '__main__':
   fire.Fire({
       'analyze': analyze_samples,
+      'a1': show_analyze_once,
       'train-perf': steps_per_eps,
       # 'combine': create_table
   })

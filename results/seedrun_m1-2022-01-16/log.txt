@@ -38,13 +38,22 @@ Measure the results
 Copy the config
 
     cp results/hpsearch-2022-01-13/best/1_run_446/backupcfg_sim.json $WDIR/config3.json
+    cp results/hpsearch-2022-01-13/best/3_run_1097/backupcfg_sim.json $WDIR/config3b.json
 
 Run the models
 
-    for seedrunname in run_seed1257804 run_seed1307018 run_seed1394398 run_seed1932160 run_seed204437 run_seed2544501 run_seed3295562 run_seed410936 run_seed4968112 run_seed513563 run_seed5140568 run_seed5381445 run_seed5397326 run_seed6285813 run_seed6623146 run_seed7050182 run_seed7070236 run_seed7892276 run_seed9300610 run_seed9641694
+    for seedrunname in run_seed1394398 run_seed5397326 run_seed1257804 run_seed1307018 run_seed1932160 run_seed204437 run_seed2544501 run_seed3295562 run_seed410936 run_seed4968112 run_seed513563 run_seed5140568 run_seed5381445 run_seed6285813 run_seed6623146 run_seed7050182 run_seed7070236 run_seed7892276 run_seed9300610 run_seed9641694
     do
         echo "Running $seedrunname"
         py neurosim/main.py cont_seedrun $WDIR/${seedrunname}/continue_1 $WDIR/config3.json
+    done
+
+And run again with the config3b:
+
+    for seedrunname in run_seed1394398 run_seed5397326 run_seed1257804 run_seed1307018 run_seed1932160 run_seed204437 run_seed2544501 run_seed3295562 run_seed410936 run_seed4968112 run_seed513563 run_seed5140568 run_seed5381445 run_seed6285813 run_seed6623146 run_seed7050182 run_seed7070236 run_seed7892276 run_seed9300610 run_seed9641694
+    do
+        echo "Running $seedrunname"
+        py neurosim/main.py cont_seedrun $WDIR/${seedrunname}/continue_1 $WDIR/config3b.json --index 2
     done
 
 Measure the results
@@ -94,6 +103,8 @@ Measure:
     
     python3 neurosim/tools/eval_seedrun.py analyze $WDIR --modifier continue_1/continue_1/continue_2/continue_2/continue_2
 
+    python3 neurosim/tools/eval_seedrun.py a1 $WDIR --modifier continue_1/continue_1/continue_2/continue_2/continue_2
+
 Train perf:
 
-    py neurosim/tools/eval_seedrun.py train-perf $WDIR --modifier continue_1/continue_1/continue_2/continue_2/continue_2 --stype median --steps 200 --parts 2
+    py neurosim/tools/eval_seedrun.py train-perf $WDIR --modifier continue_1/continue_1/continue_2/continue_2/continue_2 --stype avg --steps 100 --parts 2 --seed_nrs
