@@ -58,11 +58,12 @@ def trace(wdir):
       print(key, values)
 
 def _get_evaluation_dir(wdir, idx):
-  assert idx in [0, -1], 'Make sure this is getting the correct ts instead of index'
+  # assert idx in [0, -1], 'Make sure this is getting the correct ts instead of index'
   evaluations = [
     (os.path.join(wdir, fname), int(fname.replace('evaluation_', '')))
     for fname in os.listdir(wdir) if fname.startswith('evaluation_') and 'display' not in fname]
-  eval_dir, eval_ts = sorted(evaluations, key=lambda x:x[1])[idx]
+  print(evaluations)
+  eval_dir, eval_ts = sorted(evaluations, key=lambda x:x[1])[0]
   return eval_dir
 
 def _evaluation_actions_per_episode(wdir, idx):
@@ -95,7 +96,7 @@ def boxplot(wdirs, outdir, include_random=True):
   ax = sns.boxplot(data=data)
   ax = sns.swarmplot(data=data, color=".25", size=2.0)
   ax.set_xticklabels(labels, rotation=5)
-  ax.set_ylabel('Actions per episode')
+  ax.set_ylabel('steps per episode')
   # ax.set_title('Evaluation of models')
 
   plt.grid(axis='y', alpha=0.4)
@@ -229,10 +230,10 @@ def steps_per_eps(wdir, wdir_name, outdir, merge_es=False, steps=[100],
         training_results.extend(eps)
         steps_per_wdir.append(len(eps))
 
-  plt.figure(figsize=(7,7))
+  plt.figure(figsize=(5,5))
   plt.ylim(0, 510)
-  plt.grid(axis='y')
-  plt.ylabel('steps/actions per episode')
+  plt.grid(axis='y', alpha=0.3)
+  plt.ylabel('steps per episode')
   # plt.title('{} performance during training'.format(wdir_name))
   if merge_es:
     STEP = 10
@@ -280,8 +281,8 @@ def steps_per_eps(wdir, wdir_name, outdir, merge_es=False, steps=[100],
     ['median of {}'.format(STEP) for STEP in tr_medians.keys()] +
     ['averages of {}'.format(STEP) for STEP in tr_averages.keys()])
   plt.xlabel('episode')
-
-  plt.savefig(outputfile)
+  plt.tight_layout()
+  plt.savefig(outputfile, dpi=300)
 
 
 def steps_per_eps_combined(wdirs, outdir, steps=[100]):

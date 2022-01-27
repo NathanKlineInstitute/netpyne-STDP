@@ -88,6 +88,9 @@ def show_analyze_once(wdir, modifier=None, steps=100, stype='avg'):
   plt.figure(figsize=(2.5,6))
   plt.grid(axis='y', alpha=0.3)
   aggs_by_step = [list(aggs_seed.values())]
+  print('min: ', np.min(aggs_by_step))
+  print('mean: ', np.mean(aggs_by_step))
+  print('max: ', np.max(aggs_by_step))
   ax = sns.boxplot(data=aggs_by_step)
   ax = sns.swarmplot(data=aggs_by_step, color=".25", size=10.0)
   ax.set_xticklabels([label]) # , rotation=5
