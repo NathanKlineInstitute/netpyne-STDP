@@ -85,7 +85,7 @@ def show_analyze_once(wdir, modifier=None, steps=100, stype='avg'):
     while maxes[curr_max] < amax:
       curr_max += 1
 
-  plt.figure(figsize=(2.5,7))
+  plt.figure(figsize=(2.5,6))
   plt.grid(axis='y', alpha=0.3)
   aggs_by_step = [list(aggs_seed.values())]
   ax = sns.boxplot(data=aggs_by_step)
@@ -129,7 +129,7 @@ def steps_per_eps(wdir, steps=100, stype='avg', modifier=None, parts=1, seed_nrs
       pstep = int(len(seedruns) / parts)
       seedruns_batch = seedruns[p * pstep:min((p+1)*pstep, len(seedruns))]
 
-    plt.figure(figsize=(7,7))
+    plt.figure(figsize=(6,6))
     plt.ylim(0, 200)
     plt.grid(axis='y', alpha=0.4)
     plt.ylabel('steps per episode ({} over {} episodes)'.format(

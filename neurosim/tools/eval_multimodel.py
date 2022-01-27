@@ -137,6 +137,80 @@ def spiking_frequencies_table(wdirs, outdir):
       writer.writerow(row)
 
 
+def iters_for_evol(wdir, outdir=None, steps=[100], delimit_wdirs=False):
+  if not outdir:
+    outdir = wdir
+  outputfile = os.path.join(
+    outdir, 'iters_during_training.png')
+
+  all_wdir_steps, _ = _extract_hpsteps(wdir)
+  training_results = []
+  for wdir_steps in all_wdir_steps:
+    with open(os.path.join(wdir_steps, 'es_train.txt')) as f:
+      for row in csv.reader(f, delimiter='\t'):
+        iter_median, iter_mean, iter_min, iter_max = row[1:5]
+        training_results.append({
+          'median': float(iter_median),
+          'mean': float(iter_mean),
+          'min': float(iter_min),
+          'max': float(iter_max),
+        })
+
+  plt.figure(figsize=(7,7))
+  plt.ylim(0, 510)
+  plt.grid(axis='y', alpha=0.3)
+  plt.ylabel('steps per episode')
+  tr_averages = {STEP: _get_agg([tr['mean'] for tr in training_results], STEP, np.average) for STEP in steps}
+
+  plt.plot(list(range(len(training_results))), [tr['max'] for tr in training_results], '.')
+  plt.plot(list(range(len(training_results))), [tr['mean'] for tr in training_results], '.')
+  plt.plot(list(range(len(training_results))), [tr['min'] for tr in training_results], '.')
+  for step, averages in tr_averages.items():
+      plt.plot([t + step for t in range(len(averages))], averages)
+
+  plt.legend(['iteration max', 'iteration average', 'iteration min'] +
+    ['average of {} iteration averages'.format(step) for step in tr_averages.keys()])
+  plt.xlabel('iteration (10 episodes)')
+
+  plt.savefig(outputfile, dpi=300)
+
+
+def iters_for_evolstdprl(wdir, outdir=None, steps=[100], delimit_wdirs=False):
+  if not outdir:
+    outdir = wdir
+  outputfile = os.path.join(
+    outdir, 'iters_during_training.png')
+
+  all_wdir_steps, _ = _extract_hpsteps(wdir)
+  training_results = []
+  for wdir_steps in all_wdir_steps:
+    with open(os.path.join(wdir_steps, 'es_train.txt')) as f:
+      for row in csv.reader(f, delimiter='\t'):
+        iter_median, iter_mean, iter_min, iter_max = row[1:5]
+        training_results.append({
+          'median': float(iter_median),
+          'mean': float(iter_mean),
+          'min': float(iter_min),
+          'max': float(iter_max),
+        })
+
+  plt.figure(figsize=(7,7))
+  plt.ylim(0, 510)
+  plt.grid(axis='y', alpha=0.3)
+  plt.ylabel('steps per episode')
+
+  tr_averages = {STEP: _get_agg([tr['mean'] for tr in training_results], STEP, np.average) for STEP in steps}
+
+  plt.plot(list(range(len(training_results))), [tr['max'] for tr in training_results], '.')
+  plt.plot(list(range(len(training_results))), [tr['mean'] for tr in training_results], '.')
+  plt.plot(list(range(len(training_results))), [tr['min'] for tr in training_results], '.')
+  for step, averages in tr_averages.items():
+      plt.plot([t + step for t in range(len(averages))], averages)
+
+  plt.legend(['iteration max', 'iteration average', 'iteration min'] +
+    ['average of {} iteration averages'.format(step) for step in tr_averages.keys()])
+  plt.xlabel('iteration (10 episodes)')
+  plt.savefig(outputfile, dpi=300)
 
 def steps_per_eps(wdir, wdir_name, outdir, merge_es=False, steps=[100],
                   delimit_wdirs=False):
@@ -155,11 +229,11 @@ def steps_per_eps(wdir, wdir_name, outdir, merge_es=False, steps=[100],
         training_results.extend(eps)
         steps_per_wdir.append(len(eps))
 
-  plt.figure(figsize=(10,10))
+  plt.figure(figsize=(7,7))
   plt.ylim(0, 510)
   plt.grid(axis='y')
   plt.ylabel('steps/actions per episode')
-  plt.title('{} performance during training'.format(wdir_name))
+  # plt.title('{} performance during training'.format(wdir_name))
   if merge_es:
     STEP = 10
     merged_tr_results = _get_agg(training_results, STEP, np.average, overlap=False)
@@ -172,17 +246,17 @@ def steps_per_eps(wdir, wdir_name, outdir, merge_es=False, steps=[100],
     plt.plot(list(range(len(max_tr_results))), max_tr_results, '.')
     plt.plot(list(range(len(merged_tr_results))), merged_tr_results, '.')
     plt.plot(list(range(len(min_tr_results))), min_tr_results, '.')
-    for step, medians in tr_medians.items():
-        plt.plot([t + step for t in range(len(medians))], medians)
+    # for step, medians in tr_medians.items():
+    #     plt.plot([t + step for t in range(len(medians))], medians)
     for step, averages in tr_averages.items():
         plt.plot([t + step for t in range(len(averages))], averages)
 
     plt.legend(['iteration max', 'iteration average', 'iteration min'] +
-      ['median of {} iteration averages'.format(step) for step in tr_medians.keys()] +
-      ['averages of {} iteration averages'.format(step) for step in tr_averages.keys()])
+      # ['median of {} iteration averages'.format(step) for step in tr_medians.keys()] +
+      ['average of {} iteration averages'.format(step) for step in tr_averages.keys()])
     plt.xlabel('iteration ({} episodes)'.format(STEP))
 
-    plt.savefig(outputfile)
+    plt.savefig(outputfile, dpi=300)
     return
 
   # non merge_es
@@ -430,6 +504,8 @@ if __name__ == '__main__':
       'spk-freq': spiking_frequencies_table,
       'train-perf': steps_per_eps,
       'train-perf-comb': steps_per_eps_combined,
+      'train-perf-evol': iters_for_evol,
+      'train-perf-evolstdprl': iters_for_evolstdprl,
       'train-unk-moves': undecided_moves,
       'select-eps': select_episodes,
       'eval-selected-eps': save_episodes_eval
