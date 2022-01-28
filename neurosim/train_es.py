@@ -44,7 +44,7 @@ def init(dconf, fnjson=None):
   init_wdir(dconf)
   return dconf
 
-def train(dconf=None, fnjson=None):
+def train(dconf=None, fnjson=None, save_spikes=False):
     dconf = init(dconf, fnjson)
     ITERATIONS = dconf['ES']['iterations'] # How many iterations to train for
     POPULATION_SIZE = dconf['ES']['population_size'] # How many perturbations of weights to try per iteration
@@ -98,13 +98,14 @@ def train(dconf=None, fnjson=None):
             run_episodes(neurosim)
             run_duration = neurosim.last_times[-1]
 
-            # save the spike and V data
-            spkids.extend(netpyne.sim.simData['spkid'])
-            spkts.extend([(t+total_time) for t in netpyne.sim.simData['spkt']])
-            for kvolt, v_soma in netpyne.sim.simData['V_soma'].items():
-              if kvolt not in V_somas:
-                V_somas[kvolt] = []
-              V_somas[kvolt].extend(v_soma)
+            if save_spikes:
+              # save the spike and V data
+              spkids.extend(netpyne.sim.simData['spkid'])
+              spkts.extend([(t+total_time) for t in netpyne.sim.simData['spkt']])
+              for kvolt, v_soma in netpyne.sim.simData['V_soma'].items():
+                if kvolt not in V_somas:
+                  V_somas[kvolt] = []
+                V_somas[kvolt].extend(v_soma)
             total_time += run_duration
 
             # Add fitness
@@ -154,9 +155,10 @@ def train(dconf=None, fnjson=None):
 
 
     neurosim.dconf['sim']['duration'] = total_time / 1000
-    netpyne.sim.simData['V_soma'] = V_somas
-    netpyne.sim.simData['spkid'] = spkids
-    netpyne.sim.simData['spkt'] = spkts
+    if save_spikes:
+      netpyne.sim.simData['V_soma'] = V_somas
+      netpyne.sim.simData['spkid'] = spkids
+      netpyne.sim.simData['spkt'] = spkts
     neurosim.save()
 
 def _saved_timesteps(synWeights_file):

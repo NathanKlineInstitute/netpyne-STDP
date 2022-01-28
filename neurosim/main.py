@@ -77,6 +77,8 @@ def continue_main(wdir, duration=None, index=None,
       name, val = param.split(':')
       if name == 'recordWeightStepSize':
         dconf['sim']['recordWeightStepSize'] = int(val)
+      elif name == 'doSaveData':
+        dconf['sim']['doSaveData'] = int(val)
       else:
         raise Exception('Cannot find param {}'.format(name))
 

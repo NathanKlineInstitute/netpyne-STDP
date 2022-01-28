@@ -50,20 +50,38 @@ Compile mod files
 
 ### Install on Ubuntu 18.04
 
-Running this on a VM on gcloud:
+Running this on a VM on gcloud
+
+    EMAIL="..."
+    ssh-keygen -t ed25519 -C $EMAIL
+    cat .ssh/id_ed25519.pub 
+    # Copy the pub key here: https://github.com/settings/keys
+    git clone git@github.com:NathanKlineInstitute/netpyne-STDP.git
+    cd netpyne-STDP/
+
+then run the whole script below
+
+    git config --global alias.co checkout
+    git config --global alias.br branch
+    git config --global alias.ci commit
+    git config --global alias.st status
+    git config --global user.name "$USER"
+    git config --global user.email $EMAIL
 
     # install pacakges
-    sudo apt-get install python3.8 python3.8-distutils cmake libz-dev ffmpeg
+    sudo apt-get update
+    yes | sudo apt-get install python3.7 python3.7-distutils cmake build-essential libz-dev ffmpeg
     
     # install pip and create the environment
     curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
-    python3.8 get-pip.py
-    python3.8 -m pip install virtualenv
-    python3.8 -m virtualenv venv
+    python3.7 get-pip.py
+    python3.7 -m pip install virtualenv
+    python3.7 -m virtualenv venv
 
     # activate
     source ./venv/bin/activate
     export PYTHONPATH="`pwd`"
+    alias py=python3
 
     # install requirements
     pip install -r requirements.txt
