@@ -6,11 +6,13 @@ import math
 import pickle as pkl
 import matplotlib.pyplot as plt
 import seaborn as sns
+from scipy import stats
 from tqdm import tqdm
 import numpy as np
 import pandas as pd
 
-from neurosim.tools.utils import _get_spike_aggs_all, _extract_sorted_min_ids
+from neurosim.tools.utils import _get_spike_aggs_all, _extract_sorted_min_ids, \
+                                 _read_evaluations
 from neurosim.utils.agg import _get_agg, _get_avg_fast, _extract_hpsteps
 
 RANDOM_EVALUATION='results/random_cartpole_ActionsPerEpisode.txt'
@@ -57,6 +59,15 @@ def trace(wdir):
     if len(set(values)) > 1:
       print(key, values)
 
+def eval_perf(wdir, outputfile):
+  wdirs, configs = _extract_hpsteps(wdir)
+
+  if not outputfile:
+    outputfile = os.path.join(wdir, 'evaluations_performance_on_eval.png')
+  results = _read_evaluations(wdir, False)
+
+  # TODO!
+
 def _get_evaluation_dir(wdir, idx):
   # assert idx in [0, -1], 'Make sure this is getting the correct ts instead of index'
   evaluations = [
@@ -73,9 +84,23 @@ def _evaluation_actions_per_episode(wdir, idx):
       return [int(float(eps)) for _,eps in csv.reader(f, delimiter='\t')]
   return None
 
+def _calc_pvalue(values, plog):
+  if plog:
+    values = [[np.log2(v) for v in vals] for vals in values]
+  F, p = stats.f_oneway(*values)
+  stds = [np.std(vals) for vals in values]
+  minmax_ratio = max(stds) / min(stds)
+  if minmax_ratio >= 2:
+    raise Exception('Cannot compute pvalue as min-max ratio > 2 ({})'.format(minmax_ratio))
+  return p
 
-def boxplot(wdirs, outdir, include_random=True):
+
+def boxplot(wdirs, outdir, include_random=True, pvals=None, plog=False):
   outputfile = os.path.join(outdir, 'evaluations_boxplot.png')
+
+  if pvals != None:
+    pvals = pvals.split(';')
+    pvals = [[int(v) for v in pv.split(',')] for pv in pvals]
 
   wdirs = [wdir.split(':') for wdir in wdirs.split(',')]
   results = []
@@ -86,7 +111,6 @@ def boxplot(wdirs, outdir, include_random=True):
   for name,wdir,idx in wdirs:
     results.append([name, _evaluation_actions_per_episode(wdir, int(idx))])
 
-
   labels = [k.replace(' ', '\n') for k,v in results]
   data = [v for k,v in results]
 
@@ -94,10 +118,35 @@ def boxplot(wdirs, outdir, include_random=True):
   # ax = fig.add_subplot(111)
   # bp = ax.boxplot(data)
   ax = sns.boxplot(data=data)
-  ax = sns.swarmplot(data=data, color=".25", size=2.0)
+  # ax = sns.swarmplot(data=data, color=".25", size=2.0)
   ax.set_xticklabels(labels, rotation=5)
   ax.set_ylabel('steps per episode')
   # ax.set_title('Evaluation of models')
+  print('Boxplot details:')
+  for l,d in zip(labels, data):
+    print('{}: min={}, 25%={}, 50%={}, 75%={}, max={}. avg={}'.format(
+      l.replace('\n', ' '),
+      min(d), np.quantile(d, 0.25), np.median(d),
+      np.quantile(d, 0.75), max(d), np.mean(d)))
+
+  if pvals != None:
+    maxval = 0
+    for pv in pvals:
+      # get max first
+      assert len(pv) == 2, 'Only doing ANOVA on 2 distributions'
+      x1, x2 = pv
+      maxval = max(maxval, max(data[x1]), max(data[x2]))
+    print('P-value details:')
+    for pv in pvals:
+      x1, x2 = pv
+      p = _calc_pvalue([data[x1], data[x2]], plog)
+      print(pv, p)
+      pstring = ''.join(['*' for th in [0.5, 0.1, 0.01, 0.001, 0.0001] if p < th])
+      y, h, col = maxval * 1.05, maxval * 0.03, 'k'
+      ax.plot([x1, x1, x2, x2], [y, y+h, y+h, y], lw=1.5, c=col)
+      ax.text((x1+x2)*.5, y+h*1.3, pstring, ha='center', va='bottom', color=col)
+      ylim = ax.get_ylim()
+      ax.set_ylim([ylim[0], ylim[1] * 1.05])
 
   plt.grid(axis='y', alpha=0.4)
   plt.tight_layout()
@@ -138,7 +187,7 @@ def spiking_frequencies_table(wdirs, outdir):
       writer.writerow(row)
 
 
-def iters_for_evol(wdir, outdir=None, steps=[100], delimit_wdirs=False):
+def iters_for_evol(wdir, outdir=None, steps=[100], delimit_wdirs=False, bval=1):
   if not outdir:
     outdir = wdir
   outputfile = os.path.join(
@@ -170,8 +219,10 @@ def iters_for_evol(wdir, outdir=None, steps=[100], delimit_wdirs=False):
       plt.plot([t + step for t in range(len(averages))], averages)
 
   plt.legend(['iteration max', 'iteration average', 'iteration min'] +
-    ['average of {} iteration averages'.format(step) for step in tr_averages.keys()])
-  plt.xlabel('iteration (10 episodes)')
+    ['average of {} iteration averages'.format(step) for step in tr_averages.keys()],
+    loc='lower right', framealpha=0.95)
+  plt.xlabel('iteration ({} episodes)'.format(10 * bval))
+  plt.tight_layout()
 
   plt.savefig(outputfile, dpi=300)
 
@@ -508,6 +559,7 @@ if __name__ == '__main__':
       'train-perf-evol': iters_for_evol,
       'train-perf-evolstdprl': iters_for_evolstdprl,
       'train-unk-moves': undecided_moves,
+      'eval-perf': eval_perf,
       'select-eps': select_episodes,
       'eval-selected-eps': save_episodes_eval
   })

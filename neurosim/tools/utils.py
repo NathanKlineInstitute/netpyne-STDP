@@ -1,4 +1,9 @@
 import math
+import os
+import csv
+
+
+RANDOM_EVALUATION='results/random_cartpole_ActionsPerEpisode.txt'
 
 def _get_pop_name(cellId, sorted_min_ids):
   # This is O(n), could be O(log(n)) with binary search
@@ -65,3 +70,38 @@ def _group_by_pop(synWeights, sorted_min_ids):
                   new_map[conn_name].append([])
               new_map[conn_name][idx].append(w)
   return new_map
+
+
+def _read_evaluations(wdir, include_random, inside_dirs=False):
+  if inside_dirs:
+    results = {}
+    for fname in os.listdir(wdir):
+      new_wdir = os.path.join(wdir, fname)
+      if os.path.isdir(new_wdir):
+        evals = _read_evaluations(new_wdir, include_random=False)
+        for eval_ts, res in evals.items():
+          results['{}-{}'.format(fname, eval_ts)] = res
+
+    if include_random:
+      with open(RANDOM_EVALUATION) as f:
+        results['-1'] = [int(float(eps)) for _,eps in csv.reader(f, delimiter='\t')]
+    return results
+
+  evaluations = []
+  for fname in os.listdir(wdir):
+    if fname.startswith('evaluation_') and 'display' not in fname:
+      evaluations.append((
+        os.path.join(wdir, fname),
+        int(fname.replace('evaluation_', ''))))
+
+  results = {}
+  for eval_dir, eval_ts in evaluations:
+    if os.path.isfile(os.path.join(eval_dir, 'ActionsPerEpisode.txt')):
+      with open(os.path.join(eval_dir, 'ActionsPerEpisode.txt')) as f:
+        results[eval_ts] = [int(float(eps)) for _,eps in csv.reader(f, delimiter='\t')]
+
+  if include_random:
+      with open(RANDOM_EVALUATION) as f:
+        results[-1] = [int(float(eps)) for _,eps in csv.reader(f, delimiter='\t')]
+
+  return results
