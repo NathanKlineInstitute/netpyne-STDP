@@ -124,3 +124,32 @@ Train perf:
 Not used
 
     # py neurosim/main.py continue $WDIR/${seedrunname}/continue_1/continue_1/continue_2/continue_2/continue_2 --duration 5000 --index 2
+
+# Measure everything again
+
+Measure:
+    
+    python3 neurosim/tools/eval_seedrun.py analyze $WDIR --modifier continue_1/continue_1/continue_2/continue_2/continue_2/continue_2
+
+    python3 neurosim/tools/eval_seedrun.py a1 $WDIR --modifier continue_1/continue_1/continue_2/continue_2/continue_2
+
+Train perf:
+
+    py neurosim/tools/eval_seedrun.py train-perf $WDIR --modifier continue_1/continue_1/continue_2/continue_2/continue_2/continue_2 --stype avg --steps 100 --parts 2 --seed_nrs
+
+# AGAIN for 6500s
+
+    python3 neurosim/tools/eval_seedrun.py analyze $WDIR --modifier continue_1/continue_1/continue_2/continue_2/continue_2/continue_2/continue_2
+
+    py neurosim/tools/eval_seedrun.py train-perf $WDIR --modifier continue_1/continue_1/continue_2/continue_2/continue_2/continue_2/continue_2 --stype avg --steps 100 --parts 2 --seed_nrs
+
+    python3 neurosim/tools/eval_seedrun.py a1 $WDIR --modifier continue_1/continue_1/continue_2/continue_2/continue_2/continue_2/continue_2
+
+    WDIR=results/seedrun_m1-2022-01-16/run_seed1394398/continue_1/continue_1/continue_2/continue_2/continue_2/continue_2/continue_2
+    py neurosim/tools/eval_multimodel.py train-perf $WDIR "Seed-6(Best)" \
+        $WDIR
+
+    WDIR=results/seedrun_m1-2022-01-16/run_seed5397326/continue_1/continue_1/continue_2/continue_2/continue_2/continue_2/continue_2
+    py neurosim/tools/eval_multimodel.py train-perf $WDIR "Seed-3" \
+        $WDIR
+

@@ -43,7 +43,7 @@
         ],
         "episodes": 21,
         "unk_move": -1,
-        "seed": 123
+        "seed": 42
     },
     "moves": {
         "LEFT": 0,
@@ -73,7 +73,7 @@
         "ResumeSimFromTs": 600.0
     },
     "sim": {
-        "duration": 52500,
+        "duration": 50000,
         "dt": 0.6,
         "verbose": 0,
         "recordStep": 1.0,
@@ -115,7 +115,7 @@
             "loc": 1
         },
         "outdir": "results/20220124-EVOL_b1-badseed/continue_1/continue_1/continue_1/continue_1/continue_1/evaluation_6",
-        "doSaveData": 0,
+        "doSaveData": 1,
         "sleeptrial": 0
     },
     "cell": {
