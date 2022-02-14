@@ -21,16 +21,8 @@ py neurosim/tools/eval_multimodel.py train-perf $WDIR --wdir-name "EVOL goodseed
 WDIR=results/20220123-EVOL_b1-goodseed/continue_1
 WDIR=results/20220123-EVOL_b1-goodseed/continue_1/continue_1
 WDIR=results/20220123-EVOL_b1-goodseed/continue_1/continue_1/continue_1/continue_1
-WDIR=results/20220124-EVOL_b1-badseed/continue_1
-WDIR=results/20220124-EVOL_b1-badseed/continue_1/continue_1
-WDIR=results/20220124-EVOL_b1-badseed/continue_1/continue_1/continue_1
-WDIR=results/20220124-EVOL_b1-badseed/continue_1/continue_1/continue_1/continue_1
-WDIR=results/20220124-EVOL_b1-badseed/continue_1/continue_1/continue_1/continue_1/continue_1
 WDIR=results/20220124-EVOL_b1-badseed/continue_1/continue_1/continue_1/continue_1/continue_1/continue_1
-WDIR=results/20220128-EVOL_b5-badseed/
-WDIR=results/20220128-EVOL_b5-badseed/continue_1/continue_1
 WDIR=results/20220128-EVOL_b5-badseed/continue_1/continue_1/continue_1/continue_1/continue_1/continue_1/continue_1/continue_1/continue_1/continue_1
-WDIR=results/20220129-EVOL_b5-goodseed/continue_1
 WDIR=results/20220129-EVOL_b5-goodseed/continue_1/continue_1/continue_1/continue_1/continue_1/continue_1/continue_1/continue_1
 py neurosim/tools/eval_multimodel.py train-perf-evol $WDIR
 
@@ -124,19 +116,19 @@ py neurosim/tools/eval_multimodel.py boxplot "${CONF1},${CONF2},${CONF3},${CONF4
 WDIR=results/20220123-EVOL_b1-goodseed/continue_1/continue_1/continue_1/continue_1
 py neurosim/tools/eval_multimodel.py train-perf-evol $WDIR
 WDIR=results/20220129-EVOL_b5-goodseed/continue_1/continue_1/continue_1/continue_1/continue_1
-py neurosim/tools/eval_multimodel.py train-perf-evol $WDIR --bval 5
+py neurosim/tools/eval_multimodel.py train-perf-evol $WDIR
 # Bad Seed B1 / B5
 WDIR=results/20220124-EVOL_b1-badseed/continue_1/continue_1/continue_1/continue_1/continue_1
 py neurosim/tools/eval_multimodel.py train-perf-evol $WDIR
 WDIR=results/20220128-EVOL_b5-badseed/continue_1/continue_1/continue_1/continue_1/continue_1/continue_1/continue_1/continue_1/continue_1/continue_1
-py neurosim/tools/eval_multimodel.py train-perf-evol $WDIR --bval 5
+py neurosim/tools/eval_multimodel.py train-perf-evol $WDIR
 
 
 mkdir $WDIR/evalmockAllStates
 STEPS=20
 for ((i=0;i<$STEPS;i+=1)); do
     echo "Evaluating Step $i / $STEPS"
-    py neurosim/main.py eval $WDIR --resume_tidx=3 --eps-duration 1 \
+    py neurosim/main.py eval $WDIR --resume_tidx=58 --eps-duration 1 \
         --mock-env 2 \
         --duration 1300 \
         --mock_curr_step $i \
@@ -163,3 +155,34 @@ WDIR=results/evol-stdp-rl_2022-01-21/STDP_ES_worst_beta1_pop10.small
 py neurosim/tools/eval_multimodel.py train-perf-evolstdprl $WDIR
 WDIR=results/evol-stdp-rl_2022-01-21/STDP_ES_worst_beta5_pop10.small
 py neurosim/tools/eval_multimodel.py train-perf-evolstdprl $WDIR
+
+WDIR=results/evol-stdp-rl_2022-01-21
+py neurosim/tools/eval_multimodel.py train-eval-evolstdprl \
+    ${WDIR}/STDP_ES_worst_beta1_pop10.small,${WDIR}/STDP_ES_worst_beta5_pop10.small
+
+eval_for_evolstdprl
+
+for EMODEL in STDP_ES_best_beta1_pop10.small STDP_ES_best_beta5_pop10.small STDP_ES_worst_beta1_pop10.small STDP_ES_worst_beta5_pop10.small
+do
+    WDIR=results/evol-stdp-rl_2022-01-21/$EMODEL
+    git add -f $WDIR/backupcfg_sim.json
+    git add -f $WDIR/iters_during_*.png
+done
+
+
+
+# EVOL-STDP-RL models
+WDIR=results/evol-stdp-rl_2022-01-21/STDP_ES_best_beta1_pop10.small
+py neurosim/main.py eval $WDIR --resume_tidx=58 --env-seed 42 \
+    --eps-duration 100 --save-data
+WDIR=results/evol-stdp-rl_2022-01-21/STDP_ES_best_beta5_pop10.small
+py neurosim/main.py eval $WDIR --resume_tidx=59 --env-seed 42 \
+    --eps-duration 100 --save-data
+WDIR=results/evol-stdp-rl_2022-01-21/STDP_ES_worst_beta1_pop10.small
+py neurosim/main.py eval $WDIR --resume_tidx=56 --env-seed 42 \
+    --eps-duration 100 --save-data
+WDIR=results/evol-stdp-rl_2022-01-21/STDP_ES_worst_beta5_pop10.small
+py neurosim/main.py eval $WDIR --resume_tidx=52 --env-seed 42 \
+    --eps-duration 100 --save-data
+
+

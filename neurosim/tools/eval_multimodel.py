@@ -187,7 +187,7 @@ def spiking_frequencies_table(wdirs, outdir):
       writer.writerow(row)
 
 
-def iters_for_evol(wdir, outdir=None, steps=[100], delimit_wdirs=False, bval=1):
+def iters_for_evol(wdir, outdir=None, steps=[100], delimit_wdirs=False):
   if not outdir:
     outdir = wdir
   outputfile = os.path.join(
@@ -206,6 +206,13 @@ def iters_for_evol(wdir, outdir=None, steps=[100], delimit_wdirs=False, bval=1):
           'max': float(iter_max),
         })
 
+  pop = None
+  beta_iters = None
+  with open(os.path.join(wdir, 'backupcfg_sim.json')) as f:
+    config = json.load(f)
+    pop = config['ES']['population_size']
+    beta_iters = config['ES']['episodes_per_iter']
+
   plt.figure(figsize=(7,7))
   plt.ylim(0, 510)
   plt.grid(axis='y', alpha=0.3)
@@ -221,7 +228,7 @@ def iters_for_evol(wdir, outdir=None, steps=[100], delimit_wdirs=False, bval=1):
   plt.legend(['iteration max', 'iteration average', 'iteration min'] +
     ['average of {} iteration averages'.format(step) for step in tr_averages.keys()],
     loc='lower right', framealpha=0.95)
-  plt.xlabel('iteration ({} episodes)'.format(10 * bval))
+  plt.xlabel('iteration ({} * {} episodes)'.format(pop, beta_iters))
   plt.tight_layout()
 
   plt.savefig(outputfile, dpi=300)
@@ -248,6 +255,13 @@ def iters_for_evolstdprl(wdir, outdir=None, at_iter='alpha', steps=[100]):
           'max': float(iter_max),
         })
 
+  pop = None
+  beta_iters = None
+  with open(os.path.join(wdir, 'backupcfg_sim.json')) as f:
+    config = json.load(f)
+    pop = config['STDP_ES']['population_size']
+    beta_iters = config['STDP_ES']['beta_iters']
+
   plt.figure(figsize=(7,7))
   plt.ylim(0, 510)
   plt.grid(axis='y', alpha=0.3)
@@ -263,8 +277,70 @@ def iters_for_evolstdprl(wdir, outdir=None, at_iter='alpha', steps=[100]):
 
   plt.legend(['iteration max', 'iteration average', 'iteration min'] +
     ['average of {} iteration averages'.format(step) for step in tr_averages.keys()])
-  plt.xlabel('iteration (10 episodes)')
+  plt.xlabel('iteration ({} * {} episodes)'.format(pop, beta_iters))
+  plt.tight_layout()
   plt.savefig(outputfile, dpi=300)
+
+def all_iters_for_evolstdprl(wdir):
+  for at_iter in ['alpha', 'beta', 'gamma']:
+    iters_for_evolstdprl(wdir, at_iter=at_iter)
+
+def eval_for_evolstdprl(wdirs, outdir=None, steps=[100]):
+  if type(wdirs) == str:
+    wdirs = wdirs.split(',')
+
+  if not outdir:
+    outdir = wdirs[0]
+  outputfile = os.path.join(
+    outdir, 'evalperf_during_training.png')
+
+  plt.figure(figsize=(7,7))
+  plt.ylim(0, 510)
+  plt.grid(axis='y', alpha=0.3)
+  plt.ylabel('steps per episode')
+  legend = []
+  pop = None
+
+  for wdir in wdirs:
+    for at_iter in ['alpha', 'gamma']:
+      all_wdir_steps, _ = _extract_hpsteps(wdir)
+      training_results = []
+      offset = 0 if at_iter == 'alpha' else (4 if at_iter == 'beta' else 9)
+      for wdir_steps in all_wdir_steps:
+        with open(os.path.join(wdir_steps, 'STDP_es_train.csv')) as f:
+          for row in csv.reader(f, delimiter=','):
+            iter_median, iter_mean, iter_min, iter_max = row[offset:offset+4]
+            training_results.append({
+              'median': float(iter_median),
+              'mean': float(iter_mean),
+              'min': float(iter_min),
+              'max': float(iter_max),
+            })
+
+      beta_iters = None
+      with open(os.path.join(wdir, 'backupcfg_sim.json')) as f:
+        config = json.load(f)
+        new_pop = config['STDP_ES']['population_size']
+        if not pop:
+          pop = new_pop
+        if new_pop != pop:
+          raise Exception("Different population sizes")
+        beta_iters = config['STDP_ES']['beta_iters']
+
+      tr_averages = {STEP: _get_agg([tr['mean'] for tr in training_results], STEP, np.average) for STEP in steps}
+      # plt.plot(list(range(len(training_results))), [tr['mean'] for tr in training_results], '.')
+      for step, averages in tr_averages.items():
+        plt.plot([t + step for t in range(len(averages))], averages)
+
+      legend.append('B{} model {} STDP'.format(
+        beta_iters,
+        'before' if at_iter == 'alpha' else 'after'))
+
+  plt.legend(legend)
+  plt.xlabel('iteration ({} * B episodes)'.format(pop))
+  plt.tight_layout()
+  plt.savefig(outputfile, dpi=300)
+
 
 def all_iters_for_evolstdprl(wdir):
   for at_iter in ['alpha', 'beta', 'gamma']:
@@ -564,6 +640,7 @@ if __name__ == '__main__':
       'train-perf-comb': steps_per_eps_combined,
       'train-perf-evol': iters_for_evol,
       'train-perf-evolstdprl': all_iters_for_evolstdprl,
+      'train-eval-evolstdprl': eval_for_evolstdprl,
       'train-unk-moves': undecided_moves,
       'eval-perf': eval_perf,
       'select-eps': select_episodes,
