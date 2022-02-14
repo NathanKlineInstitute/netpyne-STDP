@@ -227,18 +227,20 @@ def iters_for_evol(wdir, outdir=None, steps=[100], delimit_wdirs=False, bval=1):
   plt.savefig(outputfile, dpi=300)
 
 
-def iters_for_evolstdprl(wdir, outdir=None, steps=[100], delimit_wdirs=False):
+def iters_for_evolstdprl(wdir, outdir=None, at_iter='alpha', steps=[100]):
+  assert at_iter in ['alpha', 'beta', 'gamma']
   if not outdir:
     outdir = wdir
   outputfile = os.path.join(
-    outdir, 'iters_during_training.png')
+    outdir, 'iters_during_training_{}.png'.format(at_iter))
 
   all_wdir_steps, _ = _extract_hpsteps(wdir)
   training_results = []
+  offset = 0 if at_iter == 'alpha' else (4 if at_iter == 'beta' else 9)
   for wdir_steps in all_wdir_steps:
-    with open(os.path.join(wdir_steps, 'es_train.txt')) as f:
-      for row in csv.reader(f, delimiter='\t'):
-        iter_median, iter_mean, iter_min, iter_max = row[1:5]
+    with open(os.path.join(wdir_steps, 'STDP_es_train.csv')) as f:
+      for row in csv.reader(f, delimiter=','):
+        iter_median, iter_mean, iter_min, iter_max = row[offset:offset+4]
         training_results.append({
           'median': float(iter_median),
           'mean': float(iter_mean),
@@ -263,6 +265,10 @@ def iters_for_evolstdprl(wdir, outdir=None, steps=[100], delimit_wdirs=False):
     ['average of {} iteration averages'.format(step) for step in tr_averages.keys()])
   plt.xlabel('iteration (10 episodes)')
   plt.savefig(outputfile, dpi=300)
+
+def all_iters_for_evolstdprl(wdir):
+  for at_iter in ['alpha', 'beta', 'gamma']:
+    iters_for_evolstdprl(wdir, at_iter=at_iter)
 
 def steps_per_eps(wdir, wdir_name, outdir, merge_es=False, steps=[100],
                   delimit_wdirs=False):
@@ -557,7 +563,7 @@ if __name__ == '__main__':
       'train-perf': steps_per_eps,
       'train-perf-comb': steps_per_eps_combined,
       'train-perf-evol': iters_for_evol,
-      'train-perf-evolstdprl': iters_for_evolstdprl,
+      'train-perf-evolstdprl': all_iters_for_evolstdprl,
       'train-unk-moves': undecided_moves,
       'eval-perf': eval_perf,
       'select-eps': select_episodes,
