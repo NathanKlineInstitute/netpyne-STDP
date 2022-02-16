@@ -45,7 +45,7 @@ def init(dconf, fnjson=None, outdir=None):
   return dconf
 
 def train(dconf=None, fnjson=None, outdir=None, save_spikes=False):
-    dconf = init(dconf, fnjson)
+    dconf = init(dconf, fnjson, outdir=outdir)
     ITERATIONS = dconf['ES']['iterations'] # How many iterations to train for
     POPULATION_SIZE = dconf['ES']['population_size'] # How many perturbations of weights to try per iteration
     SIGMA = dconf['ES']['sigma'] # 0.1 # standard deviation of perturbations applied to each member of population
