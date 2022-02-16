@@ -60,13 +60,16 @@ def run_model(q, neurosim, EPISODES_PER_ITER_ES, mutated_weights, EPISODES_PER_I
 
   print("Running model", i+1, "from population...")
 
-  # alpha: Deactivate STDP and run on just mutations (ES)
-  neurosim.STDP_active = False
-  neurosim.end_after_episode = EPISODES_PER_ITER_ES
-  neurosim.setWeightArray(netpyne.sim, mutated_weights)
-  run_episodes(neurosim)
-  fitness_NoSTDP = np.mean(neurosim.epCount[-neurosim.end_after_episode:])  
-  run_duration_NoSTDP = neurosim.last_times[-1] # TODO: RETURN THIS
+  if EPISODES_PER_ITER_ES > 0:
+    # alpha: Deactivate STDP and run on just mutations (ES)
+    neurosim.STDP_active = False
+    neurosim.end_after_episode = EPISODES_PER_ITER_ES
+    neurosim.setWeightArray(netpyne.sim, mutated_weights)
+    run_episodes(neurosim)
+    fitness_NoSTDP = np.mean(neurosim.epCount[-neurosim.end_after_episode:])  
+    run_duration_NoSTDP = neurosim.last_times[-1] # TODO: RETURN THIS
+  else:
+    fitness_NoSTDP = 0
 
   # beta: Activate STDP and run again
   neurosim.STDP_active = True
@@ -76,21 +79,24 @@ def run_model(q, neurosim, EPISODES_PER_ITER_ES, mutated_weights, EPISODES_PER_I
   post_STDP_weights = neurosim.getWeightArray(netpyne.sim)  
   run_duration_STDP = neurosim.last_times[-1] # TODO: RETURN THIS
 
-  # gamma: Deactivate STDP and run again
-  neurosim.STDP_active = False
-  neurosim.end_after_episode = EPISODES_PER_ITER_POST_STDP
-  run_episodes(neurosim)
-  fitness_post_STDP = np.mean(neurosim.epCount[-neurosim.end_after_episode:]) 
-  run_duration_STDP = neurosim.last_times[-1] # TODO: RETURN THIS
+  if EPISODES_PER_ITER_POST_STDP > 0:
+    # gamma: Deactivate STDP and run again
+    neurosim.STDP_active = False
+    neurosim.end_after_episode = EPISODES_PER_ITER_POST_STDP
+    run_episodes(neurosim)
+    fitness_post_STDP = np.mean(neurosim.epCount[-neurosim.end_after_episode:]) 
+    run_duration_STDP = neurosim.last_times[-1] # TODO: RETURN THIS
+  else:
+    fitness_post_STDP = 0
 
   # Return using queue
   q.put([fitness_STDP, post_STDP_weights, fitness_NoSTDP, fitness_post_STDP])
 
 
-def train(dconf=None):
+def train(dconf=None, outdir=None):
 
     #### CONSTANTS ####
-    dconf = init(read_conf(dconf))
+    dconf = init(read_conf(dconf, outdir=outdir))
     ITERATIONS = dconf['STDP_ES']['iterations'] # How many iterations to train for
     POPULATION_SIZE = dconf['STDP_ES']['population_size'] # How many perturbations of weights to try per iteration
     SIGMA = dconf['STDP_ES']['sigma'] # 0.1 # standard deviation of perturbations applied to each member of population
