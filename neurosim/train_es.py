@@ -23,10 +23,10 @@ def run_episodes(neurosim):
     sys.stdout = sys.__stdout__
     return
 
-def init(dconf, fnjson=None):
+def init(dconf, fnjson=None, outdir=None):
   # Initialize the model with dconf config
   if not dconf:
-      dconf = read_conf(fnjson)
+      dconf = read_conf(fnjson, outdir=outdir)
   dconf['sim']['duration'] = 1e10
   dconf['sim']['recordWeightStepSize'] = 1e10
 
@@ -44,7 +44,7 @@ def init(dconf, fnjson=None):
   init_wdir(dconf)
   return dconf
 
-def train(dconf=None, fnjson=None, save_spikes=False):
+def train(dconf=None, fnjson=None, outdir=None, save_spikes=False):
     dconf = init(dconf, fnjson)
     ITERATIONS = dconf['ES']['iterations'] # How many iterations to train for
     POPULATION_SIZE = dconf['ES']['population_size'] # How many perturbations of weights to try per iteration
