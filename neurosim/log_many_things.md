@@ -26,6 +26,24 @@ WDIR=results/20220128-EVOL_b5-badseed/continue_1/continue_1/continue_1/continue_
 WDIR=results/20220129-EVOL_b5-goodseed/continue_1/continue_1/continue_1/continue_1/continue_1/continue_1/continue_1/continue_1
 py neurosim/tools/eval_multimodel.py train-perf-evol $WDIR
 
+# Figure 4
+# A
+WDIR=results/20220124-EVOL_b1-badseed/continue_1/continue_1/continue_1/continue_1/continue_1/continue_1
+py neurosim/tools/eval_multimodel.py train-perf-evol $WDIR \
+    --show_xlabel False --extraticks 1500 --rmticks 1000,2000 --vline 1500
+# B
+WDIR=results/20220123-EVOL_b1-goodseed/continue_1/continue_1/continue_1/continue_1
+py neurosim/tools/eval_multimodel.py train-perf-evol $WDIR \
+    --show_xlabel False --extraticks 1500 --rmticks 1000,2000 --vline 1500
+# C
+WDIR=results/evol-stdp-rl_2022-01-21/STDP_ES_worst_beta1_pop10.small
+py neurosim/tools/eval_multimodel.py train-perf-evolstdprl $WDIR \
+    --vline 1500 --extraticks 1250,1500 --rmticks 1200,1400 --topticks
+# D
+WDIR=results/evol-stdp-rl_2022-01-21/STDP_ES_best_beta1_pop10.small
+py neurosim/tools/eval_multimodel.py train-perf-evolstdprl $WDIR \
+    --vline 1500 --extraticks 1250,1500 --rmticks 1200,1400 --topticks
+
 
 WDIR=results/20220124-EVOL_b1-badseed/continue_1
 WDIR=results/20220124-EVOL_b1-badseed/continue_1/continue_1
@@ -154,6 +172,11 @@ py neurosim/tools/eval_multimodel.py train-perf-evolstdprl $WDIR
 WDIR=results/evol-stdp-rl_2022-01-21/STDP_ES_worst_beta1_pop10.small
 py neurosim/tools/eval_multimodel.py train-perf-evolstdprl $WDIR
 WDIR=results/evol-stdp-rl_2022-01-21/STDP_ES_worst_beta5_pop10.small
+py neurosim/tools/eval_multimodel.py train-perf-evolstdprl $WDIR
+
+WDIR=results/evol-stdp-rl_2022-01-21/STDP_ES_worst_beta10_pop5.small
+py neurosim/tools/eval_multimodel.py train-perf-evolstdprl $WDIR
+WDIR=results/evol-stdp-rl_2022-01-21/STDP_ES_best_beta10_pop5.small
 py neurosim/tools/eval_multimodel.py train-perf-evolstdprl $WDIR
 
 WDIR=results/evol-stdp-rl_2022-01-21

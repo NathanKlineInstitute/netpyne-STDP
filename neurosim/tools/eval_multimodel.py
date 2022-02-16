@@ -187,11 +187,25 @@ def spiking_frequencies_table(wdirs, outdir):
       writer.writerow(row)
 
 
-def iters_for_evol(wdir, outdir=None, steps=[100], delimit_wdirs=False):
+def iters_for_evol(wdir, outdir=None, steps=[100], delimit_wdirs=False,
+    show_xlabel=True, extraticks=None, vline=None, rmticks=None):
   if not outdir:
     outdir = wdir
   outputfile = os.path.join(
     outdir, 'iters_during_training.png')
+
+  if extraticks != None:
+    if type(extraticks) == str:
+      extraticks = [float(k) for k in extraticks.split(',')]
+    if type(extraticks) == int or type(extraticks) == float:
+      extraticks = [extraticks]
+    extraticks = list(extraticks)
+  if rmticks != None:
+    if type(rmticks) == str:
+      rmticks = [float(k) for k in rmticks.split(',')]
+    if type(rmticks) == int or type(rmticks) == float:
+      rmticks = [rmticks]
+    rmticks = list(rmticks)
 
   all_wdir_steps, _ = _extract_hpsteps(wdir)
   training_results = []
@@ -225,21 +239,45 @@ def iters_for_evol(wdir, outdir=None, steps=[100], delimit_wdirs=False):
   for step, averages in tr_averages.items():
       plt.plot([t + step for t in range(len(averages))], averages)
 
+  if vline:
+    plt.axvline(x=vline, color='k', linestyle='--', linewidth=3.0)
+
   plt.legend(['iteration max', 'iteration average', 'iteration min'] +
     ['average of {} iteration averages'.format(step) for step in tr_averages.keys()],
     loc='lower right', framealpha=0.95)
-  plt.xlabel('iteration ({} * {} episodes)'.format(pop, beta_iters))
+  if show_xlabel:
+    plt.xlabel('iteration ({} * {} episodes)'.format(pop, beta_iters))
+  if extraticks:
+    ax = plt.gca()
+    lim = ax.get_xlim()
+    ticks = [tick for tick in list(ax.get_xticks()) if not rmticks or tick not in rmticks]
+    ax.set_xticks(ticks + extraticks)
+    ax.set_xlim(lim)
   plt.tight_layout()
 
   plt.savefig(outputfile, dpi=300)
 
 
-def iters_for_evolstdprl(wdir, outdir=None, at_iter='alpha', steps=[100]):
+def iters_for_evolstdprl(wdir, outdir=None, at_iter='alpha', steps=[100],
+    extraticks=None, rmticks=None, vline=None, topticks=False):
   assert at_iter in ['alpha', 'beta', 'gamma']
   if not outdir:
     outdir = wdir
   outputfile = os.path.join(
     outdir, 'iters_during_training_{}.png'.format(at_iter))
+
+  if extraticks != None:
+    if type(extraticks) == str:
+      extraticks = [float(k) for k in extraticks.split(',')]
+    if type(extraticks) == int or type(extraticks) == float:
+      extraticks = [extraticks]
+    extraticks = list(extraticks)
+  if rmticks != None:
+    if type(rmticks) == str:
+      rmticks = [float(k) for k in rmticks.split(',')]
+    if type(rmticks) == int or type(rmticks) == float:
+      rmticks = [rmticks]
+    rmticks = list(rmticks)
 
   all_wdir_steps, _ = _extract_hpsteps(wdir)
   training_results = []
@@ -275,15 +313,31 @@ def iters_for_evolstdprl(wdir, outdir=None, at_iter='alpha', steps=[100]):
   for step, averages in tr_averages.items():
       plt.plot([t + step for t in range(len(averages))], averages)
 
+  if vline:
+    plt.axvline(x=vline, color='k', linestyle='--', linewidth=3.0)
+
   plt.legend(['iteration max', 'iteration average', 'iteration min'] +
     ['average of {} iteration averages'.format(step) for step in tr_averages.keys()])
   plt.xlabel('iteration ({} * {} episodes)'.format(pop, beta_iters))
+  if extraticks:
+    ax = plt.gca()
+    lim = ax.get_xlim()
+    ticks = [tick for tick in list(ax.get_xticks()) if not rmticks or tick not in rmticks]
+    ax.set_xticks(ticks + extraticks)
+    ax.set_xlim(lim)
+  if topticks:
+    ax = plt.gca()
+    ax.tick_params(bottom=True, top=True, left=True, right=False)
+    ax.tick_params(labelbottom=True, labeltop=True, labelleft=True, labelright=False)
+
   plt.tight_layout()
   plt.savefig(outputfile, dpi=300)
 
-def all_iters_for_evolstdprl(wdir):
+def all_iters_for_evolstdprl(wdir,
+    extraticks=None, vline=None, rmticks=None, topticks=False):
   for at_iter in ['alpha', 'beta', 'gamma']:
-    iters_for_evolstdprl(wdir, at_iter=at_iter)
+    iters_for_evolstdprl(wdir, at_iter=at_iter,
+      extraticks=extraticks, vline=vline, rmticks=rmticks, topticks=topticks)
 
 def eval_for_evolstdprl(wdirs, outdir=None, steps=[100]):
   if type(wdirs) == str:
@@ -340,11 +394,6 @@ def eval_for_evolstdprl(wdirs, outdir=None, steps=[100]):
   plt.xlabel('iteration ({} * B episodes)'.format(pop))
   plt.tight_layout()
   plt.savefig(outputfile, dpi=300)
-
-
-def all_iters_for_evolstdprl(wdir):
-  for at_iter in ['alpha', 'beta', 'gamma']:
-    iters_for_evolstdprl(wdir, at_iter=at_iter)
 
 def steps_per_eps(wdir, wdir_name, outdir, merge_es=False, steps=[100],
                   delimit_wdirs=False):
