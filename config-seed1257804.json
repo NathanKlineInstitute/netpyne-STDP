@@ -1,6 +1,6 @@
 {
     "ES": {
-        "iterations": 5000,
+        "iterations": 1500,
         "population_size": 10,
         "eval_freq": 0,
         "eval_samples": 0,
@@ -8,8 +8,8 @@
         "learning_rate": 1.0,
         "decay_lr": 1.0,
         "decay_sigma": 1.0,
-        "episodes_per_iter": 1,
-        "save_weights_every_iter": 100
+        "episodes_per_iter": 10,
+        "save_weights_every_iter": 50
     },
     "STDP_ES": {
         "iterations": 1500,
