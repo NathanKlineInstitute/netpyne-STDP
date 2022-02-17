@@ -22,7 +22,7 @@
         "decay_sigma": 1.0,
         "alpha_iters": 0,
         "beta_iters": 1,
-        "gamma_iters": 0,
+        "gamma_iters": 1,
         "save_weights_every_iter": 50
     },
     "env": {
