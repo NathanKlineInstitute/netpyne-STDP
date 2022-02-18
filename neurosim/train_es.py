@@ -11,6 +11,9 @@ from game_interface import GameInterface
 from utils.weights import readWeights
 import netpyne
 
+from multiprocessing import Process, Queue
+
+
 # Wrapper for netpyne simulation that catched the sys.exit() after one episode (if activated)
 def run_episodes(neurosim):
     try:
