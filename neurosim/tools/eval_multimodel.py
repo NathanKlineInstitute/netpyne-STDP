@@ -281,7 +281,7 @@ def iters_for_evolstdprl(wdir, outdir=None, at_iter='alpha', steps=[100],
 
   all_wdir_steps, _ = _extract_hpsteps(wdir)
   training_results = []
-  offset = 0 if at_iter == 'alpha' else (4 if at_iter == 'beta' else 9)
+  offset = 4 if at_iter == 'alpha' else (9 if at_iter == 'beta' else 0)
   for wdir_steps in all_wdir_steps:
     with open(os.path.join(wdir_steps, 'STDP_es_train.csv')) as f:
       for row in csv.reader(f, delimiter=','):
@@ -359,7 +359,7 @@ def eval_for_evolstdprl(wdirs, outdir=None, steps=[100]):
     for at_iter in ['alpha', 'gamma']:
       all_wdir_steps, _ = _extract_hpsteps(wdir)
       training_results = []
-      offset = 0 if at_iter == 'alpha' else (4 if at_iter == 'beta' else 9)
+      offset = 4 if at_iter == 'alpha' else (9 if at_iter == 'beta' else 0)
       for wdir_steps in all_wdir_steps:
         with open(os.path.join(wdir_steps, 'STDP_es_train.csv')) as f:
           for row in csv.reader(f, delimiter=','):
