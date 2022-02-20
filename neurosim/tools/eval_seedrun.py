@@ -103,17 +103,25 @@ def show_analyze_once(wdir, modifier=None, steps=100, stype='avg'):
   plt.savefig(outputfile, dpi=300)
 
 
-def _extract_steps_per_ep(wdir, steps, stype):
+def _extract_steps_per_ep(wdir, steps, stype, filetype='stdp'):
   assert stype in ['avg', 'median']
   all_wdir_steps, _ = _extract_hpsteps(wdir)
+  if filetype == 'stdp':
+    training_results = []
+    for wdir_steps in all_wdir_steps:
+      with open(os.path.join(wdir_steps, 'ActionsPerEpisode.txt')) as f:
+          training_results.extend([int(float(eps)) for _,eps in csv.reader(f, delimiter='\t')])
 
-  training_results = []
-  for wdir_steps in all_wdir_steps:
-    with open(os.path.join(wdir_steps, 'ActionsPerEpisode.txt')) as f:
-        training_results.extend([int(float(eps)) for _,eps in csv.reader(f, delimiter='\t')])
+    func = np.average if stype == 'avg' else np.median
+    return _get_agg(training_results, steps, func)
+  elif filetype == 'evolstdprl':
+    training_results = []
+    for wdir_steps in all_wdir_steps:
+      with open(os.path.join(wdir_steps, 'STDP.txt')) as f:
+          training_results.extend([int(float(eps)) for _,eps in csv.reader(f, delimiter='\t')])
 
-  func = np.average if stype == 'avg' else np.median
-  return _get_agg(training_results, steps, func)
+    func = np.average if stype == 'avg' else np.median
+    return _get_agg(training_results, steps, func)
 
 
 def steps_per_eps(wdir, steps=100, stype='avg', modifier=None, parts=1, seed_nrs=False):

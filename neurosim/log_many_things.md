@@ -209,3 +209,8 @@ py neurosim/main.py eval $WDIR --resume_tidx=52 --env-seed 42 \
     --eps-duration 100 --save-data
 
 
+# g10 models
+WDIR=results/retrain_evol_g10-2022-02-17/run_seed1394398
+py neurosim/tools/eval_multimodel.py train-perf-evol $WDIR
+WDIR=results/retrain_evol_g10-2022-02-17/run_seed5397326
+py neurosim/tools/eval_multimodel.py train-perf-evol $WDIR
