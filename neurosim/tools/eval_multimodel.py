@@ -227,7 +227,7 @@ def iters_for_evol(wdir, outdir=None, steps=[100], delimit_wdirs=False,
     pop = config['ES']['population_size']
     beta_iters = config['ES']['episodes_per_iter']
 
-  plt.figure(figsize=(7,7))
+  plt.figure(figsize=(5,5))
   plt.ylim(0, 510)
   plt.grid(axis='y', alpha=0.3)
   plt.ylabel('steps per episode')

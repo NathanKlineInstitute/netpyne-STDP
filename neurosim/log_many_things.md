@@ -133,7 +133,7 @@ py neurosim/tools/eval_multimodel.py boxplot "${CONF1},${CONF2},${CONF3},${CONF4
 # Good Seed B1 / B5
 WDIR=results/20220123-EVOL_b1-goodseed/continue_1/continue_1/continue_1/continue_1
 py neurosim/tools/eval_multimodel.py train-perf-evol $WDIR
-WDIR=results/20220129-EVOL_b5-goodseed/continue_1/continue_1/continue_1/continue_1/continue_1
+WDIR=results/20220129-EVOL_b5-goodseed/continue_1/continue_1/continue_1/continue_1/continue_1/continue_1/continue_1/continue_1
 py neurosim/tools/eval_multimodel.py train-perf-evol $WDIR
 # Bad Seed B1 / B5
 WDIR=results/20220124-EVOL_b1-badseed/continue_1/continue_1/continue_1/continue_1/continue_1
@@ -210,7 +210,16 @@ py neurosim/main.py eval $WDIR --resume_tidx=52 --env-seed 42 \
 
 
 # g10 models
-WDIR=results/retrain_evol_g10-2022-02-17/run_seed1394398
+WDIR=results/retrain_evol_g10-2022-02-18/run_seed1394398
 py neurosim/tools/eval_multimodel.py train-perf-evol $WDIR
-WDIR=results/retrain_evol_g10-2022-02-17/run_seed5397326
+WDIR=results/retrain_evol_g10-2022-02-18/run_seed5397326
+py neurosim/tools/eval_multimodel.py train-perf-evol $WDIR
+
+
+
+# Figure 4
+WDIR=results/20220129-EVOL_b5-goodseed/continue_1/continue_1/continue_1/continue_1/continue_1/continue_1/continue_1/continue_1
+py neurosim/tools/eval_multimodel.py train-perf-evol $WDIR
+
+WDIR=results/20220128-EVOL_b5-badseed/continue_1/continue_1/continue_1/continue_1/continue_1/continue_1/continue_1/continue_1/continue_1/continue_1
 py neurosim/tools/eval_multimodel.py train-perf-evol $WDIR
