@@ -216,7 +216,6 @@ WDIR=results/retrain_evol_g10-2022-02-18/run_seed5397326
 py neurosim/tools/eval_multimodel.py train-perf-evol $WDIR
 
 
-
 # Figure 4
 WDIR=results/20220129-EVOL_b5-goodseed/continue_1/continue_1/continue_1/continue_1/continue_1/continue_1/continue_1/continue_1
 py neurosim/tools/eval_multimodel.py train-perf-evol $WDIR

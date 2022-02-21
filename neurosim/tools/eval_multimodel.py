@@ -237,7 +237,7 @@ def iters_for_evol(wdir, outdir=None, steps=[100], delimit_wdirs=False,
   plt.plot(list(range(len(training_results))), [tr['mean'] for tr in training_results], '.')
   plt.plot(list(range(len(training_results))), [tr['min'] for tr in training_results], '.')
   for step, averages in tr_averages.items():
-      plt.plot([t + step for t in range(len(averages))], averages)
+      plt.plot([t + step/2 for t in range(len(averages))], averages)
 
   if vline:
     plt.axvline(x=vline, color='k', linestyle='--', linewidth=3.0)
