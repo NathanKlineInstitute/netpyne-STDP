@@ -130,7 +130,11 @@ def train(dconf=None):
     spkids_STDP = []
     spkts_STDP = []
     V_somas = {}
+    stop_flag = False
+    moving_avg = np.zeros(dconf['sim']['stop_train_moving_avg'])
     for iteration in range(ITERATIONS):
+        if stop_flag:
+              break
         print("\n--------------------- STDP_ES iteration", iteration+1, "---------------------")
 
         # Generate mutations for ES
@@ -187,6 +191,11 @@ def train(dconf=None):
           row = [str(r) for r in fitness_res] + [str(r) for r in ES_fitness_res] + [str(r) for r in fitness_STDP]
           writer.writerow(row)    
         print("\nFitness Median: {}; Mean: {} ([{}, {}]). Mean Weight: {}".format(*fitness_res, ES_fitness_res[-1]))
+        
+        moving_avg[i%dconf['sim']['stop_train_moving_avg']] = fitness_res[1]
+        
+        if dconf['sim']['stop_train_threashold']>= np.mean(moving_avg):
+              stop_flag = True
 
         # normalize the fitness for more stable training
         normalized_fitness = (fitness - fitness.mean()) / (fitness.std() + 1e-8)

@@ -3,6 +3,9 @@ import pickle
 import time
 import pandas as pd
 
+import sys
+sys.path.append('/home/hananel/git_repo/netpyne-STDP/')
+
 from neurosim.cells import intf7
 
 def _LSynWeightToD(L):

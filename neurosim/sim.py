@@ -24,7 +24,7 @@ from utils.sync import syncdata_alltoall
 from utils.weights import saveSynWeights, readWeights, getWeightIndex, getInitSTDPWeight
 
 # this will not work properly across runs with different number of nodes
-random.seed(1234)
+# random.seed(1234)
 
 
 def isExc(ty): return ty.startswith('E')
@@ -108,6 +108,14 @@ class NeuroSim:
     simConfig.duration = dconf['sim']['duration'] * 1000
     seeds = _get_param(dconf['sim'], 'seeds',
                        default={'conn': 1, 'stim': 1, 'loc': 1})
+    
+    if seeds['conn'] == -1:
+          seeds['conn'] = random.randint(0, sys.maxsize)
+    if seeds['stim'] == -1:
+          seeds['stim'] = random.randint(0, sys.maxsize)
+    if seeds['loc'] == -1:
+          seeds['loc'] = random.randint(0, sys.maxsize)
+    
     simConfig.seeds = seeds
     # Internal integration timestep to use
     simConfig.dt = dconf['sim']['dt']
@@ -797,12 +805,14 @@ class NeuroSim:
       if self.dconf['verbose']:
         print('t={}: {} spikes: {}'.format(
             round(t, 2), ','.join(moves), ','.join([str(move_freq[m]) for m in moves])))
-      with open(sim.MotorOutputsfilename, 'a') as fid4:
-        fid4.write('%0.1f' % t)
-        for ts in range(int(self.actionsPerPlay)):
-          fid4.write(
-              '\t' + '\t'.join([str(round(move_freq[m][ts], 1)) for m in moves]))
-        fid4.write('\n')
+      
+      if self.dconf['sim']['save_logs']:
+        with open(sim.MotorOutputsfilename, 'a') as fid4:
+          fid4.write('%0.1f' % t)
+          for ts in range(int(self.actionsPerPlay)):
+            fid4.write(
+                '\t' + '\t'.join([str(round(move_freq[m][ts], 1)) for m in moves]))
+          fid4.write('\n')
 
       for ts in range(int(self.actionsPerPlay)):
         no_firing_rates = sum([v[ts] for v in move_freq.values()]) == 0
@@ -929,10 +939,11 @@ class NeuroSim:
       for ts in range(len(actions)):
         tvec_actions.append(t-self.tstepPerAction*(len(actions)-ts-1))
 
-      with open(sim.ActionsRewardsfilename, 'a') as fid3:
-        obs = '\t{}'.format(json.dumps(list(sim.AIGame.observations[-1]))) if self.saveEnvObs else ''
-        for action, t in zip(actions, tvec_actions):
-          fid3.write('%0.1f\t%0.1f\t%0.5f%s\n' % (t, action, reward, obs))
+      if dconf['sim']['save_logs']:
+        with open(sim.ActionsRewardsfilename, 'a') as fid3:
+          obs = '\t{}'.format(json.dumps(str(list(sim.AIGame.observations[-1])))) if self.saveEnvObs else ''
+          for action, t in zip(actions, tvec_actions):
+            fid3.write('%0.1f\t%0.1f\t%0.5f%s\n' % (t, action, reward, obs))
 
     # update firing rate of inputs to R population (based on game state)
     self.updateInputRates(sim)
