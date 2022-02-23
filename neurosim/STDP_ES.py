@@ -194,7 +194,7 @@ def train(dconf=None):
         
         moving_avg[i%dconf['sim']['stop_train_moving_avg']] = fitness_res[1]
         
-        if dconf['sim']['stop_train_threashold']>= np.mean(moving_avg):
+        if np.mean(moving_avg) >= dconf['sim']['stop_train_threashold']:
               stop_flag = True
 
         # normalize the fitness for more stable training
