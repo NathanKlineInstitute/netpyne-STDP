@@ -109,14 +109,6 @@ class NeuroSim:
     simConfig.duration = dconf['sim']['duration'] * 1000
     seeds = _get_param(dconf['sim'], 'seeds',
                        default={'conn': 1, 'stim': 1, 'loc': 1})
-    
-    if seeds['conn'] == -1:
-          seeds['conn'] = random.randint(0, sys.maxsize)
-    if seeds['stim'] == -1:
-          seeds['stim'] = random.randint(0, sys.maxsize)
-    if seeds['loc'] == -1:
-          seeds['loc'] = random.randint(0, sys.maxsize)
-    
     simConfig.seeds = seeds
     # Internal integration timestep to use
     simConfig.dt = dconf['sim']['dt']
