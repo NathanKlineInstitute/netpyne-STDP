@@ -15,6 +15,7 @@ from datetime import datetime
 from collections import OrderedDict, deque
 from matplotlib import pyplot as plt
 
+sys.path.append(os.path.abspath(os.getcwd()))
 from cells import intf7
 from game_interface import GameInterface
 from critic import Critic

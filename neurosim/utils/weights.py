@@ -4,7 +4,7 @@ import time
 import pandas as pd
 
 import sys
-sys.path.append('/home/hananel/git_repo/netpyne-STDP/')
+sys.path.append(os.path.abspath(os.getcwd()))
 
 from neurosim.cells import intf7
 
