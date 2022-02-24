@@ -193,7 +193,6 @@ def train(dconf=None):
         print("\nFitness Median: {}; Mean: {} ([{}, {}]). Mean Weight: {}".format(*fitness_res, ES_fitness_res[-1]))
         
         moving_avg[i%dconf['sim']['stop_train_moving_avg']] = fitness_res[1]
-        
         if np.mean(moving_avg) >= dconf['sim']['stop_train_threashold']:
               stop_flag = True
 

@@ -4,13 +4,11 @@ from neuron import h
 import random
 import signal
 import sys
-import pickle
 import os, sys
 import time
 import math
 import json
 import numpy as np
-import pandas as pd
 from datetime import datetime
 from collections import OrderedDict, deque
 from matplotlib import pyplot as plt
@@ -271,8 +269,8 @@ class NeuroSim:
     self.STDP_active = True
     self.end_after_episode = False
 
-    if save_on_control_c:
-      signal.signal(signal.SIGINT, self._handler)
+    # if save_on_control_c:
+    #   signal.signal(signal.SIGINT, self._handler)
 
 
     ################################
@@ -813,8 +811,8 @@ class NeuroSim:
           # Should we initialize with random?
           if self.dconf['verbose']:
             print('Warning: No firing rates for moves {}!'.format(','.join(moves)))
-          else:
-            print('.', end='')
+          # else:
+          #   print('.', end='')
           actions.append(self.unk_move)
         else:
           mvsf = [(m, f[ts]) for m, f in move_freq.items()]
@@ -825,8 +823,8 @@ class NeuroSim:
             if self.dconf['verbose']:
               print('Warning: No discrimination between moves, fired: {}!'.format(
                 [f for m,f in mvsf]))
-            else:
-              print(str(round(best_move_freq)) + '-', end='')
+            # else:
+            #   print(str(round(best_move_freq)) + '-', end='')
             actions.append(self.unk_move)
           else:
             actions.append(self.dconf['moves'][best_move])
@@ -888,9 +886,11 @@ class NeuroSim:
 
         self.current_episode += 1
         if self.end_after_episode and self.end_after_episode <= self.current_episode:
+          print('Current Episode ended')
           sys.exit()
 
         if self.earlyStoppingCriteria and eval_ep and eval_ep < self.earlyStoppingCriteria:
+          print('Early stopping activated')
           sys.exit()
 
       # specific for CartPole-v1. TODO: move to a diff file
@@ -966,14 +966,15 @@ class NeuroSim:
     self.current_episode = 0
     sim.runSimWithIntervalFunc(tPerPlay, self.trainAgent)
     # A Control-C will break from 'runSimWithIntervalFunc' but still save
+    print('saving.....')
     self.save()
 
 
-  def _handler(self, signal_received, frame):
-      # Handle any cleanup here
-      print('SIGINT or CTRL-C detected. Exiting gracefully')
-      self.save()
-      sys.exit()
+  # def _handler(self, signal_received, frame):
+  #     # Handle any cleanup here
+  #     print('SIGINT or CTRL-C detected. Exiting gracefully')
+  #     self.save()
+  #     sys.exit()
 
   def save(self):
     if self.ECellModel == 'INTF7' or self.ICellModel == 'INTF7':
