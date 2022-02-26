@@ -5,7 +5,8 @@ import pandas as pd
 
 import sys
 sys.path.append(os.path.abspath(os.getcwd()))
-
+sys.path.append('/Users/christopher/Documents/GitHub/netpyne-STDP/')
+print(sys.path)
 from neurosim.cells import intf7
 
 def _LSynWeightToD(L):

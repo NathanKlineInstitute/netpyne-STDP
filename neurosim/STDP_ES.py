@@ -107,7 +107,7 @@ def train(dconf=None):
     EPISODES_PER_ITER_ES = dconf['STDP_ES']['alpha_iters']
     EPISODES_PER_ITER_DURING_STDP = dconf['STDP_ES']['beta_iters']
     EPISODES_PER_ITER_POST_STDP = dconf['STDP_ES']['gamma_iters']
-    SAVE_WEIGHTS_EVERY_ITER = dconf['STDP_ES']['save_weights_every_iter'] 
+    SAVE_WEIGHTS_EVERY_ITER = dconf['STDP_ES']['save_weights_every_iter']
 
 
     #### SETUP NETWORK ####
