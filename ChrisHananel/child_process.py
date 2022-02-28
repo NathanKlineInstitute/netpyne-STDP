@@ -2,10 +2,9 @@ import argparse
 from copyreg import pickle
 import numpy as np
 import netpyne
-# import csv
 import pickle
 import os
-# from neurosim.sim import NeuroSim
+from neurosim.sim import NeuroSim
 
 
 def run_simulation(child_id, out_path):
@@ -19,33 +18,37 @@ def run_simulation(child_id, out_path):
     beta = child_data['beta']
     gamma = child_data['gamma']
 
+    os.makedirs(out_path + '/WorkingData/', exist_ok=True)
 
-    # ### ---Generate model--- ###
-    # model = NeuroSim(config, use_noise=False, save_on_control_c=False)
-    # model.setWeightArray(netpyne.sim, weights)
-    #
-    # ### --Run-- ###
-    #
-    # # Alpha #
-    # model.STDP_active = False
-    # model.end_after_episode = alpha
-    # model.run()
-    # alpha_perf = np.mean(model.epCount[-alpha:])
-    #
-    # # Beta #
-    # model.STDP_active = True
-    # model.end_after_episode = beta
-    # model.run()
-    # beta_perf = np.mean(model.epCount[-beta:])
-    #
-    # # Gamma #
-    # model.STDP_active = False
-    # model.end_after_episode = gamma
-    # model.run()
-    # gamma_perf = np.mean(model.epCount[-gamma:])
+    ### ---Generate model--- ###
+    # - pre (alpha), during (beta), and post (gamma)
+    model = NeuroSim(config, use_noise=False, save_on_control_c=False)
+    model.setWeightArray(netpyne.sim, weights)
+    fres_train = model.outpath(out_path + '/WorkingData/STDP_es_train_' + str(child_id) + '.csv')
+    fres_eval = model.outpath(out_path + '/WorkingData/STDP_es_eval_' + str(child_id) + '.csv')
+    
+    ### --Run-- ###
+    
+    # alpha: Deactivate STDP and run on just mutations (ES) #
+    model.STDP_active = False
+    model.end_after_episode = alpha
+    model.run()
+    alpha_perf = np.mean(model.epCount[-alpha:])
+    
+    # beta: Activate STDP and run again #
+    model.STDP_active = True
+    model.end_after_episode = beta
+    model.run()
+    beta_perf = np.mean(model.epCount[-beta:])
+    
+    # gamma: Deactivate STDP and run again #
+    model.STDP_active = False
+    model.end_after_episode = gamma
+    model.run()
+    gamma_perf = np.mean(model.epCount[-gamma:])
 
-    # TODO: Uncomment for above, the below is just for testing
-    alpha_perf, beta_perf, gamma_perf = 0, 1, 2
+    # # TODO: Uncomment for above, the below is just for testing
+    # alpha_perf, beta_perf, gamma_perf = 0, 1, 2
 
     ## --Write Performance-- ##
     dic_obj = {

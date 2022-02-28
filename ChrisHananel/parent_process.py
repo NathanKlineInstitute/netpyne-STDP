@@ -1,61 +1,81 @@
-import sys
-sys.path.append('../../neurosim')
-
-import os
-import csv
-import argparse
+import os, sys, argparse
+sys.path.append(os.path.abspath(os.getcwd()))
 import numpy as np
-import time
-import glob
-import pickle
-# from neurosim.utils.weights import getInitSTDPWeight
+import time, glob, pickle
+from tqdm import tqdm
 
 
-def generate_starting_weights(config) -> np.array:
+def generate_starting_weights(config) -> np.array: 
+    import netpyne
+    from neurosim.sim import NeuroSim
+    from neurosim.conf import read_conf, init_wdir
+    from neurosim.STDP_ES import init
+    def init(dconf):
+        # Initialize the model with dconf config
+        dconf['sim']['duration'] = 1e4
+        dconf['sim']['recordWeightStepSize'] = 1e4
 
-    # TODO: Re-enable/test this on Hananels system
-    # from neurosim.sim import NeuroSim
-    # from neurosim.conf import read_conf
-    # from neurosim.STDP_ES import init
-    # import netpyne
-    # dconf = init(read_conf(config))
-    # neurosim = NeuroSim(dconf, use_noise=False, save_on_control_c=False)
-    # return neurosim.getWeightArray(netpyne.sim)
+        outdir = dconf['sim']['outdir']
+        if os.path.isdir(outdir):
+            evaluations = [fname 
+                           for fname in os.listdir(outdir) 
+                           if fname.startswith('evaluation_') and os.path.isdir(os.path.join(outdir, fname))
+                           ]
+            if len(evaluations) > 0:
+                raise Exception(' '.join([
+                    'You have run evaluations on {}: {}.'.format(outdir, evaluations),
+                    'This will rewrite!',
+                    'Please delete to continue!']))
 
-    return np.ones((100, 200))
+        init_wdir(dconf)
+        return dconf
+    
+    dconf = init(read_conf(config))
+    neurosim = NeuroSim(dconf, use_noise=False, save_on_control_c=False)
+    return dconf, neurosim.getWeightArray(netpyne.sim)
+
+    # return np.ones((100, 200))
 
 
 def main(
-    sim_name,            # Simulation ID (Uniquely identify this run)
     config,              # Network config
-    epochs, population,  # Evol. general params
-    alpha, beta, gamma,  # STDP+ES params
-    sigma, lr            # Evol. learning params
 ):
+    # sim_name,            # Simulation ID (Uniquely identify this run)
+    # epochs, population,  # Evol. general params
+    # alpha, beta, gamma,  # STDP+ES params
+    # sigma, lr            # Evol. learning params
 
     ### ---Assertions--- ###
-    assert sim_name is not None, 'Simulation name must be defined'
-    assert epochs is not None, 'Number of epochs must be defined'
-    assert population is not None, 'Population must be defined'
     assert config is not None, 'Config must be given'
-    assert alpha is not None, 'Alpha must be defined'
-    assert beta is not None, 'Beta must be defined'
-    assert gamma is not None, 'Gamma must be defined'
+    # assert sim_name is not None, 'Simulation name must be defined'
+    # assert epochs is not None, 'Number of epochs must be defined'
+    # assert population is not None, 'Population must be defined'
+    # assert alpha is not None, 'Alpha must be defined'
+    # assert beta is not None, 'Beta must be defined'
+    # assert gamma is not None, 'Gamma must be defined'
 
 
     ### ---Constants--- ###
     SUB_PROCESS_FILE = 'child_process.py'
 
 
-
     ### ---Initialize--- ###
-    parent_weights = generate_starting_weights(config)
+    dconf, parent_weights = generate_starting_weights(config)
     parent_weights[parent_weights < -0.8] = -0.8
+    
+
+    #### --- Set variabels--- ###
+    sim_name = dconf['STDP_ES']['outdir'].split('/')[-1]
+    epochs = dconf['STDP_ES']['iterations']
+    population = dconf['STDP_ES']['population_size']
+    alpha = dconf['STDP_ES']['alpha_iters']
+    beta = dconf['STDP_ES']['beta_iters']
+    gamma = dconf['STDP_ES']['gamma_iters']
 
     fitness_record = np.zeros((epochs, population, 3))
 
     # out_path uniquely identified per child
-    out_path = os.path.join(os.getcwd(), 'buffers', f'{sim_name}')
+    out_path = os.path.join(os.getcwd(), f'{sim_name}')
     # Establish buffer folders for child outputs
     try:
         os.mkdir(out_path)
@@ -66,7 +86,7 @@ def main(
 
 
     ### ---Evolve--- ###
-    for epoch in range(epochs):
+    for epoch in tqdm(range(epochs)):
 
 
         # Mutated weights #
@@ -75,6 +95,7 @@ def main(
 
 
         # Mutate & run population #
+        tqdm.write('Running child process')
         for child_id in range(population):
 
             child_weights = mutations[child_id, :] + parent_weights
@@ -127,6 +148,7 @@ def main(
 
         # Evaluate children #
         STDP_perfs = np.expand_dims(fitness_record[epoch, :, 2], axis=(1,2))    # all of ith epochs beta fitness
+        # normalize the fitness for more stable training
         normalized_fitness = (STDP_perfs - STDP_perfs.mean()) / (STDP_perfs.std() + 1e-8)
         fitness_weighted_mutations = (normalized_fitness * mutations)
 
@@ -136,19 +158,20 @@ def main(
         # TODO: Potentially Sigma & LR Decay (not used in original)
 
     # TODO: Write final results to directory f'./results/{sim_name}'
+    os.makedirs(out_path + '/rerults', exist_ok=True)
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument("--sim_name", type=str)
+    # parser.add_argument("--sim_name", type=str)
     parser.add_argument("--config", type=str)
-    parser.add_argument("--epochs", type=int)
-    parser.add_argument("--population", type=int)
-    parser.add_argument("--alpha", type=int)
-    parser.add_argument("--beta", type=int)
-    parser.add_argument("--gamma", type=int)
-    parser.add_argument("--sigma", type=int, default=1)
-    parser.add_argument("--lr", type=int, default=1)
+    # parser.add_argument("--epochs", type=int)
+    # parser.add_argument("--population", type=int)
+    # parser.add_argument("--alpha", type=int)
+    # parser.add_argument("--beta", type=int)
+    # parser.add_argument("--gamma", type=int)
+    # parser.add_argument("--sigma", type=int, default=1)
+    # parser.add_argument("--lr", type=int, default=1)
 
     args = parser.parse_args()
     main(**vars(args))
