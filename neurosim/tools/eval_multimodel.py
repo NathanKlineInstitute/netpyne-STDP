@@ -6,11 +6,14 @@ import math
 import pickle as pkl
 import matplotlib.pyplot as plt
 import seaborn as sns
+from scipy import stats
 from tqdm import tqdm
 import numpy as np
 import pandas as pd
 
-from neurosim.tools.utils import _get_spike_aggs_all, _extract_sorted_min_ids
+from neurosim.tools.utils import _get_spike_aggs_all, _extract_sorted_min_ids, \
+                                 _read_evaluations
+from neurosim.utils.agg import _get_agg, _get_avg_fast, _extract_hpsteps
 
 RANDOM_EVALUATION='results/random_cartpole_ActionsPerEpisode.txt'
 
@@ -29,26 +32,6 @@ def _get_params(config):
   return params
 
 
-def _extract_hpsteps(wdir, path_prefix=None):
-  configs = []
-  wdirs = [wdir]
-  while True:
-    current_wdir = wdirs[-1]
-    if path_prefix:
-      current_wdir = os.path.join(path_prefix, current_wdir)
-    config_fname = os.path.join(current_wdir, 'backupcfg_sim.json')
-    with open(config_fname) as f:
-      config = json.load(f)
-    configs.append(config)
-    if config['simtype']['ResumeSim']:
-      wdirs.append(
-        os.path.dirname(config['simtype']['ResumeSimFromFile']))
-    else:
-      break
-
-  configs.reverse()
-  wdirs.reverse()
-  return wdirs, configs
 
 def _extract_params(wdirs, configs):
   all_params = []
@@ -76,12 +59,22 @@ def trace(wdir):
     if len(set(values)) > 1:
       print(key, values)
 
+def eval_perf(wdir, outputfile):
+  wdirs, configs = _extract_hpsteps(wdir)
+
+  if not outputfile:
+    outputfile = os.path.join(wdir, 'evaluations_performance_on_eval.png')
+  results = _read_evaluations(wdir, False)
+
+  # TODO!
+
 def _get_evaluation_dir(wdir, idx):
-  assert idx in [0, -1], 'Make sure this is getting the correct ts instead of index'
+  # assert idx in [0, -1], 'Make sure this is getting the correct ts instead of index'
   evaluations = [
     (os.path.join(wdir, fname), int(fname.replace('evaluation_', '')))
     for fname in os.listdir(wdir) if fname.startswith('evaluation_') and 'display' not in fname]
-  eval_dir, eval_ts = sorted(evaluations, key=lambda x:x[1])[idx]
+  print(evaluations)
+  eval_dir, eval_ts = sorted(evaluations, key=lambda x:x[1])[0]
   return eval_dir
 
 def _evaluation_actions_per_episode(wdir, idx):
@@ -91,9 +84,23 @@ def _evaluation_actions_per_episode(wdir, idx):
       return [int(float(eps)) for _,eps in csv.reader(f, delimiter='\t')]
   return None
 
+def _calc_pvalue(values, plog):
+  if plog:
+    values = [[np.log2(v) for v in vals] for vals in values]
+  F, p = stats.f_oneway(*values)
+  stds = [np.std(vals) for vals in values]
+  minmax_ratio = max(stds) / min(stds)
+  if minmax_ratio >= 2:
+    raise Exception('Cannot compute pvalue as min-max ratio > 2 ({})'.format(minmax_ratio))
+  return p
 
-def boxplot(wdirs, outdir, include_random=True):
+
+def boxplot(wdirs, outdir, include_random=True, pvals=None, plog=False):
   outputfile = os.path.join(outdir, 'evaluations_boxplot.png')
+
+  if pvals != None:
+    pvals = pvals.split(';')
+    pvals = [[int(v) for v in pv.split(',')] for pv in pvals]
 
   wdirs = [wdir.split(':') for wdir in wdirs.split(',')]
   results = []
@@ -104,7 +111,6 @@ def boxplot(wdirs, outdir, include_random=True):
   for name,wdir,idx in wdirs:
     results.append([name, _evaluation_actions_per_episode(wdir, int(idx))])
 
-
   labels = [k.replace(' ', '\n') for k,v in results]
   data = [v for k,v in results]
 
@@ -112,10 +118,35 @@ def boxplot(wdirs, outdir, include_random=True):
   # ax = fig.add_subplot(111)
   # bp = ax.boxplot(data)
   ax = sns.boxplot(data=data)
-  ax = sns.swarmplot(data=data, color=".25", size=2.0)
+  # ax = sns.swarmplot(data=data, color=".25", size=2.0)
   ax.set_xticklabels(labels, rotation=5)
-  ax.set_ylabel('Actions per episode')
+  ax.set_ylabel('steps per episode')
   # ax.set_title('Evaluation of models')
+  print('Boxplot details:')
+  for l,d in zip(labels, data):
+    print('{}: min={}, 25%={}, 50%={}, 75%={}, max={}. avg={}'.format(
+      l.replace('\n', ' '),
+      min(d), np.quantile(d, 0.25), np.median(d),
+      np.quantile(d, 0.75), max(d), np.mean(d)))
+
+  if pvals != None:
+    maxval = 0
+    for pv in pvals:
+      # get max first
+      assert len(pv) == 2, 'Only doing ANOVA on 2 distributions'
+      x1, x2 = pv
+      maxval = max(maxval, max(data[x1]), max(data[x2]))
+    print('P-value details:')
+    for pv in pvals:
+      x1, x2 = pv
+      p = _calc_pvalue([data[x1], data[x2]], plog)
+      print(pv, p)
+      pstring = ''.join(['*' for th in [0.5, 0.1, 0.01, 0.001, 0.0001] if p < th])
+      y, h, col = maxval * 1.05, maxval * 0.03, 'k'
+      ax.plot([x1, x1, x2, x2], [y, y+h, y+h, y], lw=1.5, c=col)
+      ax.text((x1+x2)*.5, y+h*1.3, pstring, ha='center', va='bottom', color=col)
+      ylim = ax.get_ylim()
+      ax.set_ylim([ylim[0], ylim[1] * 1.05])
 
   plt.grid(axis='y', alpha=0.4)
   plt.tight_layout()
@@ -156,23 +187,216 @@ def spiking_frequencies_table(wdirs, outdir):
       writer.writerow(row)
 
 
-def _get_agg(tr_results, step, func, overlap=True):
-  tr_agg = []
-  for idx in range(0, len(tr_results) - step, 1 if overlap else step):
-    tr_agg.append(func(tr_results[idx:idx+step]))
-  return tr_agg
+def iters_for_evol(wdir, outdir=None, steps=[100], delimit_wdirs=False,
+    show_xlabel=True, extraticks=None, vline=None, rmticks=None):
+  if not outdir:
+    outdir = wdir
+  outputfile = os.path.join(
+    outdir, 'iters_during_training.png')
 
-def _get_avg_fast(tr_results, step):
-  tr_agg = []
-  current_sum = sum(tr_results[:step])
-  current_avg_by = step
-  tr_agg.append(current_sum / current_avg_by)
-  for idx in range(1, len(tr_results) - step):
-    current_sum += tr_results[idx+step-1] - tr_results[idx-1]
-    tr_agg.append(current_sum / current_avg_by)
-  return tr_agg
+  if extraticks != None:
+    if type(extraticks) == str:
+      extraticks = [float(k) for k in extraticks.split(',')]
+    if type(extraticks) == int or type(extraticks) == float:
+      extraticks = [extraticks]
+    extraticks = list(extraticks)
+  if rmticks != None:
+    if type(rmticks) == str:
+      rmticks = [float(k) for k in rmticks.split(',')]
+    if type(rmticks) == int or type(rmticks) == float:
+      rmticks = [rmticks]
+    rmticks = list(rmticks)
 
-def steps_per_eps(wdir, wdir_name, outdir, merge_es=False, steps=[100]):
+  all_wdir_steps, _ = _extract_hpsteps(wdir)
+  training_results = []
+  for wdir_steps in all_wdir_steps:
+    with open(os.path.join(wdir_steps, 'es_train.txt')) as f:
+      for row in csv.reader(f, delimiter='\t'):
+        iter_median, iter_mean, iter_min, iter_max = row[1:5]
+        training_results.append({
+          'median': float(iter_median),
+          'mean': float(iter_mean),
+          'min': float(iter_min),
+          'max': float(iter_max),
+        })
+
+  pop = None
+  beta_iters = None
+  with open(os.path.join(wdir, 'backupcfg_sim.json')) as f:
+    config = json.load(f)
+    pop = config['ES']['population_size']
+    beta_iters = config['ES']['episodes_per_iter']
+
+  plt.figure(figsize=(5,5))
+  plt.ylim(0, 510)
+  plt.grid(axis='y', alpha=0.3)
+  plt.ylabel('steps per episode')
+  tr_averages = {STEP: _get_agg([tr['mean'] for tr in training_results], STEP, np.average) for STEP in steps}
+
+  plt.plot(list(range(len(training_results))), [tr['max'] for tr in training_results], '.')
+  plt.plot(list(range(len(training_results))), [tr['mean'] for tr in training_results], '.')
+  plt.plot(list(range(len(training_results))), [tr['min'] for tr in training_results], '.')
+  for step, averages in tr_averages.items():
+      plt.plot([t + step/2 for t in range(len(averages))], averages)
+
+  if vline:
+    plt.axvline(x=vline, color='k', linestyle='--', linewidth=3.0)
+
+  plt.legend(['iteration max', 'iteration average', 'iteration min'] +
+    ['average of {} iteration averages'.format(step) for step in tr_averages.keys()],
+    loc='lower right', framealpha=0.95)
+  if show_xlabel:
+    plt.xlabel('iteration ({} * {} episodes)'.format(pop, beta_iters))
+  if extraticks:
+    ax = plt.gca()
+    lim = ax.get_xlim()
+    ticks = [tick for tick in list(ax.get_xticks()) if not rmticks or tick not in rmticks]
+    ax.set_xticks(ticks + extraticks)
+    ax.set_xlim(lim)
+  plt.tight_layout()
+
+  plt.savefig(outputfile, dpi=300)
+
+
+def iters_for_evolstdprl(wdir, outdir=None, at_iter='alpha', steps=[100],
+    extraticks=None, rmticks=None, vline=None, topticks=False):
+  assert at_iter in ['alpha', 'beta', 'gamma']
+  if not outdir:
+    outdir = wdir
+  outputfile = os.path.join(
+    outdir, 'iters_during_training_{}.png'.format(at_iter))
+
+  if extraticks != None:
+    if type(extraticks) == str:
+      extraticks = [float(k) for k in extraticks.split(',')]
+    if type(extraticks) == int or type(extraticks) == float:
+      extraticks = [extraticks]
+    extraticks = list(extraticks)
+  if rmticks != None:
+    if type(rmticks) == str:
+      rmticks = [float(k) for k in rmticks.split(',')]
+    if type(rmticks) == int or type(rmticks) == float:
+      rmticks = [rmticks]
+    rmticks = list(rmticks)
+
+  all_wdir_steps, _ = _extract_hpsteps(wdir)
+  training_results = []
+  offset = 4 if at_iter == 'alpha' else (9 if at_iter == 'beta' else 0)
+  for wdir_steps in all_wdir_steps:
+    with open(os.path.join(wdir_steps, 'STDP_es_train.csv')) as f:
+      for row in csv.reader(f, delimiter=','):
+        iter_median, iter_mean, iter_min, iter_max = row[offset:offset+4]
+        training_results.append({
+          'median': float(iter_median),
+          'mean': float(iter_mean),
+          'min': float(iter_min),
+          'max': float(iter_max),
+        })
+
+  pop = None
+  beta_iters = None
+  with open(os.path.join(wdir, 'backupcfg_sim.json')) as f:
+    config = json.load(f)
+    pop = config['STDP_ES']['population_size']
+    beta_iters = config['STDP_ES']['beta_iters']
+
+  plt.figure(figsize=(7,7))
+  plt.ylim(0, 510)
+  plt.grid(axis='y', alpha=0.3)
+  plt.ylabel('steps per episode')
+
+  tr_averages = {STEP: _get_agg([tr['mean'] for tr in training_results], STEP, np.average) for STEP in steps}
+
+  plt.plot(list(range(len(training_results))), [tr['max'] for tr in training_results], '.')
+  plt.plot(list(range(len(training_results))), [tr['mean'] for tr in training_results], '.')
+  plt.plot(list(range(len(training_results))), [tr['min'] for tr in training_results], '.')
+  for step, averages in tr_averages.items():
+      plt.plot([t + step for t in range(len(averages))], averages)
+
+  if vline:
+    plt.axvline(x=vline, color='k', linestyle='--', linewidth=3.0)
+
+  plt.legend(['iteration max', 'iteration average', 'iteration min'] +
+    ['average of {} iteration averages'.format(step) for step in tr_averages.keys()])
+  plt.xlabel('iteration ({} * {} episodes)'.format(pop, beta_iters))
+  if extraticks:
+    ax = plt.gca()
+    lim = ax.get_xlim()
+    ticks = [tick for tick in list(ax.get_xticks()) if not rmticks or tick not in rmticks]
+    ax.set_xticks(ticks + extraticks)
+    ax.set_xlim(lim)
+  if topticks:
+    ax = plt.gca()
+    ax.tick_params(bottom=True, top=True, left=True, right=False)
+    ax.tick_params(labelbottom=True, labeltop=True, labelleft=True, labelright=False)
+
+  plt.tight_layout()
+  plt.savefig(outputfile, dpi=300)
+
+def all_iters_for_evolstdprl(wdir,
+    extraticks=None, vline=None, rmticks=None, topticks=False):
+  for at_iter in ['alpha', 'beta', 'gamma']:
+    iters_for_evolstdprl(wdir, at_iter=at_iter,
+      extraticks=extraticks, vline=vline, rmticks=rmticks, topticks=topticks)
+
+def eval_for_evolstdprl(wdirs, outdir=None, steps=[100]):
+  if type(wdirs) == str:
+    wdirs = wdirs.split(',')
+
+  if not outdir:
+    outdir = wdirs[0]
+  outputfile = os.path.join(
+    outdir, 'evalperf_during_training.png')
+
+  plt.figure(figsize=(7,7))
+  plt.ylim(0, 510)
+  plt.grid(axis='y', alpha=0.3)
+  plt.ylabel('steps per episode')
+  legend = []
+  pop = None
+
+  for wdir in wdirs:
+    for at_iter in ['alpha', 'gamma']:
+      all_wdir_steps, _ = _extract_hpsteps(wdir)
+      training_results = []
+      offset = 4 if at_iter == 'alpha' else (9 if at_iter == 'beta' else 0)
+      for wdir_steps in all_wdir_steps:
+        with open(os.path.join(wdir_steps, 'STDP_es_train.csv')) as f:
+          for row in csv.reader(f, delimiter=','):
+            iter_median, iter_mean, iter_min, iter_max = row[offset:offset+4]
+            training_results.append({
+              'median': float(iter_median),
+              'mean': float(iter_mean),
+              'min': float(iter_min),
+              'max': float(iter_max),
+            })
+
+      beta_iters = None
+      with open(os.path.join(wdir, 'backupcfg_sim.json')) as f:
+        config = json.load(f)
+        new_pop = config['STDP_ES']['population_size']
+        if not pop:
+          pop = new_pop
+        if new_pop != pop:
+          raise Exception("Different population sizes")
+        beta_iters = config['STDP_ES']['beta_iters']
+
+      tr_averages = {STEP: _get_agg([tr['mean'] for tr in training_results], STEP, np.average) for STEP in steps}
+      # plt.plot(list(range(len(training_results))), [tr['mean'] for tr in training_results], '.')
+      for step, averages in tr_averages.items():
+        plt.plot([t + step for t in range(len(averages))], averages)
+
+      legend.append('B{} model {} STDP'.format(
+        beta_iters,
+        'before' if at_iter == 'alpha' else 'after'))
+
+  plt.legend(legend)
+  plt.xlabel('iteration ({} * B episodes)'.format(pop))
+  plt.tight_layout()
+  plt.savefig(outputfile, dpi=300)
+
+def steps_per_eps(wdir, wdir_name, outdir, merge_es=False, steps=[100],
+                  delimit_wdirs=False):
   outputfile = os.path.join(
     outdir,
     'steps_per_episode_during_training_{}{}.png'.format(
@@ -180,16 +404,19 @@ def steps_per_eps(wdir, wdir_name, outdir, merge_es=False, steps=[100]):
 
   all_wdir_steps, _ = _extract_hpsteps(wdir)
 
+  steps_per_wdir = []
   training_results = []
   for wdir_steps in all_wdir_steps:
     with open(os.path.join(wdir_steps, 'ActionsPerEpisode.txt')) as f:
-        training_results.extend([int(float(eps)) for _,eps in csv.reader(f, delimiter='\t')])
+        eps = [int(float(eps)) for _,eps in csv.reader(f, delimiter='\t')]
+        training_results.extend(eps)
+        steps_per_wdir.append(len(eps))
 
-  plt.figure(figsize=(10,10))
+  plt.figure(figsize=(5,5))
   plt.ylim(0, 510)
-  plt.grid(axis='y')
-  plt.ylabel('steps/actions per episode')
-  plt.title('{} performance during training'.format(wdir_name))
+  plt.grid(axis='y', alpha=0.3)
+  plt.ylabel('steps per episode')
+  # plt.title('{} performance during training'.format(wdir_name))
   if merge_es:
     STEP = 10
     merged_tr_results = _get_agg(training_results, STEP, np.average, overlap=False)
@@ -202,17 +429,17 @@ def steps_per_eps(wdir, wdir_name, outdir, merge_es=False, steps=[100]):
     plt.plot(list(range(len(max_tr_results))), max_tr_results, '.')
     plt.plot(list(range(len(merged_tr_results))), merged_tr_results, '.')
     plt.plot(list(range(len(min_tr_results))), min_tr_results, '.')
-    for step, medians in tr_medians.items():
-        plt.plot([t + step for t in range(len(medians))], medians)
+    # for step, medians in tr_medians.items():
+    #     plt.plot([t + step for t in range(len(medians))], medians)
     for step, averages in tr_averages.items():
         plt.plot([t + step for t in range(len(averages))], averages)
 
     plt.legend(['iteration max', 'iteration average', 'iteration min'] +
-      ['median of {} iteration averages'.format(step) for step in tr_medians.keys()] +
-      ['averages of {} iteration averages'.format(step) for step in tr_averages.keys()])
+      # ['median of {} iteration averages'.format(step) for step in tr_medians.keys()] +
+      ['average of {} iteration averages'.format(step) for step in tr_averages.keys()])
     plt.xlabel('iteration ({} episodes)'.format(STEP))
 
-    plt.savefig(outputfile)
+    plt.savefig(outputfile, dpi=300)
     return
 
   # non merge_es
@@ -226,12 +453,18 @@ def steps_per_eps(wdir, wdir_name, outdir, merge_es=False, steps=[100]):
   for STEP, averages in tr_averages.items():
       plt.plot([t + STEP for t in range(len(averages))], averages)
 
+  if delimit_wdirs:
+    total_eps = 0
+    for epscnt in steps_per_wdir:
+      total_eps += epscnt
+      plt.axvline(x=total_eps, c='r')
+
   plt.legend(['individual'] +
     ['median of {}'.format(STEP) for STEP in tr_medians.keys()] +
     ['averages of {}'.format(STEP) for STEP in tr_averages.keys()])
   plt.xlabel('episode')
-
-  plt.savefig(outputfile)
+  plt.tight_layout()
+  plt.savefig(outputfile, dpi=300)
 
 
 def steps_per_eps_combined(wdirs, outdir, steps=[100]):
@@ -454,7 +687,11 @@ if __name__ == '__main__':
       'spk-freq': spiking_frequencies_table,
       'train-perf': steps_per_eps,
       'train-perf-comb': steps_per_eps_combined,
+      'train-perf-evol': iters_for_evol,
+      'train-perf-evolstdprl': all_iters_for_evolstdprl,
+      'train-eval-evolstdprl': eval_for_evolstdprl,
       'train-unk-moves': undecided_moves,
+      'eval-perf': eval_perf,
       'select-eps': select_episodes,
       'eval-selected-eps': save_episodes_eval
   })

@@ -11,6 +11,9 @@ from game_interface import GameInterface
 from utils.weights import readWeights
 import netpyne
 
+from multiprocessing import Process, Queue
+
+
 # Wrapper for netpyne simulation that catched the sys.exit() after one episode (if activated)
 def run_episodes(neurosim):
     try:
@@ -23,10 +26,23 @@ def run_episodes(neurosim):
     sys.stdout = sys.__stdout__
     return
 
-def init(dconf, fnjson=None):
+
+# Wrapper for netpyne simulation that catched the sys.exit() after one episode (if activated)
+def run_model(q, neurosim, mutated_weights, i):
+  neurosim.setWeightArray(netpyne.sim, mutated_weights)
+  run_episodes(neurosim)
+
+  fitness = np.mean(neurosim.epCount[-neurosim.end_after_episode:])
+  run_duration = neurosim.last_times[-1]
+
+  # Return using queue
+  q.put([fitness, run_duration])
+
+
+def init(dconf, fnjson=None, outdir=None):
   # Initialize the model with dconf config
   if not dconf:
-      dconf = read_conf(fnjson)
+      dconf = read_conf(fnjson, outdir=outdir)
   dconf['sim']['duration'] = 1e10
   dconf['sim']['recordWeightStepSize'] = 1e10
 
@@ -44,8 +60,8 @@ def init(dconf, fnjson=None):
   init_wdir(dconf)
   return dconf
 
-def train(dconf=None, fnjson=None):
-    dconf = init(dconf, fnjson)
+def train(dconf=None, fnjson=None, outdir=None, save_spikes=False):
+    dconf = init(dconf, fnjson, outdir=outdir)
     ITERATIONS = dconf['ES']['iterations'] # How many iterations to train for
     POPULATION_SIZE = dconf['ES']['population_size'] # How many perturbations of weights to try per iteration
     SIGMA = dconf['ES']['sigma'] # 0.1 # standard deviation of perturbations applied to each member of population
@@ -89,27 +105,36 @@ def train(dconf=None, fnjson=None):
         perturbations[perturbations < -0.8] = -0.8
 
         print("\nSimulating episodes ... ")
+        proc = list()
+        q = list()
+
+        for i in range(POPULATION_SIZE):
+            mutated_weights = best_weights * (1 + perturbations[i])
+            q.append(Queue())
+            proc.append(Process(
+              target=run_model,
+              args=(q[-1], neurosim, mutated_weights, i)))
+            proc[-1].start()
+
 
         # get the fitness of each set of perturbations when applied to the current best weights
         # by simulating each network and getting the episode length as the fitness
         fitness = []
         for i in range(POPULATION_SIZE):
-            neurosim.setWeightArray(netpyne.sim, best_weights * (1 + perturbations[i]))
-            run_episodes(neurosim)
-            run_duration = neurosim.last_times[-1]
+            individual_fitness, run_duration = q[i].get()
 
-            # save the spike and V data
-            spkids.extend(netpyne.sim.simData['spkid'])
-            spkts.extend([(t+total_time) for t in netpyne.sim.simData['spkt']])
-            for kvolt, v_soma in netpyne.sim.simData['V_soma'].items():
-              if kvolt not in V_somas:
-                V_somas[kvolt] = []
-              V_somas[kvolt].extend(v_soma)
+            if save_spikes:
+              # save the spike and V data
+              spkids.extend(netpyne.sim.simData['spkid'])
+              spkts.extend([(t+total_time) for t in netpyne.sim.simData['spkt']])
+              for kvolt, v_soma in netpyne.sim.simData['V_soma'].items():
+                if kvolt not in V_somas:
+                  V_somas[kvolt] = []
+                V_somas[kvolt].extend(v_soma)
             total_time += run_duration
 
             # Add fitness
-            fitness.append(
-              np.mean(neurosim.epCount[-neurosim.end_after_episode:]))
+            fitness.append(individual_fitness)
 
         fitness = np.expand_dims(np.array(fitness), 1)
 
@@ -117,7 +142,7 @@ def train(dconf=None, fnjson=None):
                best_weights.mean()]
         with open(fres_train, 'a') as out:
           out.write('\t'.join(
-            [str(neurosim.end_after_episode)] + [str(r) for r in fitness_res]) + '\n')
+            [str(EPISODES_PER_ITER)] + [str(r) for r in fitness_res]) + '\n')
         print("\nFitness Median: {}; Mean: {} ([{}, {}]). Mean Weight: {}".format(*fitness_res))
 
         # normalize the fitness for more stable training
@@ -154,9 +179,10 @@ def train(dconf=None, fnjson=None):
 
 
     neurosim.dconf['sim']['duration'] = total_time / 1000
-    netpyne.sim.simData['V_soma'] = V_somas
-    netpyne.sim.simData['spkid'] = spkids
-    netpyne.sim.simData['spkt'] = spkts
+    if save_spikes:
+      netpyne.sim.simData['V_soma'] = V_somas
+      netpyne.sim.simData['spkid'] = spkids
+      netpyne.sim.simData['spkt'] = spkts
     neurosim.save()
 
 def _saved_timesteps(synWeights_file):
