@@ -221,7 +221,7 @@ def train(dconf=None, outdir=None):
         # apply the fitness_weighted_perturbations to the current best weights proportionally to the LR
         best_weights = best_weights * (1 + (LEARNING_RATE * fitness_weighted_perturbations.mean(axis = 0)))
 
-        # decay sigma and the learning rate
+       # decay sigma and the learning rate
         SIGMA *= SIGMA_DECAY
         LEARNING_RATE *= LR_DECAY
 
@@ -266,25 +266,25 @@ def train(dconf=None, outdir=None):
     # neurosim.save()
 
 
-def continue_main(wdir, iterations=100, index=None):
-  dconf_path = os.path.join(wdir, 'backupcfg_sim.json')
+# def continue_main(wdir, iterations=100, index=None):
+#   dconf_path = os.path.join(wdir, 'backupcfg_sim.json')
 
-  outdir = os.path.join(wdir, 'continue_{}'.format(1 if index == None else index))
-  dconf = read_conf(dconf_path, outdir=outdir)
-  synWeights_file = os.path.join(wdir, 'synWeights.pkl')
+#   outdir = os.path.join(wdir, 'continue_{}'.format(1 if index == None else index))
+#   dconf = read_conf(dconf_path, outdir=outdir)
+#   synWeights_file = os.path.join(wdir, 'synWeights.pkl')
 
-  dconf['simtype']['ResumeSim'] = 1
-  dconf['simtype']['ResumeSimFromFile'] = synWeights_file
-  if iterations != None:
-    dconf['ES_STDP']['iterations'] = iterations
-  dconf['sim']['plotRaster'] = 0
+#   dconf['simtype']['ResumeSim'] = 1
+#   dconf['simtype']['ResumeSimFromFile'] = synWeights_file
+#   if iterations != None:
+#     dconf['ES_STDP']['iterations'] = iterations
+#   dconf['sim']['plotRaster'] = 0
 
-  train(dconf)
+#   train(dconf)
 
 if __name__ == "__main__":
   fire.Fire({
       'train': train,
-      'continue': continue_main
+      # 'continue': continue_main
   })
 
 
