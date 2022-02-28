@@ -59,6 +59,7 @@ def main(
     # Establish buffer folders for child outputs
     try:
         os.mkdir(out_path)
+        os.mkdir(out_path + '/Ready/')
     except FileExistsError:
         raise Exception("Re-using simulation name, pick a different name")
 
@@ -78,20 +79,25 @@ def main(
 
             child_weights = mutations[child_id, :] + parent_weights
 
-
-            # Prepare command for child process #
-
-            args = {
-                # child_weights,            # Mutated weights # TODO: Figure out way to get numpy weights to child
-                'id':       child_id,
+            dic_obj = {
+                'child_weights': child_weights, # Mutated weights # TODO: Figure out way to get numpy weights to child
                 'config':   config,             # Config file TODO: path?
                 'alpha':    alpha,              # Num. Pre-STDP iters
                 'beta':     beta,               # Num. STDP iters
                 'gamma':    gamma,              # Num. Post-STDP iters
+                # what ever you would like to return to parent
+            }
+            ## --Save data for child process-- ##
+            with open(out_path + '/Ready/child_' + str(child_id) +'.pkl', 'wb') as out:
+                pickle.dump(dic_obj, out)
+
+            # Prepare command for child process #
+
+            args = {
+                'id':       child_id,
                 'out_path': "\'"+out_path+"\'"  # Output file path
             }
             shell_command = ' '.join(['python3', SUB_PROCESS_FILE, *(f'--{k} {v}' for k,v in args.items())])
-
 
             # Create parallel process #
             os.system(shell_command)
@@ -100,7 +106,7 @@ def main(
         # Await outputs #
         files = None
         while(True):
-            files = (glob.glob(out_path + "/*.pkl"))
+            files = (glob.glob(out_path + "/Done/*.pkl"))
             if len(files) >= population:
                 break
             time.sleep(1)

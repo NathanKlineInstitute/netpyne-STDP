@@ -8,11 +8,16 @@ import os
 # from neurosim.sim import NeuroSim
 
 
-def run_simulation(weights, config, alpha, beta, gamma, id, out_path):
+def run_simulation(child_id, out_path):
     ## loading
-    with open(file, 'rb') as out:
-                child_data.append(pickle.load(out))
+    with open(out_path + '/Ready/child_' + str(child_id) +'.pkl', 'rb') as out:
+        child_data = pickle.load(out)
 
+    weights = child_data['weights']
+    config = child_data['config']
+    alpha = child_data['alpha']
+    beta = child_data['beta']
+    gamma = child_data['gamma']
 
 
     # ### ---Generate model--- ###
@@ -44,26 +49,24 @@ def run_simulation(weights, config, alpha, beta, gamma, id, out_path):
 
     ## --Write Performance-- ##
     dic_obj = {
-        'id': id,
+        'id': child_id,
         'alpha': alpha_perf,
         'beta': beta_perf,
         'gamma_perf':gamma_perf,
         # what ever you would like to return to parent
     }
-    with open(out_path + '/child_' + str(id) +'.tmp', 'wb') as out:
+    with open(out_path + '/Done/child_' + str(child_id) +'.tmp', 'wb') as out:
         pickle.dump(dic_obj, out)
     
+    # Delete data from parent
+    os.system('rm ' + out_path + '/Ready/child_' + str(child_id) +'.pkl')
+    
     #The closeest to atomic operation
-    os.system('mv ' + out_path + '/child_' + str(id) +'.tmp ' + out_path + '/child_' + str(id) +'.pkl')
+    os.system('mv ' + out_path + '/Done/child_' + str(child_id) +'.tmp ' + out_path + '/child_' + str(child_id) +'.pkl')
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument("--weights", type=str)    # TODO: How to do??
-    parser.add_argument("--config", type=str)
-    parser.add_argument("--alpha", type=int)
-    parser.add_argument("--beta", type=int)
-    parser.add_argument("--gamma", type=int)
     parser.add_argument("--id", type=int)
     parser.add_argument("--out_path", type=str)
 
