@@ -63,7 +63,8 @@ def analyze_samples(wdir, modifier=None):
   plt.savefig(outputfile)
 
 
-def show_analyze_once(wdir, modifier=None, steps=100, stype='avg'):
+def show_analyze_once(wdir, modifier=None, find_modifier=False,
+                      steps=100, stype='avg', evaltype='stdp', no_swarm=False):
   seedruns = [(wd.replace('run_seed', ''), os.path.join(wdir, wd))
     for wd in os.listdir(wdir) if wd.startswith('run_seed')]
 
@@ -73,11 +74,14 @@ def show_analyze_once(wdir, modifier=None, steps=100, stype='avg'):
   assert stype in ['avg', 'median']
   aggs_seed = {}
   for seed, seedrun_f in seedruns:
-    tr_res = _extract_steps_per_ep(seedrun_f, steps, stype)
+    tr_res = _extract_steps_per_ep(seedrun_f, steps, stype,
+        find_modifier=find_modifier, filetype=evaltype)
+    print([i for i,k in enumerate(tr_res) if k == max(tr_res)][0])
     aggs_seed[seed] = max(tr_res)
 
-  label = 'MAX {} over {}steps'.format(
-    'average' if stype == 'avg' else stype, steps)
+  label = 'MAX {} over {}{}'.format(
+    'average' if stype == 'avg' else stype, steps,
+    'iterations'if evaltype == 'evol' else 'steps')
 
   maxes = [200, 300, 500, 501]
   curr_max = 0
@@ -92,7 +96,8 @@ def show_analyze_once(wdir, modifier=None, steps=100, stype='avg'):
   print('mean: ', np.mean(aggs_by_step))
   print('max: ', np.max(aggs_by_step))
   ax = sns.boxplot(data=aggs_by_step)
-  ax = sns.swarmplot(data=aggs_by_step, color=".25", size=10.0)
+  if not no_swarm:
+    ax = sns.swarmplot(data=aggs_by_step, color=".25", size=10.0)
   ax.set_xticklabels([label]) # , rotation=5
   ax.set_ylim(0, maxes[curr_max])
   # plt.title('Variance in performance of {} different initial network configurations'.format(len(akeys)))
@@ -103,8 +108,17 @@ def show_analyze_once(wdir, modifier=None, steps=100, stype='avg'):
   plt.savefig(outputfile, dpi=300)
 
 
-def _extract_steps_per_ep(wdir, steps, stype, filetype='stdp'):
+def _extract_steps_per_ep(wdir, steps, stype, filetype='stdp', find_modifier=False):
   assert stype in ['avg', 'median']
+  if find_modifier:
+    while True:
+      wdirs = os.listdir(wdir)
+      continue_dirs = [wd for wd in wdirs if wd.startswith('continue_')]
+      if len(continue_dirs) == 0:
+        break
+      assert len(continue_dirs) == 1
+      wdir = os.path.join(wdir, continue_dirs[0])
+
   all_wdir_steps, _ = _extract_hpsteps(wdir)
   if filetype == 'stdp':
     training_results = []
@@ -119,6 +133,15 @@ def _extract_steps_per_ep(wdir, steps, stype, filetype='stdp'):
     for wdir_steps in all_wdir_steps:
       with open(os.path.join(wdir_steps, 'STDP.txt')) as f:
           training_results.extend([int(float(eps)) for _,eps in csv.reader(f, delimiter='\t')])
+
+    func = np.average if stype == 'avg' else np.median
+    return _get_agg(training_results, steps, func)
+  elif filetype == 'evol':
+    training_results = []
+    for wdir_steps in all_wdir_steps:
+      with open(os.path.join(wdir_steps, 'es_train.txt')) as f:
+          # get the mean
+          training_results.extend([int(float(toks[2])) for toks in csv.reader(f, delimiter='\t')])
 
     func = np.average if stype == 'avg' else np.median
     return _get_agg(training_results, steps, func)
@@ -163,10 +186,49 @@ def steps_per_eps(wdir, steps=100, stype='avg', modifier=None, parts=1, seed_nrs
     plt.savefig(outputfile, dpi=300)
 
 
+def steps_per_eps_evol(wdir, steps=100, stype='avg', parts=1, seed_nrs=False, target_perf=None):
+  assert stype in ['avg', 'median']
+
+  seedruns = [(wd.replace('run_seed', ''), os.path.join(wdir, wd))
+    for wd in os.listdir(wdir) if wd.startswith('run_seed')]
+
+  for p in range(parts):
+    seedruns_batch = seedruns
+    pstep = 0
+    if parts > 1:
+      pstep = int(len(seedruns) / parts)
+      seedruns_batch = seedruns[p * pstep:min((p+1)*pstep, len(seedruns))]
+
+    plt.figure(figsize=(5,5))
+    plt.ylim(0, 500)
+    plt.grid(axis='y', alpha=0.4)
+    plt.ylabel('steps per episode ({} over {} iterations)'.format(
+      'average' if stype == 'avg' else stype, steps))
+    # plt.title('Performance during training, evaluated using {} over {} episodes'.format(stype, steps))
+    for seed, seedrun_wdir in seedruns_batch:
+      tr_res = _extract_steps_per_ep(seedrun_wdir, steps, stype, 'evol', find_modifier=True)
+      plt.plot(tr_res)
+      if target_perf:
+        print([i for i, k in enumerate(tr_res) if k > target_perf][0])
+
+    plt.legend(['model seed: {}'.format(sidx+1+pstep*p if seed_nrs else seed)
+      for sidx, (seed,_) in enumerate(seedruns_batch)])
+    plt.xlabel('iteration (10 * 5 episodes)')
+
+    outputfile = os.path.join(
+      wdir,
+      'steps_per_episode{}_{}_{}.png'.format(
+        '' if parts == 1 else '_{}of{}'.format(p+1, parts),
+        stype, steps))
+    plt.tight_layout()
+    plt.savefig(outputfile, dpi=300)
+
+
 if __name__ == '__main__':
   fire.Fire({
       'analyze': analyze_samples,
       'a1': show_analyze_once,
       'train-perf': steps_per_eps,
+      'train-perf-evol': steps_per_eps_evol,
       # 'combine': create_table
   })

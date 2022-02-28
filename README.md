@@ -128,8 +128,8 @@ Evaluate the model before and after training:
         --save-data
 
     # To evaluate one specific episode over and over again
-    # for EPISODE_ID in 4 7 12 16 49 60 66 78 83
-    for EPISODE_ID in 4 7 12 16 49 66 78 83
+    # for EPISODE_ID in 74 68 77 55 31 50 32 10 19 59 22
+    for EPISODE_ID in 74 68 77 55 31 50 32 10 19 59 22
     do
         py neurosim/main.py eval $WDIR --resume_tidx=-1 \
             --env-seed 42 \

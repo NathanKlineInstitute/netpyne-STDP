@@ -222,3 +222,103 @@ py neurosim/tools/eval_multimodel.py train-perf-evol $WDIR
 
 WDIR=results/20220128-EVOL_b5-badseed/continue_1/continue_1/continue_1/continue_1/continue_1/continue_1/continue_1/continue_1/continue_1/continue_1
 py neurosim/tools/eval_multimodel.py train-perf-evol $WDIR
+
+
+WDIR=results/seedrun_evol-2022-02-20
+py neurosim/tools/eval_seedrun.py train-perf-evol $WDIR \
+    --stype avg --steps 4 --parts 1
+
+WDIR=results/seedrun_evol-2022-02-20
+py neurosim/tools/eval_seedrun.py train-perf-evol $WDIR \
+    --stype avg --steps 4 --parts 1 --seed_nrs
+
+python3 neurosim/tools/eval_seedrun.py a1 $WDIR \
+    --find_modifier --evaltype evol --stype avg --steps 4 --no_swarm
+
+py neurosim/tools/eval_seedrun.py train-perf-evol $WDIR \
+    --stype avg --steps 4 --parts 1 --seed_nrs --target_perf 118
+
+
+---------
+
+
+
+WDIR=results/seedrun_m1-2022-01-16/run_seed1394398
+py neurosim/main.py eval $WDIR --resume_tidx=0 --env-seed 42 \
+    --eps-duration 100 --save-data
+
+WDIR=results/seedrun_m1-2022-01-16/run_seed1394398/continue_1/continue_1/continue_2/continue_2/continue_2
+py neurosim/main.py eval $WDIR --resume_tidx=1 --env-seed 42 \
+    --eps-duration 100 --save-data
+
+WDIR=results/seedrun_m1-2022-01-16/run_seed5397326
+py neurosim/main.py eval $WDIR --resume_tidx=0 --env-seed 42 \
+    --eps-duration 100 --save-data
+
+WDIR=results/seedrun_m1-2022-01-16/run_seed5397326/continue_1/continue_1/continue_2/continue_2/continue_2
+py neurosim/main.py eval $WDIR --resume_tidx=-1 --env-seed 42 \
+    --eps-duration 100 --save-data
+
+
+
+WDIR=results/seedrun_m1-2022-01-16/run_seed1394398/continue_1/continue_1/continue_2/continue_2/continue_2
+
+
+for EPISODE_ID in 74 68 77 55 31 50 32 10 19 59 22
+do
+    py neurosim/main.py eval $WDIR --resume_tidx=1 \
+        --env-seed 42 \
+        --eps-duration 25 \
+        --save-data \
+        --rerun-episode ${EPISODE_ID}
+done
+
+
+
+WDIR=results/seedrun_m1-2022-01-16/run_seed5397326/continue_1/continue_1/continue_2/continue_2/continue_2
+
+for EPISODE_ID in 74 68 77 55 31 50 32 10 19 59 22
+do
+    py neurosim/main.py eval $WDIR --resume_tidx=-1 \
+        --env-seed 42 \
+        --eps-duration 25 \
+        --save-data \
+        --rerun-episode ${EPISODE_ID}
+done
+
+
+WDIR_S6=results/seedrun_m1-2022-01-16/run_seed1394398/continue_1/continue_1/continue_2/continue_2/continue_2
+WDIR_S3=results/seedrun_m1-2022-01-16/run_seed5397326/continue_1/continue_1/continue_2/continue_2/continue_2
+OUTDIR=results/final-results-2021-09
+
+py neurosim/tools/eval_multimodel.py select-eps \
+            ${WDIR_S6}/evaluation_1,${WDIR_S3}/evaluation_50
+
+# Figure 6
+py neurosim/tools/eval_multimodel.py eval-selected-eps \
+            "STDP-RL Seed-6:${WDIR_S6}:1","STDP-RL Seed-3:${WDIR_S3}:50" \
+            --outdir=$OUTDIR \
+            --sort-by "68,74,10,19,55,32,31,22,77"
+
+
+WDIR=results/20220129-EVOL_b5-goodseed/continue_1/continue_1/continue_1/continue_1/continue_1/continue_1/continue_1/continue_1
+
+for EPISODE_ID in 68 77
+do
+    py neurosim/main.py eval $WDIR --resume_tidx=-1 \
+        --env-seed 42 \
+        --eps-duration 25 \
+        --save-data \
+        --rerun-episode ${EPISODE_ID}
+done
+
+WDIR=results/20220128-EVOL_b5-badseed/continue_1/continue_1/continue_1/continue_1/continue_1/continue_1/continue_1/continue_1/continue_1/continue_1
+
+for EPISODE_ID in 68 77
+do
+    py neurosim/main.py eval $WDIR --resume_tidx=-1 \
+        --env-seed 42 \
+        --eps-duration 25 \
+        --save-data \
+        --rerun-episode ${EPISODE_ID}
+done
