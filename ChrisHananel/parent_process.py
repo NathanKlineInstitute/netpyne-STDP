@@ -169,12 +169,12 @@ def main(
         # Evolve parent #
         parent_weights = parent_weights * (1 + (LEARNING_RATE * fitness_weighted_mutations.mean(axis=0)))
 
+        # TODO: Potentially Sigma & LR Decay (not used in original)
         # decay sigma and the learning rate
         SIGMA *= SIGMA_DECAY
         LEARNING_RATE *= LR_DECAY
 
-        # TODO: Potentially Sigma & LR Decay (not used in original)
-        
+               
         # This one saves weight data
         save_flag = False
         if (epoch + 1) % SAVE_WEIGHTS_EVERY_ITER == 0:
