@@ -12,6 +12,18 @@ from sim import NeuroSim
 from conf import read_conf, init_wdir
 from aigame import AIGame
 
+# Wrapper for netpyne simulation that catched the sys.exit() after one episode (if activated)
+def run_episodes(neurosim):
+    try:
+        # Suppress print statements from the netpyne sim
+        # sys.stdout = open(os.devnull, 'w')
+        neurosim.run()
+    except SystemExit:
+        pass
+    # Turn printing back on after netpyne sim is done
+    sys.stdout = sys.__stdout__
+    return
+
 def init(dconf, out_path):
     # Initialize the model with dconf config
     dconf['sim']['duration'] = 1e4
@@ -63,20 +75,26 @@ def run_simulation(child_id, out_path):
     # alpha: Deactivate STDP and run on just mutations (ES) #
     model.STDP_active = False
     model.end_after_episode = alpha
-    model.run()
+    run_episodes(model)
     alpha_perf = np.mean(model.epCount[-alpha:])
+    alpha_post_weights = model.getWeightArray(netpyne.sim)  
+    alpha_run_duration_STDP = model.last_times[-1] # TODO: RETURN THIS
     
     # beta: Activate STDP and run again #
     model.STDP_active = True
     model.end_after_episode = beta
-    model.run()
+    run_episodes(model)
     beta_perf = np.mean(model.epCount[-beta:])
+    beta_post_weights = model.getWeightArray(netpyne.sim)  
+    beta_run_duration_STDP = model.last_times[-1] # TODO: RETURN THIS
     
     # gamma: Deactivate STDP and run again #
     model.STDP_active = False
     model.end_after_episode = gamma
-    model.run()
+    run_episodes(model)
     gamma_perf = np.mean(model.epCount[-gamma:])
+    gamma_post_weights = model.getWeightArray(netpyne.sim)  
+    gamma_run_duration_STDP = model.last_times[-1] # TODO: RETURN THIS
 
     # # TODO: Uncomment for above, the below is just for testing
     # alpha_perf, beta_perf, gamma_perf = 0, 1, 2
@@ -84,19 +102,27 @@ def run_simulation(child_id, out_path):
     ## --Write Performance-- ##
     dic_obj = {
         'id': child_id,
-        'alpha': alpha_perf,
-        'beta': beta_perf,
-        'gamma_perf':gamma_perf,
+        'alpha': 0 if np.isnan(alpha_perf) else alpha_perf,
+        'alpha_post_weights': alpha_post_weights,
+        'alpha_run_duration_STDP': alpha_run_duration_STDP,
+        'beta': 0 if np.isnan(beta_perf) else beta_perf,
+        'beta_post_weights': beta_post_weights,
+        'beta_run_duration_STDP': beta_run_duration_STDP,
+        'gamma': 0 if np.isnan(gamma_perf) else gamma_perf,
+        'gamma_post_weights': gamma_post_weights,
+        'gamma_run_duration_STDP': gamma_run_duration_STDP,
         # what ever you would like to return to parent
     }
+    os.makedirs(out_path + '/Done/', exist_ok=True)
     with open(out_path + '/Done/child_' + str(child_id) +'.tmp', 'wb') as out:
         pickle.dump(dic_obj, out)
     
-    # Delete data from parent
-    os.system('rm ' + out_path + '/Ready/child_' + str(child_id) +'.pkl')
+    # Delete temp data and data from parent
+    os.system('rm -r \"' + out_path + '/WorkingData/\"')
+    os.system('rm \"' + out_path + '/Ready/child_' + str(child_id) +'.pkl\"')
     
     #The closeest to atomic operation
-    os.system('mv ' + out_path + '/Done/child_' + str(child_id) +'.tmp ' + out_path + '/child_' + str(child_id) +'.pkl')
+    os.system('mv \"' + out_path + '/Done/child_' + str(child_id) +'.tmp\"  \"' + out_path + '/Done/child_' + str(child_id) +'.pkl\"')
 
     if save_flag:    
         print("\nSaving best weights after iteration")

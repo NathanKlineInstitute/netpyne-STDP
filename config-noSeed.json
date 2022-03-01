@@ -12,8 +12,8 @@
         "save_weights_every_iter": 100
     },
     "STDP_ES": {
-        "iterations": 1500,
-        "population_size": 10,
+        "iterations": 5,
+        "population_size": 2,
         "eval_freq": 5,
         "eval_samples": 5,
         "sigma": 0.1,

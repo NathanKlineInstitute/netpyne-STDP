@@ -161,30 +161,36 @@ def train(dconf=None, outdir=None):
             Process(target=run_model, args=(q[-1], neurosim, EPISODES_PER_ITER_ES, mutated_weights, EPISODES_PER_ITER_DURING_STDP, EPISODES_PER_ITER_POST_STDP, i))
             )
           proc[-1].start()
-
-        # Await returns...
-        cleared = list()
-        while True:
-            for i in range(POPULATION_SIZE):
-              try:
-                returnV = q[i].get(False, 0.5)
-                fitness_STDP.append(returnV[0])
-                # post_STDP_weights.append(returnV[1])
-                fitness_NoSTDP.append(returnV[2])
-                fitness_post_STDP.append(returnV[3])
-                proc[i].join()
-                cleared.append(i)
-                print(f'process {i} Finished')
-              except:
-                pass
+          
+          returnV = q[i].get()
+          fitness_STDP.append(returnV[0])
+          # post_STDP_weights.append(returnV[1])
+          fitness_NoSTDP.append(returnV[2])
+          fitness_post_STDP.append(returnV[3])
+          proc[i].join()
+        # # Await returns...
+        # cleared = list()
+        # while True:
+        #     for i in range(POPULATION_SIZE):
+        #       try:
+        #         returnV = q[i].get(False, 0.5)
+        #         fitness_STDP.append(returnV[0])
+        #         # post_STDP_weights.append(returnV[1])
+        #         fitness_NoSTDP.append(returnV[2])
+        #         fitness_post_STDP.append(returnV[3])
+        #         proc[i].join()
+        #         cleared.append(i)
+        #         print(f'process {i} Finished')
+        #       except:
+        #         pass
     
-            allExited = True
-            for t in proc:
-                if t.exitcode is None:
-                    allExited = False
-                    break
-            if allExited & (len(cleared)==POPULATION_SIZE):
-                break
+        #     allExited = True
+        #     for t in proc:
+        #         if t.exitcode is None:
+        #             allExited = False
+        #             break
+        #     if allExited & (len(cleared)==POPULATION_SIZE):
+        #         break
           
         proc.clear()
         q.clear()    

@@ -122,7 +122,6 @@ def main(
             with open(out_path + '/Ready/child_' + str(child_id) +'.pkl', 'wb') as out:
                 pickle.dump(dic_obj, out)
 
-            save_flag = False
 
             # Prepare command for child process #
 
@@ -152,12 +151,13 @@ def main(
                 child_data.append(pickle.load(out))
             
             #delete the file after we collect the data
-            # os.system('rm '+ file)
+            # os.system('rm \"'+ file +'\"')
 
 
-        # # TODO: Add information recording for medians, min, max, etc. & for alpha/gamma
-        # # Record #
-        # fitness_record[epoch, child_id, :] = alpha_perf, beta_perf, gamma_perf
+        # TODO: Add information recording for medians, min, max, etc. & for alpha/gamma
+        # Record #
+        for data in child_data:
+            fitness_record[epoch, data['id'], :] = data['alpha'], data['beta'], data['gamma']
 
 
         # Evaluate children #
@@ -176,6 +176,7 @@ def main(
         # TODO: Potentially Sigma & LR Decay (not used in original)
         
         # This one saves weight data
+        save_flag = False
         if (epoch + 1) % SAVE_WEIGHTS_EVERY_ITER == 0:
             save_flag = True
             
