@@ -5,12 +5,12 @@ import pickle
 import os, sys
 
 sys.path.append(os.path.abspath(os.getcwd()))
-sys.path.append(os.path.abspath(os.getcwd()) + '/neurosim')
+sys.path.append(os.path.abspath(os.getcwd()) + '/neurosim/')
 
 import netpyne
-from ..neurosim.sim import NeuroSim
-from ..neurosim.conf import read_conf, init_wdir
-from ..neurosim.aigame import AIGame
+from sim import NeuroSim
+from conf import read_conf, init_wdir
+from aigame import AIGame
 
 # Wrapper for netpyne simulation that catched the sys.exit() after one episode (if activated)
 def run_episodes(neurosim):
@@ -47,9 +47,9 @@ def init(dconf, out_path):
     return dconf
 
 
-def run_simulation(child_id, out_path):
+def run_simulation(id, out_path):
     ## loading
-    with open(out_path + '/Ready/child_' + str(child_id) +'.pkl', 'rb') as out:
+    with open(out_path + '/Ready/child_' + str(id) +'.pkl', 'rb') as out:
         child_data = pickle.load(out)
 
     weights = child_data['weights']
@@ -62,11 +62,11 @@ def run_simulation(child_id, out_path):
     os.makedirs(out_path + '/WorkingData/', exist_ok=True)
 
     ### ---Generate model--- ###
-    dconf = init(read_conf(config), out_path + '/WorkingData/child_' + str(child_id))
+    dconf = init(read_conf(config), out_path + '/WorkingData/child_' + str(id))
     model = NeuroSim(dconf, use_noise=False, save_on_control_c=False)
     model.setWeightArray(netpyne.sim, weights)
-    fres_train = model.outpath(out_path + '/WorkingData/STDP_es_train_' + str(child_id) + '.csv')
-    fres_eval = model.outpath(out_path + '/WorkingData/STDP_es_eval_' + str(child_id) + '.csv')
+    fres_train = model.outpath(out_path + '/WorkingData/STDP_es_train_' + str(id) + '.csv')
+    fres_eval = model.outpath(out_path + '/WorkingData/STDP_es_eval_' + str(id) + '.csv')
     
     ### --Run-- ###
     
@@ -99,7 +99,7 @@ def run_simulation(child_id, out_path):
 
     ## --Write Performance-- ##
     dic_obj = {
-        'id': child_id,
+        'id': id,
         'alpha': 0 if np.isnan(alpha_perf) else alpha_perf,
         'alpha_post_weights': alpha_post_weights,
         'alpha_run_duration_STDP': alpha_run_duration_STDP,
@@ -112,15 +112,15 @@ def run_simulation(child_id, out_path):
         # what ever you would like to return to parent
     }
     os.makedirs(out_path + '/Done/', exist_ok=True)
-    with open(out_path + '/Done/child_' + str(child_id) +'.tmp', 'wb') as out:
+    with open(out_path + '/Done/child_' + str(id) +'.tmp', 'wb') as out:
         pickle.dump(dic_obj, out)
     
     # Delete temp data and data from parent
     os.system('rm -r \"' + out_path + '/WorkingData/\"')
-    os.system('rm \"' + out_path + '/Ready/child_' + str(child_id) +'.pkl\"')
+    os.system('rm \"' + out_path + '/Ready/child_' + str(id) +'.pkl\"')
     
     #The closeest to atomic operation
-    os.system('mv \"' + out_path + '/Done/child_' + str(child_id) +'.tmp\"  \"' + out_path + '/Done/child_' + str(child_id) +'.pkl\"')
+    os.system('mv \"' + out_path + '/Done/child_' + str(id) +'.tmp\"  \"' + out_path + '/Done/child_' + str(id) +'.pkl\"')
 
 
 if __name__ == '__main__':

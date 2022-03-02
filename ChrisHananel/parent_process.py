@@ -3,14 +3,15 @@ import numpy as np
 import time, glob, pickle
 from tqdm import tqdm
 
-sys.path.append(os.path.abspath(os.getcwd()))
-sys.path.append(os.path.abspath(os.getcwd()) + '/neurosim')
 
 def generate_starting_weights(config) -> np.array: 
+    sys.path.append(os.path.abspath(os.getcwd()))
+    sys.path.append(os.path.abspath(os.getcwd()) + '/neurosim/')
+
     import netpyne
-    from ..neurosim.sim import NeuroSim
-    from ..neurosim.conf import read_conf, init_wdir
-    from ..neurosim.aigame import AIGame
+    from sim import NeuroSim
+    from conf import read_conf, init_wdir
+    from aigame import AIGame
     def init(dconf):
         # Initialize the model with dconf config
         dconf['sim']['duration'] = 1e4
@@ -57,7 +58,7 @@ def main(
 
 
     ### ---Constants--- ###
-    SUB_PROCESS_FILE = 'child_process.py'
+    SUB_PROCESS_FILE = os.path.abspath(os.getcwd()) + '/ChrisHananel/child_process.py'
 
 
     ### ---Initialize--- ###
