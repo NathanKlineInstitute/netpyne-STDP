@@ -8,9 +8,9 @@ sys.path.append(os.path.abspath(os.getcwd()))
 sys.path.append(os.path.abspath(os.getcwd()) + '/neurosim')
 
 import netpyne
-from sim import NeuroSim
-from conf import read_conf, init_wdir
-from aigame import AIGame
+from ..neurosim.sim import NeuroSim
+from ..neurosim.conf import read_conf, init_wdir
+from ..neurosim.aigame import AIGame
 
 # Wrapper for netpyne simulation that catched the sys.exit() after one episode (if activated)
 def run_episodes(neurosim):

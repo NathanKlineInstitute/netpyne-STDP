@@ -8,9 +8,9 @@ sys.path.append(os.path.abspath(os.getcwd()) + '/neurosim')
 
 def generate_starting_weights(config) -> np.array: 
     import netpyne
-    from sim import NeuroSim
-    from conf import read_conf, init_wdir
-    from aigame import AIGame
+    from ..neurosim.sim import NeuroSim
+    from ..neurosim.conf import read_conf, init_wdir
+    from ..neurosim.aigame import AIGame
     def init(dconf):
         # Initialize the model with dconf config
         dconf['sim']['duration'] = 1e4
