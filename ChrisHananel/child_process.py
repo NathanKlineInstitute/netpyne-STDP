@@ -62,11 +62,11 @@ def run_simulation(id, out_path):
     os.makedirs(out_path + '/WorkingData/', exist_ok=True)
 
     ### ---Generate model--- ###
-    dconf = init(read_conf(config), out_path + '/WorkingData/child_' + str(id))
+    dconf = init(read_conf(config), r'"' + out_path + '/WorkingData/child_' + str(id) + '"')
     model = NeuroSim(dconf, use_noise=False, save_on_control_c=False)
     model.setWeightArray(netpyne.sim, weights)
-    fres_train = model.outpath(out_path + '/WorkingData/STDP_es_train_' + str(id) + '.csv')
-    fres_eval = model.outpath(out_path + '/WorkingData/STDP_es_eval_' + str(id) + '.csv')
+    fres_train = model.outpath(r'"' + out_path + '/WorkingData/STDP_es_train_' + str(id) + '.csv"')
+    fres_eval = model.outpath(r'"' + out_path + '/WorkingData/STDP_es_eval_' + str(id) + '.csv"')
     
     ### --Run-- ###
     
@@ -116,10 +116,10 @@ def run_simulation(id, out_path):
         pickle.dump(dic_obj, out)
     
     # Delete temp data and data from parent
-    os.system('rm \"' + out_path + '/Ready/child_' + str(id) +'.pkl\"')
+    os.system('rm "' + out_path + '/Ready/child_' + str(id) +'.pkl"')
     
     #The closeest to atomic operation
-    os.system('mv \"' + out_path + '/Done/child_' + str(id) +'.tmp\"  \"' + out_path + '/Done/child_' + str(id) +'.pkl\"')
+    os.system('mv "' + out_path + '/Done/child_' + str(id) +'.tmp"  "' + out_path + '/Done/child_' + str(id) +'.pkl"')
 
 
 if __name__ == '__main__':

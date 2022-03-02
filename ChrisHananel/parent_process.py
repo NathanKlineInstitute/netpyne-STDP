@@ -59,6 +59,7 @@ def main(
 
     ### ---Constants--- ###
     SUB_PROCESS_FILE = os.path.abspath(os.getcwd()) + '/ChrisHananel/child_process.py'
+    Agragate_log_file = 'performance.csv'
 
 
     ### ---Initialize--- ###
@@ -81,20 +82,32 @@ def main(
     LR_DECAY = dconf['STDP_ES']['decay_lr'] # 1
     SIGMA_DECAY = dconf['STDP_ES']['decay_sigma'] # 1
     SAVE_WEIGHTS_EVERY_ITER = dconf['STDP_ES']['save_weights_every_iter']
+    STOP_TRAIN_THRESHOLD = dconf['STDP_ES']['stop_train_threashold']
+    STOP_TRAIN_MOVING_AVG = dconf['STDP_ES']['stop_train_moving_avg']
 
 
     fitness_record = np.zeros((epochs, population, 3))
+    moving_performance_log = np.zeros(STOP_TRAIN_MOVING_AVG)
+    best_weights = np.copy(parent_weights)
 
     # out_path uniquely identified per child
     out_path = os.path.join(os.getcwd(), 'results', f'{sim_name}')
     # Establish buffer folders for child outputs
+    os.system('rm -r "' + out_path + '"') # COMMENT ON PRODUCTION
     try:
         os.makedirs(out_path + '/Ready/')
     except FileExistsError:
         raise Exception("Re-using simulation name, pick a different name")
+    
+    with open(out_path + '/' + Agragate_log_file,'wt') as f:
+        f.write('Alpha,Beta,Gamma\n')
+         
 
     ### ---Evolve--- ###
-    for epoch in tqdm(range(epochs)):
+    for epoch in tqdm(range(epochs), mininterval=1, leave=True,):
+        
+        if np.mean(moving_performance_log) >= STOP_TRAIN_THRESHOLD:
+            break
 
         # Mutated weights #
         mutations = np.random.normal(0, SIGMA, (population, *parent_weights.shape))
@@ -122,7 +135,7 @@ def main(
             # Prepare command for child process #
             args = {
                 'id':       child_id,
-                'out_path': "\'"+out_path+"\'",  # Output file path
+                'out_path': r""+out_path+"",  # Output file path
             }
             shell_command = ' '.join(['python3', SUB_PROCESS_FILE, *(f'--{k} {v}' for k,v in args.items()), '&'])
 
@@ -130,13 +143,13 @@ def main(
             os.system(shell_command)
             
             # from child_process import run_simulation
-            # run_simulation(child_id=child_id, out_path=out_path)
+            # run_simulation(id=child_id, out_path=out_path)
 
 
         # Await outputs #
         files = None
         while(True):
-            files = (glob.glob(out_path + "/Done/*.pkl"))
+            files = (glob.glob(r'' + out_path + "/Done/*.pkl"))
             if len(files) >= population:
                 break
             time.sleep(1)
@@ -147,17 +160,21 @@ def main(
                 child_data.append(pickle.load(out))
             
             # delete the file after we collect the data
-            os.system('rm \"'+ file +'\"')
-        os.system('rm -r \"' + out_path + '/WorkingData/\"')
+            os.system('rm '+ file +'')
+        os.system('rm -r ' + out_path + '/WorkingData/')
 
         # TODO: Add information recording for medians, min, max, etc. & for alpha/gamma
         # Record #
         for data in child_data:
             fitness_record[epoch, data['id'], :] = data['alpha'], data['beta'], data['gamma']
 
+        with open(out_path + '/' + Agragate_log_file,'at') as f:
+            f.write(f"{data['alpha']},{data['beta']},{data['gamma']}\n")
+            
+        moving_performance_log[epoch % STOP_TRAIN_MOVING_AVG] = data['gamma']
 
         # Evaluate children #
-        STDP_perfs = fitness_record[epoch, :, 2]    # all of ith epochs beta fitness
+        STDP_perfs = fitness_record[epoch, :, 2]    # all of ith epochs Gamma fitness
         # normalize the fitness for more stable training
         normalized_fitness = (STDP_perfs - STDP_perfs.mean()) / (STDP_perfs.std() + 1e-8)
         fitness_weighted_mutations = (normalized_fitness.reshape(-1, 1) * mutations)
@@ -173,11 +190,20 @@ def main(
                
         # This one saves weight data
         if (epoch + 1) % SAVE_WEIGHTS_EVERY_ITER == 0:
-            save_flag = True
+            best_fitness = np.mean(moving_performance_log)
+            flag = False
+            for child in child_data:
+                if child['gamma'] > best_fitness:
+                    best_fitness = child['gamma']
+                    best_weights = np.copy(child['gamma_post_weights'])
+                    flag = True
+            if flag:
+                with open(out_path + 'bestweights.pkl', 'wb') as f:
+                    pickle.dump(best_weights, f)
             
 
     # TODO: Write final results to directory f'./results/{sim_name}'
-    os.makedirs(out_path + '/rerults', exist_ok=True)
+    os.makedirs(r'' + out_path + '/rerults', exist_ok=True)
 
 
 if __name__ == '__main__':

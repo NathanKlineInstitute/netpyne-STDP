@@ -23,7 +23,9 @@
         "alpha_iters": 0,
         "beta_iters": 20,
         "gamma_iters": 10,
-        "save_weights_every_iter": 25
+        "save_weights_every_iter": 25,
+		"stop_train_threashold": 495,
+        "stop_train_moving_avg": 10
     },
     "env": {
         "name": "CartPole-v1",
@@ -96,8 +98,6 @@
         "targetedRLDscntFctr": 0.5,
         "tstepPerAction": 50,
         "saveWeights": 1,
-		"stop_train_threashold": 495,
-        "stop_train_moving_avg": 10,
         "save_logs": 0,
         "resetEligTrace": 1
     },
