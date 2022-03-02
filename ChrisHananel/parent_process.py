@@ -148,7 +148,7 @@ def main(
             
             # delete the file after we collect the data
             os.system('rm \"'+ file +'\"')
-
+        os.system('rm -r \"' + out_path + '/WorkingData/\"')
 
         # TODO: Add information recording for medians, min, max, etc. & for alpha/gamma
         # Record #

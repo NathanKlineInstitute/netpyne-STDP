@@ -116,7 +116,6 @@ def run_simulation(id, out_path):
         pickle.dump(dic_obj, out)
     
     # Delete temp data and data from parent
-    os.system('rm -r \"' + out_path + '/WorkingData/\"')
     os.system('rm \"' + out_path + '/Ready/child_' + str(id) +'.pkl\"')
     
     #The closeest to atomic operation
