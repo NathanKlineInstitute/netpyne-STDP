@@ -124,7 +124,7 @@ def main(
                 'id':       child_id,
                 'out_path': "\'"+out_path+"\'",  # Output file path
             }
-            shell_command = ' '.join(['python3', SUB_PROCESS_FILE, *(f'--{k} {v}' for k,v in args.items())])
+            shell_command = ' '.join(['python3', SUB_PROCESS_FILE, *(f'--{k} {v}' for k,v in args.items()), '&'])
 
             # Create parallel process #
             os.system(shell_command)
