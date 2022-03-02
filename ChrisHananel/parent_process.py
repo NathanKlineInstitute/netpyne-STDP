@@ -88,13 +88,9 @@ def main(
     out_path = os.path.join(os.getcwd(), 'results', f'{sim_name}')
     # Establish buffer folders for child outputs
     try:
-        # os.mkdir(out_path)
-        os.mkdir(out_path + '/Ready/')
+        os.makedirs(out_path + '/Ready/')
     except FileExistsError:
         raise Exception("Re-using simulation name, pick a different name")
-
-
-    save_flag = False
 
     ### ---Evolve--- ###
     for epoch in tqdm(range(epochs)):
@@ -115,7 +111,6 @@ def main(
                 'alpha':    alpha,              # Num. Pre-STDP iters
                 'beta':     beta,               # Num. STDP iters
                 'gamma':    gamma,              # Num. Post-STDP iters
-                'save_flag': save_flag,         # save weights?
                 # what ever you would like to return to parent
             }
             ## --Save data for child process-- ##
@@ -124,17 +119,17 @@ def main(
 
 
             # Prepare command for child process #
+            args = {
+                'id':       child_id,
+                'out_path': "\'"+out_path+"\'",  # Output file path
+            }
+            shell_command = ' '.join(['python3', SUB_PROCESS_FILE, *(f'--{k} {v}' for k,v in args.items())])
 
-            # args = {
-            #     'id':       child_id,
-            #     'out_path': "\'"+out_path+"\'",  # Output file path
-            # }
-            # shell_command = ' '.join(['python3', SUB_PROCESS_FILE, *(f'--{k} {v}' for k,v in args.items())])
-
-            # # Create parallel process #
-            # os.system(shell_command)
-            from child_process import run_simulation
-            run_simulation(child_id=child_id, out_path=out_path)
+            # Create parallel process #
+            os.system(shell_command)
+            
+            # from child_process import run_simulation
+            # run_simulation(child_id=child_id, out_path=out_path)
 
 
         # Await outputs #
@@ -150,8 +145,8 @@ def main(
             with open(file, 'rb') as out:
                 child_data.append(pickle.load(out))
             
-            #delete the file after we collect the data
-            # os.system('rm \"'+ file +'\"')
+            # delete the file after we collect the data
+            os.system('rm \"'+ file +'\"')
 
 
         # TODO: Add information recording for medians, min, max, etc. & for alpha/gamma
@@ -161,10 +156,10 @@ def main(
 
 
         # Evaluate children #
-        STDP_perfs = np.expand_dims(fitness_record[epoch, :, 2], axis=(1,2))    # all of ith epochs beta fitness
+        STDP_perfs = fitness_record[epoch, :, 2]    # all of ith epochs beta fitness
         # normalize the fitness for more stable training
         normalized_fitness = (STDP_perfs - STDP_perfs.mean()) / (STDP_perfs.std() + 1e-8)
-        fitness_weighted_mutations = (normalized_fitness * mutations)
+        fitness_weighted_mutations = (normalized_fitness.reshape(-1, 1) * mutations)
 
         # Evolve parent #
         parent_weights = parent_weights * (1 + (LEARNING_RATE * fitness_weighted_mutations.mean(axis=0)))
@@ -176,7 +171,6 @@ def main(
 
                
         # This one saves weight data
-        save_flag = False
         if (epoch + 1) % SAVE_WEIGHTS_EVERY_ITER == 0:
             save_flag = True
             

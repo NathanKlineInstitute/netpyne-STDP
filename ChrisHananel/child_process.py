@@ -59,8 +59,6 @@ def run_simulation(child_id, out_path):
     beta = child_data['beta']
     gamma = child_data['gamma']
     
-    save_flag = child_data['save_flag']
-
     os.makedirs(out_path + '/WorkingData/', exist_ok=True)
 
     ### ---Generate model--- ###
@@ -123,13 +121,6 @@ def run_simulation(child_id, out_path):
     
     #The closeest to atomic operation
     os.system('mv \"' + out_path + '/Done/child_' + str(child_id) +'.tmp\"  \"' + out_path + '/Done/child_' + str(child_id) +'.pkl\"')
-
-    if save_flag:    
-        print("\nSaving best weights after iteration")
-        # model.setWeightArray(netpyne.sim, best_weights)
-        model.recordWeights(netpyne.sim)
-        model.save()
-
 
 
 if __name__ == '__main__':
