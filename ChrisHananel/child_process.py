@@ -4,6 +4,8 @@ import numpy as np
 import pickle
 import os, sys
 
+from tqdm import tqdm
+
 sys.path.append(os.path.abspath(os.getcwd()))
 sys.path.append(os.path.abspath(os.getcwd()) + '/neurosim/')
 
@@ -49,7 +51,7 @@ def init(dconf, out_path):
 
 def run_simulation(id, out_path):
     ## loading
-    with open(out_path + '/Ready/child_' + str(id) +'.pkl', 'rb') as out:
+    with open(os.path.normpath(out_path + '/Ready/child_' + str(id) +'.pkl'), 'rb') as out:
         child_data = pickle.load(out)
 
     weights = child_data['weights']
@@ -74,7 +76,8 @@ def run_simulation(id, out_path):
     model.STDP_active = False
     model.end_after_episode = alpha
     run_episodes(model)
-    alpha_perf = np.mean(model.epCount[-alpha:])
+    alpha_perf = np.nanmean(model.epCount[-alpha:])
+    alpha_results = np.copy(model.epCount[-alpha:])
     alpha_post_weights = model.getWeightArray(netpyne.sim)  
     alpha_run_duration_STDP = model.last_times[-1] # TODO: RETURN THIS
     
@@ -82,7 +85,8 @@ def run_simulation(id, out_path):
     model.STDP_active = True
     model.end_after_episode = beta
     run_episodes(model)
-    beta_perf = np.mean(model.epCount[-beta:])
+    beta_perf = np.nanmean(model.epCount[-beta:])
+    beta_results = np.copy(model.epCount[-beta:])
     beta_post_weights = model.getWeightArray(netpyne.sim)  
     beta_run_duration_STDP = model.last_times[-1] # TODO: RETURN THIS
     
@@ -90,7 +94,8 @@ def run_simulation(id, out_path):
     model.STDP_active = False
     model.end_after_episode = gamma
     run_episodes(model)
-    gamma_perf = np.mean(model.epCount[-gamma:])
+    gamma_perf = np.nanmean(model.epCount[-gamma:])
+    gama_results = np.copy(model.epCount[-gamma:])
     gamma_post_weights = model.getWeightArray(netpyne.sim)  
     gamma_run_duration_STDP = model.last_times[-1] # TODO: RETURN THIS
 
@@ -101,12 +106,15 @@ def run_simulation(id, out_path):
     dic_obj = {
         'id': id,
         'alpha': 0 if np.isnan(alpha_perf) else alpha_perf,
+        'alpha_results': alpha_results,
         'alpha_post_weights': alpha_post_weights,
         'alpha_run_duration_STDP': alpha_run_duration_STDP,
         'beta': 0 if np.isnan(beta_perf) else beta_perf,
+        'beta_results': beta_results,
         'beta_post_weights': beta_post_weights,
         'beta_run_duration_STDP': beta_run_duration_STDP,
         'gamma': 0 if np.isnan(gamma_perf) else gamma_perf,
+        'gama_results': gama_results,
         'gamma_post_weights': gamma_post_weights,
         'gamma_run_duration_STDP': gamma_run_duration_STDP,
         # what ever you would like to return to parent

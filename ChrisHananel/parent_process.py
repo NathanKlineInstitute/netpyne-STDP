@@ -11,7 +11,6 @@ def generate_starting_weights(config) -> np.array:
     import netpyne
     from sim import NeuroSim
     from conf import read_conf, init_wdir
-    from aigame import AIGame
     def init(dconf):
         # Initialize the model with dconf config
         dconf['sim']['duration'] = 1e4
@@ -35,8 +34,6 @@ def generate_starting_weights(config) -> np.array:
     dconf = init(read_conf(config))
     neurosim = NeuroSim(dconf, use_noise=False, save_on_control_c=False)
     return dconf, neurosim.getWeightArray(netpyne.sim)
-
-    # return np.ones((100, 200))
 
 
 def main(
@@ -84,6 +81,7 @@ def main(
     SAVE_WEIGHTS_EVERY_ITER = dconf['STDP_ES']['save_weights_every_iter']
     STOP_TRAIN_THRESHOLD = dconf['STDP_ES']['stop_train_threashold']
     STOP_TRAIN_MOVING_AVG = dconf['STDP_ES']['stop_train_moving_avg']
+    use_weights_to_mutate = dconf['STDP_ES']['use_weights_to_mutate']
 
 
     fitness_record = np.zeros((epochs, population, 3))
@@ -93,7 +91,6 @@ def main(
     # out_path uniquely identified per child
     out_path = os.path.join(os.getcwd(), 'results', f'{sim_name}')
     # Establish buffer folders for child outputs
-    os.system('rm -r "' + out_path + '"') # COMMENT ON PRODUCTION
     try:
         os.makedirs(out_path + '/Ready/')
     except FileExistsError:
@@ -101,7 +98,6 @@ def main(
     
     with open(out_path + '/' + Agragate_log_file,'wt') as f:
         f.write('Alpha,Beta,Gamma\n')
-         
 
     ### ---Evolve--- ###
     for epoch in tqdm(range(epochs), mininterval=1, leave=True,):
@@ -135,9 +131,9 @@ def main(
             # Prepare command for child process #
             args = {
                 'id':       child_id,
-                'out_path': r""+out_path+"",  # Output file path
+                'out_path': '"' + out_path + '"',  # Output file path
             }
-            shell_command = ' '.join(['python3', SUB_PROCESS_FILE, *(f'--{k} {v}' for k,v in args.items()), '&'])
+            shell_command = ' '.join(['python3', "'" + SUB_PROCESS_FILE + "'", *(f'--{k} {v}' for k,v in args.items()), '&'])
 
             # Create parallel process #
             os.system(shell_command)
@@ -160,19 +156,30 @@ def main(
                 child_data.append(pickle.load(out))
             
             # delete the file after we collect the data
-            os.system('rm '+ file +'')
-        os.system('rm -r ' + out_path + '/WorkingData/')
+            os.system('rm "'+ file + '"')
+        os.system('rm -r "' + out_path + '/WorkingData/"')
+        os.system('rm -r "' + out_path + '/Done/"')
 
         # TODO: Add information recording for medians, min, max, etc. & for alpha/gamma
         # Record #
-        for data in child_data:
-            fitness_record[epoch, data['id'], :] = data['alpha'], data['beta'], data['gamma']
-
         with open(out_path + '/' + Agragate_log_file,'at') as f:
-            f.write(f"{data['alpha']},{data['beta']},{data['gamma']}\n")
-            
+            for data in child_data:
+                fitness_record[epoch, data['id'], :] = data['alpha'], data['beta'], data['gamma']
+                f.write(f"{data['alpha']},{data['beta']},{data['gamma']}\n")
+        
+        # calculating moving avarage
         moving_performance_log[epoch % STOP_TRAIN_MOVING_AVG] = data['gamma']
+        best_fitness = np.mean(moving_performance_log)
+        for child in child_data:
+            if child['gamma'] > best_fitness:
+                best_fitness = child['gamma']
+                best_weights = np.copy(child['gamma_post_weights'])
 
+        # This one saves weight data
+        if ((epoch + 1) % SAVE_WEIGHTS_EVERY_ITER) == 0:
+            with open(out_path + '/bestweights.pkl', 'wb') as f:
+                pickle.dump(best_weights, f)
+            
         # Evaluate children #
         STDP_perfs = fitness_record[epoch, :, 2]    # all of ith epochs Gamma fitness
         # normalize the fitness for more stable training
@@ -180,30 +187,15 @@ def main(
         fitness_weighted_mutations = (normalized_fitness.reshape(-1, 1) * mutations)
 
         # Evolve parent #
+        if use_weights_to_mutate:
+            parent_weights = np.copy(best_weights)
         parent_weights = parent_weights * (1 + (LEARNING_RATE * fitness_weighted_mutations.mean(axis=0)))
 
         # TODO: Potentially Sigma & LR Decay (not used in original)
         # decay sigma and the learning rate
         SIGMA *= SIGMA_DECAY
         LEARNING_RATE *= LR_DECAY
-
-               
-        # This one saves weight data
-        if (epoch + 1) % SAVE_WEIGHTS_EVERY_ITER == 0:
-            best_fitness = np.mean(moving_performance_log)
-            flag = False
-            for child in child_data:
-                if child['gamma'] > best_fitness:
-                    best_fitness = child['gamma']
-                    best_weights = np.copy(child['gamma_post_weights'])
-                    flag = True
-            if flag:
-                with open(out_path + 'bestweights.pkl', 'wb') as f:
-                    pickle.dump(best_weights, f)
-            
-
-    # TODO: Write final results to directory f'./results/{sim_name}'
-    os.makedirs(r'' + out_path + '/rerults', exist_ok=True)
+    os.system('rm -r "' + out_path + '/Ready/"')
 
 
 if __name__ == '__main__':
