@@ -38,6 +38,7 @@ def generate_starting_weights(config) -> np.array:
 
 def main(
     config,              # Network config
+    resume,              # Continue from the last save weights?
 ):
     # sim_name,            # Simulation ID (Uniquely identify this run)
     # epochs, population,  # Evol. general params
@@ -200,15 +201,10 @@ def main(
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    # parser.add_argument("--sim_name", type=str)
+    parser.add_argument("--resume", type=str, default='False')      # pass to the next process
     parser.add_argument("--config", type=str)
-    # parser.add_argument("--epochs", type=int)
-    # parser.add_argument("--population", type=int)
-    # parser.add_argument("--alpha", type=int)
-    # parser.add_argument("--beta", type=int)
-    # parser.add_argument("--gamma", type=int)
-    # parser.add_argument("--sigma", type=int, default=1)
-    # parser.add_argument("--lr", type=int, default=1)
 
     args = parser.parse_args()
+    args.resume = True if args.resume == 'True' or args.resume == 'true' else False
+
     main(**vars(args))

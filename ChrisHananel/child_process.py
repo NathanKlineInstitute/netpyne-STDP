@@ -64,11 +64,11 @@ def run_simulation(id, out_path):
     os.makedirs(out_path + '/WorkingData/', exist_ok=True)
 
     ### ---Generate model--- ###
-    dconf = init(read_conf(config), r'"' + out_path + '/WorkingData/child_' + str(id) + '"')
+    dconf = init(read_conf(config), out_path + '/WorkingData/child_' + str(id))
     model = NeuroSim(dconf, use_noise=False, save_on_control_c=False)
     model.setWeightArray(netpyne.sim, weights)
-    fres_train = model.outpath(r'"' + out_path + '/WorkingData/STDP_es_train_' + str(id) + '.csv"')
-    fres_eval = model.outpath(r'"' + out_path + '/WorkingData/STDP_es_eval_' + str(id) + '.csv"')
+    fres_train = model.outpath(out_path + '/WorkingData/STDP_es_train_' + str(id) + '.csv')
+    fres_eval = model.outpath(out_path + '/WorkingData/STDP_es_eval_' + str(id) + '.csv')
     
     ### --Run-- ###
     
