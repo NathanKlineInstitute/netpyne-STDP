@@ -2,7 +2,7 @@ import os, sys, argparse
 import numpy as np
 import time, glob, pickle
 from tqdm import tqdm
-
+import matplotlib.pyplot as plt
 
 def generate_starting_weights(config) -> np.array: 
     sys.path.append(os.path.abspath(os.getcwd()))
@@ -10,31 +10,86 @@ def generate_starting_weights(config) -> np.array:
 
     import netpyne
     from sim import NeuroSim
-    from conf import read_conf, init_wdir
+    from conf import read_conf, backup_config
     def init(dconf):
         # Initialize the model with dconf config
         dconf['sim']['duration'] = 1e4
         dconf['sim']['recordWeightStepSize'] = 1e4
 
-        outdir = dconf['sim']['outdir']
-        if os.path.isdir(outdir):
-            evaluations = [fname 
-                           for fname in os.listdir(outdir) 
-                           if fname.startswith('evaluation_') and os.path.isdir(os.path.join(outdir, fname))
-                           ]
-            if len(evaluations) > 0:
-                raise Exception(' '.join([
-                    'You have run evaluations on {}: {}.'.format(outdir, evaluations),
-                    'This will rewrite!',
-                    'Please delete to continue!']))
-
-        init_wdir(dconf)
+        backup_config(dconf)
         return dconf
     
     dconf = init(read_conf(config))
     neurosim = NeuroSim(dconf, use_noise=False, save_on_control_c=False)
     return dconf, neurosim.getWeightArray(netpyne.sim)
 
+def plot_performance(open_file, save):
+    data = dict()
+    feilds = list()
+    n_generations = 0
+    with open(open_file,'rt') as f:
+        # read lagent
+        st = f.readline()
+        for field in st.split(','):
+            field = field.replace('\n','')
+            feilds.append(field)
+            data[field] = {
+                'data': list(),
+                'feild_size': 0
+            }
+        #read feild size
+        st = f.readline().split(',')
+        for i, field in enumerate(data.keys()):
+            data[field]['feild_size'] = int(st[i])
+            
+        #space
+        st = f.readline().split(',')
+        
+        #data
+        for i_d, d in enumerate(f):
+            n_generations += 1
+            pop_counter =  i_d % data['pop']['feild_size']
+            if pop_counter == 0:
+                for k in data.keys():
+                    if k == feilds[-1]:
+                        continue
+                    data[k]['data'].append(np.zeros(data['pop']['feild_size']))
+            for i_v, v in enumerate(d.replace('\n','').split(',')):
+                data[feilds[i_v]]['data'][-1][pop_counter] = float(v)
+                
+    # plotting
+    xAxies = list()
+    counter = np.zeros(data['pop']['feild_size'])
+    for g in range(n_generations // data['pop']['feild_size']):
+        xAxies.extend(counter.tolist())
+        counter +=1
+    
+    plt.title('')
+    plt.xlabel('Generations') 
+    plt.ylabel('Performance') 
+    
+    for k,v in data.items():
+        if k == feilds[-1]:
+            continue
+        plt.scatter(xAxies, np.array(data[k]['data']).reshape(-1), label = k, s=0.5)
+    
+    plt.legend()
+    plt.savefig(save + r".png") 
+        
+        
+def convert(file,population,alpha,beta,gamma):
+    with open(file+'.tmp','wt') as f:
+        f.write('Alpha,Beta,Gamma,pop\n')
+        f.write(f'{alpha},{beta},{gamma}, {population}\n')
+        f.write(f'\n')
+    
+        with open(file,'rt') as f2:
+            f2.readline()
+            for line in f2:
+                f.write(line)
+    
+    os.system('rm "' + file + '"')
+    os.system('mv "' + file+'.tmp" "' + file + '"')
 
 def main(
     config,              # Network config
@@ -58,6 +113,7 @@ def main(
     ### ---Constants--- ###
     SUB_PROCESS_FILE = os.path.abspath(os.getcwd()) + '/ChrisHananel/child_process.py'
     Agragate_log_file = 'performance.csv'
+    Agragate_Verbos_log_file = 'performance_verbos.csv'
 
 
     ### ---Initialize--- ###
@@ -92,14 +148,29 @@ def main(
     # out_path uniquely identified per child
     out_path = os.path.join(os.getcwd(), 'results', f'{sim_name}')
     # Establish buffer folders for child outputs
-    try:
+    if resume:
+        with open(out_path + '/bestweights.pkl', 'rb') as f:
+            parent_weights = pickle.load(f)
+        os.system('rm -r "' + out_path + '/Ready/"')
+        os.system('rm -r "' + out_path + '/WorkingData/"')
+        os.system('rm -r "' + out_path + '/Done/"')
         os.makedirs(out_path + '/Ready/')
-    except FileExistsError:
-        raise Exception("Re-using simulation name, pick a different name")
+    else:            
+        try:
+            os.makedirs(out_path + '/Ready/')
+        except FileExistsError:
+            raise Exception("Re-using simulation name, pick a different name")
     
-    with open(out_path + '/' + Agragate_log_file,'wt') as f:
-        f.write('Alpha,Beta,Gamma\n')
-
+        with open(out_path + '/' + Agragate_log_file,'wt') as f:
+            f.write('Alpha,Beta,Gamma,pop\n')
+            f.write(f'{population},{alpha},{beta},{gamma}\n')
+            f.write(f'\n')
+        
+        # with open(out_path + '/' + Agragate_Verbos_log_file,'wt') as f:
+        #     f.write('Alpha,Beta,Gamma,pop\n')
+        #     f.write(f'{population},{alpha},{beta},{gamma}\n')
+        #     f.write(f'\n') 
+        
     ### ---Evolve--- ###
     for epoch in tqdm(range(epochs), mininterval=1, leave=True,):
         
@@ -144,6 +215,7 @@ def main(
 
 
         # Await outputs #
+        time.sleep(10)
         files = None
         while(True):
             files = (glob.glob(r'' + out_path + "/Done/*.pkl"))
@@ -163,10 +235,20 @@ def main(
 
         # TODO: Add information recording for medians, min, max, etc. & for alpha/gamma
         # Record #
-        with open(out_path + '/' + Agragate_log_file,'at') as f:
+        a_list = []; b_list = []; g_list = []
+        with open(out_path + '/' + Agragate_log_file,'at') as f:    
             for data in child_data:
-                fitness_record[epoch, data['id'], :] = data['alpha'], data['beta'], data['gamma']
+                fitness_record[epoch, data['id'], :] = data['alpha'], data['beta'], data['gamma']        
+                a_list.append(data['alpha_results'])
+                b_list.append(data['beta_results'])
+                g_list.append(data['gama_results'])
                 f.write(f"{data['alpha']},{data['beta']},{data['gamma']}\n")
+        
+        # with open(out_path + '/' + Agragate_Verbos_log_file,'at') as f:    
+        #     f.write(str(a_list).replace('[','').replace(']',''))
+        #     f.write(',' + str(b_list).replace('[','').replace(']',''))
+        #     f.write(',' + str(g_list).replace('[','').replace(']',''))
+        #     f.write("\n")            
         
         # calculating moving avarage
         moving_performance_log[epoch % STOP_TRAIN_MOVING_AVG] = data['gamma']
@@ -180,6 +262,8 @@ def main(
         if ((epoch + 1) % SAVE_WEIGHTS_EVERY_ITER) == 0:
             with open(out_path + '/bestweights.pkl', 'wb') as f:
                 pickle.dump(best_weights, f)
+            plot_performance(open_file=out_path + '/' + Agragate_log_file, save=out_path + '/performance')
+            plot_performance_verbos(open_file=out_path + '/' + Agragate_log_file, save=out_path + '/performance')
             
         # Evaluate children #
         STDP_perfs = fitness_record[epoch, :, 2]    # all of ith epochs Gamma fitness
@@ -208,3 +292,8 @@ if __name__ == '__main__':
     args.resume = True if args.resume == 'True' or args.resume == 'true' else False
 
     main(**vars(args))
+    
+    # convert(
+    #     '/mnt/d/LocalUserData/Box Sync/git_repo/netpyne-STDP/results/pop-10,alpha-0,beta-30,gama-10.withWights/performance.csv',
+    #         10,0,30,10
+    #         )

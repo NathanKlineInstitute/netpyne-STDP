@@ -11,8 +11,7 @@ sys.path.append(os.path.abspath(os.getcwd()) + '/neurosim/')
 
 import netpyne
 from sim import NeuroSim
-from conf import read_conf, init_wdir
-from aigame import AIGame
+from conf import read_conf, backup_config
 
 # Wrapper for netpyne simulation that catched the sys.exit() after one episode (if activated)
 def run_episodes(neurosim):
@@ -27,27 +26,12 @@ def run_episodes(neurosim):
     return
 
 def init(dconf, out_path):
-    # Initialize the model with dconf config
-    dconf['sim']['duration'] = 1e4
-    dconf['sim']['recordWeightStepSize'] = 1e4
-
-    outdir = dconf['sim']['outdir']
-    if os.path.isdir(outdir):
-        evaluations = [fname 
-                        for fname in os.listdir(outdir) 
-                        if fname.startswith('evaluation_') and os.path.isdir(os.path.join(outdir, fname))
-                        ]
-        if len(evaluations) > 0:
-            raise Exception(' '.join([
-                'You have run evaluations on {}: {}.'.format(outdir, evaluations),
-                'This will rewrite!',
-                'Please delete to continue!']))
-
-    dconf['sim']['outdir'] = out_path 
-    init_wdir(dconf)
-    
-    return dconf
-
+        # Initialize the model with dconf config
+        dconf['sim']['duration'] = 1e4
+        dconf['sim']['recordWeightStepSize'] = 1e4
+        
+        dconf['sim']['outdir'] = out_path 
+        return dconf
 
 def run_simulation(id, out_path):
     ## loading
