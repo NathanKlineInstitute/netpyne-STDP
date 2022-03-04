@@ -24,7 +24,7 @@ def generate_starting_weights(config) -> np.array:
     neurosim = NeuroSim(dconf, use_noise=False, save_on_control_c=False)
     return dconf, neurosim.getWeightArray(netpyne.sim)
 
-def plot_performance(open_file, save):
+def plot_performance(open_file, save, title=None):
     data = dict()
     feilds = list()
     n_generations = 0
@@ -66,7 +66,10 @@ def plot_performance(open_file, save):
         xAxies.extend(counter.tolist())
         counter +=1
     
-    plt.title('')
+    if title is None:
+        plt.title('')
+    else:
+        plt.title(title)
     plt.xlabel('Generations') 
     plt.ylabel('Performance') 
     
@@ -253,7 +256,10 @@ def main(
         if ((epoch + 1) % SAVE_WEIGHTS_EVERY_ITER) == 0 or (epoch+1)==epochs:
             with open(out_path + '/bestweights.pkl', 'wb') as f:
                 pickle.dump(best_weights, f)
-            plot_performance(open_file=out_path + '/' + Agragate_log_file, save=out_path + '/performance')
+            plot_performance(open_file=out_path + '/' + Agragate_log_file, 
+                             save=out_path + '/performance',
+                             title=sim_name
+                             )
             # plot_performance_verbos(open_file=out_path + '/' + Agragate_log_file, save=out_path + '/performance')
             
         # Evaluate children #
