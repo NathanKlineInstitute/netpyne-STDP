@@ -78,20 +78,6 @@ def plot_performance(open_file, save):
     plt.savefig(save + r".png") 
         
         
-def convert_logs(file,population,alpha,beta,gamma):
-    with open(file+'.tmp','wt') as f:
-        f.write('Alpha,Beta,Gamma,pop\n')
-        f.write(f'{alpha},{beta},{gamma}, {population}\n')
-        f.write(f'\n')
-    
-        with open(file,'rt') as f2:
-            f2.readline()
-            for line in f2:
-                f.write(line)
-    
-    os.system('rm "' + file + '"')
-    os.system('mv "' + file+'.tmp" "' + file + '"')
-
 def main(
     config,              # Network config
     resume,              # Continue from the last save weights?
@@ -149,12 +135,6 @@ def main(
            
     # out_path uniquely identified per child
     out_path = os.path.join(os.getcwd(), 'results', f'{sim_name}')
-    
-    # convert exist dataset
-    if convert: 
-        convert_logs(out_path + '/' + Agragate_log_file,population,alpha,beta,gamma)
-        main(config=config, resume=resume, convert=False)
-        return
     
     
     # Establish buffer folders for child outputs
@@ -296,7 +276,6 @@ def main(
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("--resume", type=str, default='False')
-    parser.add_argument("--convert", type=str, default='False')
     parser.add_argument("--config", type=str)
 
     args = parser.parse_args()
