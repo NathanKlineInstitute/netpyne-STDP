@@ -58,6 +58,7 @@ def plot_performance(open_file, save):
                 data[feilds[i_v]]['data'][-1][pop_counter] = float(v)
                 
     # plotting
+    plt.figure()
     xAxies = list()
     counter = np.zeros(data['pop']['feild_size'])
     for g in range(n_generations // data['pop']['feild_size']):

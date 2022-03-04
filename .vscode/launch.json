@@ -11,7 +11,7 @@
          "request": "launch",
          "program": "${file}",
          "console": "integratedTerminal",
-         "args": ["--config", "config-noSeed.json"]
+         "args": ["--config", "pop-10,alpha-0,beta-30,gama-10.withWights.json", "--resume", "True"]
          // "args": ["train", "config-noSeed.json"]
       }
    ]
