@@ -158,8 +158,8 @@ def main(
         #     f.write(f'{population},{alpha},{beta},{gamma}\n')
         #     f.write(f'\n') 
 
-    ### ---Initialize weights--- ###
-    dconf, parent_weights = generate_starting_weights(dconf)
+        ### ---Initialize weights--- ###
+        dconf, parent_weights = generate_starting_weights(dconf)
     parent_weights[parent_weights < -0.8] = -0.8
 
     fitness_record = np.zeros((epochs, population, 3))
