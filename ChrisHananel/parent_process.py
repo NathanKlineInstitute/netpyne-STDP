@@ -300,10 +300,10 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
     args.resume = True if args.resume == 'True' or args.resume == 'true' else False
+    args.convert = True if args.convert == 'True' or args.convert == 'true' else False
 
     main(**vars(args))
-    
-    # convert(
-    #     '/mnt/d/LocalUserData/Box Sync/git_repo/netpyne-STDP/results/pop-10,alpha-0,beta-30,gama-10.withWights/performance.csv',
-    #         10,0,30,10
-    #         )
+    # out_path = '/mnt/d/LocalUserData/Box Sync/git_repo/netpyne-STDP/results/pop-10,alpha-0,beta-30,gama-10.withWights'
+    # Agragate_log_file = 'performance.csv'
+    # plot_performance(open_file=out_path + '/' + Agragate_log_file, save=out_path + '/performance')
+
