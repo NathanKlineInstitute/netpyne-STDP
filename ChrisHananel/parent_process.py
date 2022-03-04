@@ -4,13 +4,14 @@ import time, glob, pickle
 from tqdm import tqdm
 import matplotlib.pyplot as plt
 
-def generate_starting_weights(config) -> np.array: 
-    sys.path.append(os.path.abspath(os.getcwd()))
-    sys.path.append(os.path.abspath(os.getcwd()) + '/neurosim/')
+import netpyne
+sys.path.append(os.path.abspath(os.getcwd()))
+sys.path.append(os.path.abspath(os.getcwd()) + '/neurosim/')
+from sim import NeuroSim
+from conf import read_conf, backup_config
 
-    import netpyne
-    from sim import NeuroSim
-    from conf import read_conf, backup_config
+def generate_starting_weights(config) -> np.array: 
+
     def init(dconf):
         # Initialize the model with dconf config
         dconf['sim']['duration'] = 1e4
@@ -19,7 +20,7 @@ def generate_starting_weights(config) -> np.array:
         backup_config(dconf)
         return dconf
     
-    dconf = init(read_conf(config))
+    dconf = init(config)
     neurosim = NeuroSim(dconf, use_noise=False, save_on_control_c=False)
     return dconf, neurosim.getWeightArray(netpyne.sim)
 
@@ -81,7 +82,6 @@ def plot_performance(open_file, save):
 def main(
     config,              # Network config
     resume,              # Continue from the last save weights?
-    convert,             # convert logs
 ):
     # sim_name,            # Simulation ID (Uniquely identify this run)
     # epochs, population,  # Evol. general params
@@ -105,9 +105,7 @@ def main(
 
 
     ### ---Initialize--- ###
-    dconf, parent_weights = generate_starting_weights(config)
-    parent_weights[parent_weights < -0.8] = -0.8
-    
+    dconf = read_conf(config)    
 
     #### --- Set variabels--- ###
     sim_name = dconf['sim']['outdir'].split('/')[-1]
@@ -128,10 +126,6 @@ def main(
     STOP_TRAIN_MOVING_AVG = dconf['STDP_ES']['stop_train_moving_avg']
     use_weights_to_mutate = dconf['STDP_ES']['use_weights_to_mutate']
 
-
-    fitness_record = np.zeros((epochs, population, 3))
-    moving_performance_log = np.zeros(STOP_TRAIN_MOVING_AVG)
-    best_weights = np.copy(parent_weights)
            
     # out_path uniquely identified per child
     out_path = os.path.join(os.getcwd(), 'results', f'{sim_name}')
@@ -160,6 +154,14 @@ def main(
         #     f.write('Alpha,Beta,Gamma,pop\n')
         #     f.write(f'{population},{alpha},{beta},{gamma}\n')
         #     f.write(f'\n') 
+
+    ### ---Initialize weights--- ###
+    dconf, parent_weights = generate_starting_weights(dconf)
+    parent_weights[parent_weights < -0.8] = -0.8
+
+    fitness_record = np.zeros((epochs, population, 3))
+    moving_performance_log = np.zeros(STOP_TRAIN_MOVING_AVG)
+    best_weights = np.copy(parent_weights)
         
     ### ---Evolve--- ###
     for epoch in tqdm(range(epochs), mininterval=1, leave=True,):
@@ -183,25 +185,26 @@ def main(
                 'alpha':    alpha,              # Num. Pre-STDP iters
                 'beta':     beta,               # Num. STDP iters
                 'gamma':    gamma,              # Num. Post-STDP iters
+                'Exit?':    (epoch+1)==epochs   # last round?
                 # what ever you would like to return to parent
             }
             ## --Save data for child process-- ##
             with open(out_path + '/Ready/child_' + str(child_id) +'.pkl', 'wb') as out:
                 pickle.dump(dic_obj, out)
 
+            if epoch == 0:
+                # Prepare command for child process #
+                args = {
+                    'id':       child_id,
+                    'out_path': '"' + out_path + '"',  # Output file path
+                }
+                shell_command = ' '.join(['python3', "'" + SUB_PROCESS_FILE + "'", *(f'--{k} {v}' for k,v in args.items()), '&'])
 
-            # Prepare command for child process #
-            args = {
-                'id':       child_id,
-                'out_path': '"' + out_path + '"',  # Output file path
-            }
-            shell_command = ' '.join(['python3', "'" + SUB_PROCESS_FILE + "'", *(f'--{k} {v}' for k,v in args.items()), '&'])
-
-            # Create parallel process #
-            os.system(shell_command)
-            
-            # from child_process import run_simulation
-            # run_simulation(id=child_id, out_path=out_path)
+                # Create parallel process #
+                os.system(shell_command)
+                
+                # from child_process import run_simulation
+                # run_simulation(id=child_id, out_path=out_path)
 
 
         # Await outputs #
@@ -220,8 +223,6 @@ def main(
             
             # delete the file after we collect the data
             os.system('rm "'+ file + '"')
-        os.system('rm -r "' + out_path + '/WorkingData/"')
-        os.system('rm -r "' + out_path + '/Done/"')
 
         # TODO: Add information recording for medians, min, max, etc. & for alpha/gamma
         # Record #
@@ -249,7 +250,7 @@ def main(
                 best_weights = np.copy(child['gamma_post_weights'])
 
         # This one saves weight data
-        if ((epoch + 1) % SAVE_WEIGHTS_EVERY_ITER) == 0:
+        if ((epoch + 1) % SAVE_WEIGHTS_EVERY_ITER) == 0 or (epoch+1)==epochs:
             with open(out_path + '/bestweights.pkl', 'wb') as f:
                 pickle.dump(best_weights, f)
             plot_performance(open_file=out_path + '/' + Agragate_log_file, save=out_path + '/performance')
@@ -271,6 +272,8 @@ def main(
         SIGMA *= SIGMA_DECAY
         LEARNING_RATE *= LR_DECAY
     os.system('rm -r "' + out_path + '/Ready/"')
+    os.system('rm -r "' + out_path + '/WorkingData/"')
+    os.system('rm -r "' + out_path + '/Done/"')
 
 
 if __name__ == '__main__':
@@ -280,7 +283,6 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
     args.resume = True if args.resume == 'True' or args.resume == 'true' else False
-    args.convert = True if args.convert == 'True' or args.convert == 'true' else False
 
     main(**vars(args))
     
