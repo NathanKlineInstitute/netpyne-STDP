@@ -155,7 +155,7 @@ def main(
     
         with open(out_path + '/' + Agragate_log_file,'wt') as f:
             f.write('Alpha,Beta,Gamma,pop\n')
-            f.write(f'{population},{alpha},{beta},{gamma}\n')
+            f.write(f'{alpha},{beta},{gamma},{population}\n')
             f.write(f'\n')
         
         # with open(out_path + '/' + Agragate_Verbos_log_file,'wt') as f:
