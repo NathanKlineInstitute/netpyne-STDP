@@ -275,7 +275,7 @@ def main(
 
         # Evolve parent #
         if use_weights_to_mutate:
-            parent_weights = np.copy(best_weights)
+            parent_weights = parent_weights + use_weights_to_mutate * np.copy(best_weights)
         parent_weights = parent_weights * (1 + (LEARNING_RATE * fitness_weighted_mutations.mean(axis=0)))
 
         # TODO: Potentially Sigma & LR Decay (not used in original)

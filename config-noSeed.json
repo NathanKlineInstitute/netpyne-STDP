@@ -14,7 +14,7 @@
         "save_weights_every_iter": 25,
 		"stop_train_threashold": 495,
         "stop_train_moving_avg": 10,
-		"use_weights_to_mutate": 0
+		"use_weights_to_mutate": 0.2
     },
     "env": {
         "name": "CartPole-v1",
