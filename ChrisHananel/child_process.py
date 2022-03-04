@@ -108,6 +108,11 @@ def main(id, out_path):
             'gamma_run_duration_STDP': gamma_run_duration_STDP,
             # what ever you would like to return to parent
         }
+        
+        if not os.path.exists(out_path + '/Done/'):
+            tqdm.write('Identify parant termination!')
+            return
+        
         with open(out_path + '/Done/child_' + str(id) +'.tmp', 'wb') as out:
             pickle.dump(dic_obj, out)
         
@@ -123,6 +128,10 @@ def main(id, out_path):
         else:
             # wait for the next data dump
             while(True):
+                if not os.path.exists(out_path + '/Done/'):
+                    tqdm.write('Identify parant termination!')
+                    return
+                
                 files = (glob.glob(r'' + out_path + '/Ready/child_' + str(id) +'.pkl'))
                 if len(files) > 0:
                     break

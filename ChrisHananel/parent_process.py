@@ -3,12 +3,26 @@ import numpy as np
 import time, glob, pickle
 from tqdm import tqdm
 import matplotlib.pyplot as plt
+import signal
 
 import netpyne
 sys.path.append(os.path.abspath(os.getcwd()))
 sys.path.append(os.path.abspath(os.getcwd()) + '/neurosim/')
 from sim import NeuroSim
 from conf import read_conf, backup_config
+
+def signal_handler(signal, frame):
+        done()
+        sys.exit(0)
+
+signal.signal(signal.SIGINT, signal_handler)
+out_path = None
+
+def done():
+    global out_path
+    os.system('rm -r "' + out_path + '/Ready/"')
+    os.system('rm -r "' + out_path + '/WorkingData/"')
+    os.system('rm -r "' + out_path + '/Done/"')
 
 def generate_starting_weights(config) -> np.array: 
 
@@ -86,19 +100,9 @@ def main(
     config,              # Network config
     resume,              # Continue from the last save weights?
 ):
-    # sim_name,            # Simulation ID (Uniquely identify this run)
-    # epochs, population,  # Evol. general params
-    # alpha, beta, gamma,  # STDP+ES params
-    # sigma, lr            # Evol. learning params
-
     ### ---Assertions--- ###
     assert config is not None, 'Config must be given'
-    # assert sim_name is not None, 'Simulation name must be defined'
-    # assert epochs is not None, 'Number of epochs must be defined'
-    # assert population is not None, 'Population must be defined'
-    # assert alpha is not None, 'Alpha must be defined'
-    # assert beta is not None, 'Beta must be defined'
-    # assert gamma is not None, 'Gamma must be defined'
+
 
 
     ### ---Constants--- ###
@@ -108,7 +112,7 @@ def main(
 
 
     ### ---Initialize--- ###
-    dconf = read_conf(config)    
+    dconf = read_conf(config)
 
     #### --- Set variabels--- ###
     sim_name = dconf['sim']['outdir'].split('/')[-1]
@@ -131,6 +135,7 @@ def main(
 
            
     # out_path uniquely identified per child
+    global out_path
     out_path = os.path.join(os.getcwd(), 'results', f'{sim_name}')
     
     
@@ -277,9 +282,7 @@ def main(
         # decay sigma and the learning rate
         SIGMA *= SIGMA_DECAY
         LEARNING_RATE *= LR_DECAY
-    os.system('rm -r "' + out_path + '/Ready/"')
-    os.system('rm -r "' + out_path + '/WorkingData/"')
-    os.system('rm -r "' + out_path + '/Done/"')
+    done()
 
 
 if __name__ == '__main__':
