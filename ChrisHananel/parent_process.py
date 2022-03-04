@@ -77,7 +77,7 @@ def plot_performance(open_file, save):
     plt.savefig(save + r".png") 
         
         
-def convert(file,population,alpha,beta,gamma):
+def convert_logs(file,population,alpha,beta,gamma):
     with open(file+'.tmp','wt') as f:
         f.write('Alpha,Beta,Gamma,pop\n')
         f.write(f'{alpha},{beta},{gamma}, {population}\n')
@@ -94,6 +94,7 @@ def convert(file,population,alpha,beta,gamma):
 def main(
     config,              # Network config
     resume,              # Continue from the last save weights?
+    convert,             # convert logs
 ):
     # sim_name,            # Simulation ID (Uniquely identify this run)
     # epochs, population,  # Evol. general params
@@ -144,9 +145,17 @@ def main(
     fitness_record = np.zeros((epochs, population, 3))
     moving_performance_log = np.zeros(STOP_TRAIN_MOVING_AVG)
     best_weights = np.copy(parent_weights)
-
+           
     # out_path uniquely identified per child
     out_path = os.path.join(os.getcwd(), 'results', f'{sim_name}')
+    
+    # convert exist dataset
+    if convert: 
+        convert_logs(out_path + '/' + Agragate_log_file,population,alpha,beta,gamma)
+        main(config=config, resume=resume, convert=False)
+        return
+    
+    
     # Establish buffer folders for child outputs
     if resume:
         with open(out_path + '/bestweights.pkl', 'rb') as f:
@@ -263,7 +272,7 @@ def main(
             with open(out_path + '/bestweights.pkl', 'wb') as f:
                 pickle.dump(best_weights, f)
             plot_performance(open_file=out_path + '/' + Agragate_log_file, save=out_path + '/performance')
-            plot_performance_verbos(open_file=out_path + '/' + Agragate_log_file, save=out_path + '/performance')
+            # plot_performance_verbos(open_file=out_path + '/' + Agragate_log_file, save=out_path + '/performance')
             
         # Evaluate children #
         STDP_perfs = fitness_record[epoch, :, 2]    # all of ith epochs Gamma fitness
@@ -285,7 +294,8 @@ def main(
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument("--resume", type=str, default='False')      # pass to the next process
+    parser.add_argument("--resume", type=str, default='False')
+    parser.add_argument("--convert", type=str, default='False')
     parser.add_argument("--config", type=str)
 
     args = parser.parse_args()
