@@ -217,8 +217,6 @@ def main(
         ### ---Initialize weights--- ###
         dconf, best_weights = generate_starting_weights(dconf, out_path)
         
-    best_weights[best_weights < -0.8] = -0.8
-
     fitness_record = np.zeros((epochs, population, 3))
     moving_performance_log = np.zeros(STOP_TRAIN_MOVING_AVG)
         
@@ -310,6 +308,8 @@ def main(
             if child['gamma'] > best_fitness:
                 best_fitness = child['gamma']
                 gama_best_weight = np.copy(child['gamma_post_weights'])
+                # beta_best_weight = np.copy(child['beta_post_weights'])
+                
 
         # This one saves weight data
         if ((epoch + 1) % SAVE_WEIGHTS_EVERY_ITER) == 0 or (epoch+1)==epochs:
@@ -325,10 +325,9 @@ def main(
                                     )
             
         # Evaluate children #
+        # fitness = fitness_record[epoch, :, 1].reshape(-1, 1)   # all of ith epochs Beta fitness
         fitness = fitness_record[epoch, :, 2].reshape(-1, 1)   # all of ith epochs Gamma fitness
-        
-        # STDP_perfs = fitness_record[epoch, :, 1]    # all of ith epochs Beta fitness
-        
+                
         # normalize the fitness for more stable training
         normalized_fitness = (fitness - fitness.mean()) / (fitness.std() + 1e-8)
         fitness_weighted_mutations = (normalized_fitness * perturbations)
