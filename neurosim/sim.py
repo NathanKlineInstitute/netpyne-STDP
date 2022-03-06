@@ -834,11 +834,11 @@ class NeuroSim:
 
     return actions
 
-  def trainAgent(self, t):
+  def trainAgent(self, simTime):
     """ training interface between simulation and game environment
     """
     dconf = self.dconf
-    self.last_times.append(t)
+    self.last_times.append(simTime)
 
     t1 = datetime.now()
     
@@ -857,7 +857,7 @@ class NeuroSim:
       self.normOutMeans = self.weightsMean(sim, ctype='out')
 
     # for the first time interval use randomly selected actions
-    if t < (self.tstepPerAction*self.actionsPerPlay):
+    if simTime < (self.tstepPerAction*self.actionsPerPlay):
       actions = []
       movecodes = [v for k, v in dconf['moves'].items()]
       for _ in range(int(self.actionsPerPlay)):
@@ -865,7 +865,7 @@ class NeuroSim:
         actions.append(action)
     # the actions should be based on the activity of motor cortex (EMRIGHT, EMLEFT)
     else:
-      actions = self.getActions(sim, t)
+      actions = self.getActions(sim, simTime)
 
     t1 = datetime.now() - t1
     t2 = datetime.now()
@@ -918,7 +918,7 @@ class NeuroSim:
     if self.STDP_active and reward != 0.0:
       if dconf['verbose']:
         if sim.rank == 0:
-          tqdm.write('t={} Reward:{} Actions: {}'.format(round(t, 2), reward, actions))
+          tqdm.write('t={} Reward:{} Actions: {}'.format(round(simTime, 2), reward, actions))
       self.applySTDP(sim, reward, actions)
 
     # Reset eligibility trace
@@ -931,13 +931,13 @@ class NeuroSim:
     if sim.rank == 0:
       tvec_actions = []
       for ts in range(len(actions)):
-        tvec_actions.append(t-self.tstepPerAction*(len(actions)-ts-1))
+        tvec_actions.append(simTime-self.tstepPerAction*(len(actions)-ts-1))
 
       if dconf['sim']['save_logs']:
         with open(sim.ActionsRewardsfilename, 'a') as fid3:
           obs = '\t{}'.format(json.dumps(str(list(sim.AIGame.observations[-1])))) if self.saveEnvObs else ''
-          for action, t in zip(actions, tvec_actions):
-            fid3.write('%0.1f\t%0.1f\t%0.5f%s\n' % (t, action, reward, obs))
+          for action, simTime in zip(actions, tvec_actions):
+            fid3.write('%0.1f\t%0.1f\t%0.5f%s\n' % (simTime, action, reward, obs))
 
     # update firing rate of inputs to R population (based on game state)
     self.updateInputRates(sim)
@@ -948,16 +948,16 @@ class NeuroSim:
     self.NBsteps += 1
     if self.NBsteps % self.recordWeightStepSize == 0:
       if dconf['verbose'] > 0 and sim.rank == 0:
-        tqdm.write('Weights Recording Time:', t, 'NBsteps:', self.NBsteps,
+        tqdm.write('Weights Recording Time:', simTime, 'NBsteps:', self.NBsteps,
               'recordWeightStepSize:', self.recordWeightStepSize)
-      self.recordWeights(sim, t)
+      self.recordWeights(sim, simTime)
     if self.STDP_active and self.normalizeSynInputs and self.NBsteps % self.normalizeInStepSize == 0:
       self.normalizeInWeights(sim)
 
     t5 = datetime.now() - t5
     if random.random() < 0.001:
       buf = [round(tk.microseconds / 1000, 0) for tk in [t1, t2, t3, t4, t5]]
-      buf = str(t) + ' ' + ','.join(str(buf).replace(']','').replace('[','').split(','))
+      buf = str(simTime) + ' ' + ','.join(str(buf).replace(']','').replace('[','').split(','))
       tqdm.write(buf)
 
     if 'sleeptrial' in dconf['sim'] and dconf['sim']['sleeptrial']:

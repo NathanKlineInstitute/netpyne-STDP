@@ -1,5 +1,6 @@
 import argparse
 from copyreg import pickle
+from matplotlib.pyplot import flag
 import numpy as np
 import pickle
 import os, sys
@@ -67,28 +68,28 @@ def main(id, out_path):
         model.STDP_active = False
         model.end_after_episode = alpha
         run_episodes(model)
-        alpha_perf = np.nanmean(model.epCount[-alpha:])
-        alpha_results = np.copy(model.epCount[-alpha:])
-        alpha_post_weights = model.getWeightArray(netpyne.sim)  
-        alpha_run_duration_STDP = model.last_times[-1] # TODO: RETURN THIS
+        alpha_perf = 0 if alpha==0 else np.nanmean(model.epCount[-alpha:])
+        alpha_results = np.copy(model.epCount[-alpha:]) if alpha>0 else 0
+        alpha_post_weights = model.getWeightArray(netpyne.sim) if alpha>0 else 0
+        alpha_run_duration_STDP = model.last_times[-1] if alpha>0 else 0 # TODO: RETURN THIS
         
         # beta: Activate STDP and run again #
         model.STDP_active = True
         model.end_after_episode = beta
         run_episodes(model)
-        beta_perf = np.nanmean(model.epCount[-beta:])
-        beta_results = np.copy(model.epCount[-beta:])
-        beta_post_weights = model.getWeightArray(netpyne.sim)  
-        beta_run_duration_STDP = model.last_times[-1] # TODO: RETURN THIS
+        beta_perf = 0 if beta==0 else np.nanmean(model.epCount[-beta:])
+        beta_results = 0 if beta==0 else np.copy(model.epCount[-beta:])
+        beta_post_weights = 0 if beta==0 else model.getWeightArray(netpyne.sim)  
+        beta_run_duration_STDP = 0 if beta==0 else model.last_times[-1] # TODO: RETURN THIS
         
         # gamma: Deactivate STDP and run again #
         model.STDP_active = False
         model.end_after_episode = gamma
         run_episodes(model)
-        gamma_perf = np.nanmean(model.epCount[-gamma:])
-        gama_results = np.copy(model.epCount[-gamma:])
-        gamma_post_weights = model.getWeightArray(netpyne.sim)  
-        gamma_run_duration_STDP = model.last_times[-1] # TODO: RETURN THIS
+        gamma_perf = 0 if gamma==0 else np.nanmean(model.epCount[-gamma:])
+        gama_results = 0 if gamma==0 else np.copy(model.epCount[-gamma:])
+        gamma_post_weights = 0 if gamma==0 else model.getWeightArray(netpyne.sim)  
+        gamma_run_duration_STDP = 0 if gamma==0 else model.last_times[-1] # TODO: RETURN THIS
 
         # # TODO: Uncomment for above, the below is just for testing
         # alpha_perf, beta_perf, gamma_perf = 0, 1, 2
@@ -123,12 +124,6 @@ def main(id, out_path):
         
         #The closeest to atomic operation
         os.system('mv "' + out_path + '/Done/child_' + str(id) +'.tmp"  "' + out_path + '/Done/child_' + str(id) +'.pkl"')
-
-        ### ---Generate model--- ###
-        dconf = init(read_conf(config), out_path + '/WorkingData/child_' + str(id))
-        model = NeuroSim(dconf, use_noise=False, save_on_control_c=False)
-        fres_train = model.outpath(out_path + '/WorkingData/STDP_es_train_' + str(id) + '.csv')
-        fres_eval = model.outpath(out_path + '/WorkingData/STDP_es_eval_' + str(id) + '.csv')  
 
         if child_data['Exit?']:
             # last round!
