@@ -14,6 +14,7 @@ sys.path.append(os.path.abspath(os.getcwd()) + '/neurosim/')
 import netpyne
 from sim import NeuroSim
 from conf import read_conf, backup_config
+from collections import deque
 
 # Wrapper for netpyne simulation that catched the sys.exit() after one episode (if activated)
 def run_episodes(neurosim):
@@ -90,6 +91,7 @@ def main(id, out_path):
         gama_results = 0 if gamma==0 else np.copy(model.epCount[-gamma:])
         gamma_post_weights = 0 if gamma==0 else model.getWeightArray(netpyne.sim)  
         gamma_run_duration_STDP = 0 if gamma==0 else model.last_times[-1] # TODO: RETURN THIS
+        model.epCount.clear()
 
         # # TODO: Uncomment for above, the below is just for testing
         # alpha_perf, beta_perf, gamma_perf = 0, 1, 2

@@ -95,7 +95,6 @@ def plot_performance(open_file, save, title=None):
     plt.legend()
     plt.savefig(save + r".png") 
   
-
 def plot_performance_verbos(open_file, save, title=None):
     data = dict()
     feilds = list()
@@ -163,7 +162,7 @@ def main(
     SUB_PROCESS_FILE = os.path.abspath(os.getcwd()) + '/ChrisHananel/child_process.py'
     Agragate_log_file = 'performance.csv'
     Agragate_Verbos_log_file = 'performance_verbos.csv'
-
+    
 
     ### ---Initialize--- ###
     dconf = read_conf(config)
@@ -191,6 +190,10 @@ def main(
     # out_path uniquely identified per child
     global out_path
     out_path = os.path.join(os.getcwd(), 'results', f'{sim_name}')
+    
+    ### ---backup--- ###
+    os.system('cp ' + config + ' ' + out_path + '/')
+    os.system('tar cvzf '+ out_path + '/code_backp.tar.gz ChrisHananel/*.* neurosim/*.*')
     
     
     # Establish buffer folders for child outputs
