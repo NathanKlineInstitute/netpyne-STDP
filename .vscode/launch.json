@@ -4,21 +4,33 @@
    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
    "version": "0.2.0",
    "configurations": [
-      {
-         "name": "Python: child",
-         "type": "python",
-         "request": "launch",
-         "program": "ChrisHananel/child_process.py",
-         "console": "integratedTerminal",
-         "args": ["--out_path", "/mnt/d/LocalUserData/Box Sync/git_repo/netpyne-STDP/results/noSeed/", "--id", "0" ]
-      },
+
       // {
-      //    "name": "Python: parent",
+      //    "name": "Python: child",
       //    "type": "python",
       //    "request": "launch",
-      //    "program": "ChrisHananel/parent_process.py",
+      //    "program": "ChrisHananel/child_process.py",
       //    "console": "integratedTerminal",
-      //    "args": ["--config", "config-noSeed.json",]// "--resume", "True"]
+      //    "args": ["--out_path", "/mnt/d/LocalUserData/Box Sync/git_repo/netpyne-STDP/results/noSeed/", "--id", "0" ]
+      // },
+
+      {
+         "name": "Python: parent",
+         "type": "python",
+         "request": "launch",
+         "program": "ChrisHananel/parent_process.py",
+         "console": "integratedTerminal",
+         "args": ["--config", "config-noSeed.json",]// "--resume", "True"]
+         // "args": ["train", "config-noSeed.json"]
+      }
+
+      // {
+      //    "name": "Python: STDP_ES",
+      //    "type": "python",
+      //    "request": "launch",
+      //    "program": "neurosim/STDP_ES.py",
+      //    "console": "integratedTerminal",
+      //    "args": ["train", "config-noSeed.json",]// "--resume", "True"]
       //    // "args": ["train", "config-noSeed.json"]
       // }
    ]

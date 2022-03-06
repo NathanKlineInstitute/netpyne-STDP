@@ -24,19 +24,14 @@ def done():
     os.system('rm -r "' + out_path + '/WorkingData/"')
     os.system('rm -r "' + out_path + '/Done/"')
 
-def generate_starting_weights(config) -> np.array: 
+def generate_starting_weights(config, path) -> np.array: 
 
-    def init(dconf):
-        # Initialize the model with dconf config
-        dconf['sim']['duration'] = 1e4
-        dconf['sim']['recordWeightStepSize'] = 1e4
-
-        backup_config(dconf)
-        return dconf
+    config['sim']['duration'] = 1e4
+    config['sim']['recordWeightStepSize'] = 1e4
+    config['sim']['outdir'] = path 
     
-    dconf = init(config)
-    neurosim = NeuroSim(dconf, use_noise=False, save_on_control_c=False)
-    return dconf, neurosim.getWeightArray(netpyne.sim)
+    neurosim = NeuroSim(config, use_noise=False, save_on_control_c=False)
+    return config, neurosim.getWeightArray(netpyne.sim)
 
 def plot_performance(open_file, save, title=None):
     data = dict()
@@ -190,16 +185,11 @@ def main(
     # out_path uniquely identified per child
     global out_path
     out_path = os.path.join(os.getcwd(), 'results', f'{sim_name}')
-    
-    ### ---backup--- ###
-    os.system('cp ' + config + ' ' + out_path + '/')
-    os.system('tar cvzf '+ out_path + '/code_backp.tar.gz ChrisHananel/*.* neurosim/*.*')
-    
-    
+        
     # Establish buffer folders for child outputs
     if resume:
         with open(out_path + '/bestweights.pkl', 'rb') as f:
-            parent_weights = pickle.load(f)
+            best_weights = pickle.load(f)
         os.system('rm -r "' + out_path + '/Ready/"')
         os.system('rm -r "' + out_path + '/WorkingData/"')
         os.system('rm -r "' + out_path + '/Done/"')
@@ -219,14 +209,18 @@ def main(
             f.write('Alpha,Beta,Gamma,pop\n')
             f.write(f'{alpha},{beta},{gamma},{population}\n')
             f.write(f'\n') 
+        
+        ### ---backup--- ###
+        os.system('cp "' + config + '" "' + out_path + '/"')
+        os.system('tar cvzf "'+ out_path + '/code_backp.tar.gz" ChrisHananel/*.* neurosim/*.*')
 
         ### ---Initialize weights--- ###
-        dconf, parent_weights = generate_starting_weights(dconf)
-    parent_weights[parent_weights < -0.8] = -0.8
+        dconf, best_weights = generate_starting_weights(dconf, out_path)
+        
+    best_weights[best_weights < -0.8] = -0.8
 
     fitness_record = np.zeros((epochs, population, 3))
     moving_performance_log = np.zeros(STOP_TRAIN_MOVING_AVG)
-    best_weights = np.copy(parent_weights)
         
     ### ---Evolve--- ###
     for epoch in tqdm(range(epochs), mininterval=1, leave=True,):
@@ -235,14 +229,14 @@ def main(
             break
 
         # Mutated weights #
-        mutations = np.random.normal(0, SIGMA, (population, *parent_weights.shape))
-        mutations[mutations < -0.8] = -0.8
+        perturbations = np.random.normal(0, SIGMA, (population, best_weights.size))
+        perturbations[perturbations < -0.8] = -0.8
 
         # Mutate & run population #
         tqdm.write('Running child process')
         for child_id in range(population):
 
-            child_weights = mutations[child_id, :] + parent_weights
+            child_weights = best_weights * (1 + perturbations[child_id])
 
             dic_obj = {
                 'weights': child_weights, # Mutated weights # TODO: Figure out way to get numpy weights to child
@@ -315,7 +309,7 @@ def main(
         for child in child_data:
             if child['gamma'] > best_fitness:
                 best_fitness = child['gamma']
-                best_weights = np.copy(child['gamma_post_weights'])
+                gama_best_weight = np.copy(child['gamma_post_weights'])
 
         # This one saves weight data
         if ((epoch + 1) % SAVE_WEIGHTS_EVERY_ITER) == 0 or (epoch+1)==epochs:
@@ -331,20 +325,21 @@ def main(
                                     )
             
         # Evaluate children #
-        STDP_perfs = fitness_record[epoch, :, 2]    # all of ith epochs Gamma fitness
+        fitness = fitness_record[epoch, :, 2].reshape(-1, 1)   # all of ith epochs Gamma fitness
+        
         # STDP_perfs = fitness_record[epoch, :, 1]    # all of ith epochs Beta fitness
         
         # normalize the fitness for more stable training
-        normalized_fitness = (STDP_perfs - STDP_perfs.mean()) / (STDP_perfs.std() + 1e-8)
-        fitness_weighted_mutations = (normalized_fitness.reshape(-1, 1) * mutations)
+        normalized_fitness = (fitness - fitness.mean()) / (fitness.std() + 1e-8)
+        fitness_weighted_mutations = (normalized_fitness * perturbations)
 
         # Evolve parent #
         if use_weights_to_mutate:
-            # parent_weights = parent_weights + use_weights_to_mutate * np.copy(best_weights)
+            # best_weights = best_weights + use_weights_to_mutate * np.copy(gama_best_weight)
             # apply the fitness_weighted_perturbations to the current best weights proportionally to the LR
             
             # Post STDP weight influence on weights
-            weight_diff = np.array(best_weights - parent_weights)
+            weight_diff = np.array(gama_best_weight - best_weights)
             normalized_weight_diff = (weight_diff - weight_diff.mean()) / (weight_diff.std() + 1e-8)
         
             best_weights = best_weights * (
@@ -353,7 +348,7 @@ def main(
             (LEARNING_RATE * normalized_weight_diff.mean(axis = 0)) * (use_weights_to_mutate)            # STDP influence
             )
         else:
-            parent_weights = parent_weights * (1 + (LEARNING_RATE * fitness_weighted_mutations.mean(axis=0)))
+            best_weights = best_weights * (1 + (LEARNING_RATE * fitness_weighted_mutations.mean(axis=0)))
 
         # TODO: Potentially Sigma & LR Decay (not used in original)
         # decay sigma and the learning rate

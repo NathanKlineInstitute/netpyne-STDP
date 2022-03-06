@@ -28,20 +28,13 @@ def run_episodes(neurosim):
     sys.stdout = sys.__stdout__
     return
 
-def init(dconf, out_path):
-        # Initialize the model with dconf config
-        dconf['sim']['duration'] = 1e4
-        dconf['sim']['recordWeightStepSize'] = 1e4
-        dconf['sim']['outdir'] = out_path 
-        return dconf
-
-
 def main(id, out_path):
     
     model = None
     
     os.makedirs(out_path + '/WorkingData/', exist_ok=True)
-    os.makedirs(out_path + '/Done/', exist_ok=True)
+    os.makedirs(out_path + '/Done/', exist_ok=True) 
+            
     while True:
         ## loading
         with open(os.path.normpath(out_path + '/Ready/child_' + str(id) +'.pkl'), 'rb') as out:
@@ -56,10 +49,15 @@ def main(id, out_path):
         
         if model is None:
             ### ---Generate model--- ###
-            dconf = init(read_conf(config), out_path + '/WorkingData/child_' + str(id))
+            dconf = read_conf(config)
+            # Initialize the model with dconf config
+            dconf['sim']['duration'] = 1e4
+            dconf['sim']['recordWeightStepSize'] = 1e4
+            dconf['sim']['outdir'] = out_path + '/WorkingData/child_' + str(id) 
             model = NeuroSim(dconf, use_noise=False, save_on_control_c=False)
             fres_train = model.outpath(out_path + '/WorkingData/STDP_es_train_' + str(id) + '.csv')
-            fres_eval = model.outpath(out_path + '/WorkingData/STDP_es_eval_' + str(id) + '.csv')  
+            fres_eval = model.outpath(out_path + '/WorkingData/STDP_es_eval_' + str(id) + '.csv') 
+          
         # set model weights 
         model.setWeightArray(netpyne.sim, weights)
         
@@ -93,9 +91,6 @@ def main(id, out_path):
         gamma_run_duration_STDP = 0 if gamma==0 else model.last_times[-1] # TODO: RETURN THIS
         model.epCount.clear()
 
-        # # TODO: Uncomment for above, the below is just for testing
-        # alpha_perf, beta_perf, gamma_perf = 0, 1, 2
-
         ## --Write Performance-- ##
         dic_obj = {
             'id': id,
@@ -126,6 +121,16 @@ def main(id, out_path):
         
         #The closeest to atomic operation
         os.system('mv "' + out_path + '/Done/child_' + str(id) +'.tmp"  "' + out_path + '/Done/child_' + str(id) +'.pkl"')
+        
+        # ### ---Generate model--- ###
+        # dconf = read_conf(config)
+        # # Initialize the model with dconf config
+        # dconf['sim']['duration'] = 1e4
+        # dconf['sim']['recordWeightStepSize'] = 1e4
+        # dconf['sim']['outdir'] = out_path + '/WorkingData/child_' + str(id) 
+        # model = NeuroSim(dconf, use_noise=False, save_on_control_c=False)
+        # fres_train = model.outpath(out_path + '/WorkingData/STDP_es_train_' + str(id) + '.csv')
+        # fres_eval = model.outpath(out_path + '/WorkingData/STDP_es_eval_' + str(id) + '.csv') 
 
         if child_data['Exit?']:
             # last round!
