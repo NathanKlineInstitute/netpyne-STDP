@@ -247,7 +247,7 @@ def main(
                 # what ever you would like to return to parent
             }
             ## --Save data for child process-- ##
-            with open(out_path + '/Ready/child_' + str(child_id) +'.pkl', 'wb') as out:
+            with open(out_path + '/Ready/child_' + str(child_id) +'.pkl.new', 'wb') as out:
                 pickle.dump(dic_obj, out)
 
             if epoch == 0:
@@ -263,7 +263,10 @@ def main(
                 
             #     # from child_process import run_simulation
             #     # run_simulation(id=child_id, out_path=out_path)
-
+        
+        #release data
+        for child_id in range(population):
+            os.system('mv "' +out_path + '/Ready/child_' + str(child_id) +'.pkl.new" "' +out_path + '/Ready/child_' + str(child_id) +'.pkl"')
 
         # Await outputs #
         time.sleep(10)
