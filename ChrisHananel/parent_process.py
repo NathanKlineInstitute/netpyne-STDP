@@ -325,6 +325,7 @@ def main(
                                     )
             
         # Evaluate children #
+        # fitness = fitness_record[epoch, :, 0].reshape(-1, 1)   # all of ith epochs Alpha fitness
         # fitness = fitness_record[epoch, :, 1].reshape(-1, 1)   # all of ith epochs Beta fitness
         fitness = fitness_record[epoch, :, 2].reshape(-1, 1)   # all of ith epochs Gamma fitness
                 
