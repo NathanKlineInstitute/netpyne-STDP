@@ -304,10 +304,11 @@ def main(
         # calculating moving avarage
         moving_performance_log[epoch % STOP_TRAIN_MOVING_AVG] = data['gamma']
         best_fitness = np.mean(moving_performance_log)
+        gama_weights = []
         for child in child_data:
+            gama_weights.append(np.copy(child['gamma_post_weights']))
             if child['gamma'] > best_fitness:
                 best_fitness = child['gamma']
-                gama_best_weight = np.copy(child['gamma_post_weights'])
                 # beta_best_weight = np.copy(child['beta_post_weights'])
                 
 
@@ -339,7 +340,7 @@ def main(
             # apply the fitness_weighted_perturbations to the current best weights proportionally to the LR
             
             # Post STDP weight influence on weights
-            weight_diff = np.array(gama_best_weight - best_weights)
+            weight_diff = np.array(gama_weights - best_weights)
             normalized_weight_diff = (weight_diff - weight_diff.mean()) / (weight_diff.std() + 1e-8)
         
             best_weights = best_weights * (
