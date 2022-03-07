@@ -10,7 +10,8 @@
         "decay_sigma": 1.0,
         "episodes_per_iter_ES": 1,
         "episodes_per_iter_STDP": 10,
-        "save_weights_every_iter": 50
+        "save_weights_every_iter": 50,
+        "optimize_for": "beta"
     },
     "env": {
         "name": "CartPole-v1",

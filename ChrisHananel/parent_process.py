@@ -179,6 +179,7 @@ def main(
     SAVE_WEIGHTS_EVERY_ITER = dconf['STDP_ES']['save_weights_every_iter']
     STOP_TRAIN_THRESHOLD = dconf['STDP_ES']['stop_train_threashold']
     STOP_TRAIN_MOVING_AVG = dconf['STDP_ES']['stop_train_moving_avg']
+    OPTIMIZE_FOR = dconf['STDP_ES']['optimize_for']
     use_weights_to_mutate = dconf['STDP_ES']['use_weights_to_mutate']
 
            
@@ -328,8 +329,15 @@ def main(
         # Evaluate children #
         # fitness = fitness_record[epoch, :, 0].reshape(-1, 1)   # all of ith epochs Alpha fitness
         # fitness = fitness_record[epoch, :, 1].reshape(-1, 1)   # all of ith epochs Beta fitness
-        fitness = fitness_record[epoch, :, 2].reshape(-1, 1)   # all of ith epochs Gamma fitness
-                
+        if OPTIMIZE_FOR == 'alpha':
+            fitness = fitness_record[epoch, :, 0].reshape(-1, 1)   # all of ith epochs alpha fitness
+        elif OPTIMIZE_FOR == 'beta':
+            fitness = fitness_record[epoch, :, 1].reshape(-1, 1)   # all of ith epochs beta fitness
+        elif OPTIMIZE_FOR == 'gamma':
+            fitness = fitness_record[epoch, :, 2].reshape(-1, 1)   # all of ith epochs gamma fitness
+        else:
+            raise Exception("Invalid optimize_for parameter in config file")
+
         # normalize the fitness for more stable training
         normalized_fitness = (fitness - fitness.mean()) / (fitness.std() + 1e-8)
         fitness_weighted_mutations = (normalized_fitness * perturbations)
