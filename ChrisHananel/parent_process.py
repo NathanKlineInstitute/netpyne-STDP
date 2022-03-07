@@ -309,7 +309,6 @@ def main(
             gama_weights.append(np.copy(child['gamma_post_weights']))
             if child['gamma'] > best_fitness:
                 best_fitness = child['gamma']
-                # beta_best_weight = np.copy(child['beta_post_weights'])
                 
 
         # This one saves weight data
