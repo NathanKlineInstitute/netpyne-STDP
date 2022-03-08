@@ -87,8 +87,8 @@ def plot_performance(open_file, save, title=None):
             continue
         plt.scatter(xAxies, np.array(data[k]['data']).reshape(-1), label = k, s=0.5, alpha=0.3)
     
-    plt.legend()
-    plt.savefig(save + r".png") 
+    plt.legend(prop={'size': 6})
+    plt.savefig(save + r".png", dpi=300)
   
 def plot_performance_verbos(open_file, save, title=None):
     data = dict()
@@ -249,9 +249,12 @@ def main(
             ## --Save data for child process-- ##
             with open(out_path + '/Ready/child_' + str(child_id) +'.pkl.new', 'wb') as out:
                 pickle.dump(dic_obj, out)
-
+        
+        #release data
+        for child_id in range(population):
+            os.system('mv "' +out_path + '/Ready/child_' + str(child_id) +'.pkl.new" "' +out_path + '/Ready/child_' + str(child_id) +'.pkl"')
             if epoch == 0:
-                # Prepare command for child process #
+                   # Prepare command for child process #
                 args = {
                     'id':       child_id,
                     'out_path': '"' + out_path + '"',  # Output file path
@@ -263,10 +266,6 @@ def main(
                 
             #     # from child_process import run_simulation
             #     # run_simulation(id=child_id, out_path=out_path)
-        
-        #release data
-        for child_id in range(population):
-            os.system('mv "' +out_path + '/Ready/child_' + str(child_id) +'.pkl.new" "' +out_path + '/Ready/child_' + str(child_id) +'.pkl"')
 
         # Await outputs #
         time.sleep(10)
@@ -285,7 +284,6 @@ def main(
             # delete the file after we collect the data
             os.system('rm "'+ file + '"')
 
-        # TODO: Add information recording for medians, min, max, etc. & for alpha/gamma
         # Record #
         a_list = []; b_list = []; g_list = []
         with open(out_path + '/' + Agragate_log_file,'at') as f:    
@@ -305,16 +303,6 @@ def main(
             f.write(str(g_list.tolist()).replace('[',''))
             f.write("\n")            
         
-        # calculating moving avarage
-        moving_performance_log[epoch % STOP_TRAIN_MOVING_AVG] = data['gamma']
-        best_fitness = np.mean(moving_performance_log)
-        gama_weights = []
-        for child in child_data:
-            gama_weights.append(np.copy(child['gamma_post_weights']))
-            if child['gamma'] > best_fitness:
-                best_fitness = child['gamma']
-                
-
         # This one saves weight data
         if ((epoch + 1) % SAVE_WEIGHTS_EVERY_ITER) == 0 or (epoch+1)==epochs:
             with open(out_path + '/bestweights.pkl', 'wb') as f:
@@ -326,11 +314,14 @@ def main(
             plot_performance_verbos(open_file=out_path + '/' + Agragate_Verbos_log_file, 
                                     save=out_path + '/performanceVerbos',
                                     title=sim_name
-                                    )
+                                    )                
             
         # Evaluate children #
-        # fitness = fitness_record[epoch, :, 0].reshape(-1, 1)   # all of ith epochs Alpha fitness
-        # fitness = fitness_record[epoch, :, 1].reshape(-1, 1)   # all of ith epochs Beta fitness
+        population_weights = []
+        for child in child_data:
+            population_weights.append(np.copy(child[OPTIMIZE_FOR+'_post_weights']))
+            if child[OPTIMIZE_FOR] > best_fitness:
+                best_fitness = child[OPTIMIZE_FOR]
         if OPTIMIZE_FOR == 'alpha':
             fitness = fitness_record[epoch, :, 0].reshape(-1, 1)   # all of ith epochs alpha fitness
         elif OPTIMIZE_FOR == 'beta':
@@ -339,6 +330,10 @@ def main(
             fitness = fitness_record[epoch, :, 2].reshape(-1, 1)   # all of ith epochs gamma fitness
         else:
             raise Exception("Invalid optimize_for parameter in config file")
+        
+        # calculating moving avarage
+        moving_performance_log[epoch % STOP_TRAIN_MOVING_AVG] = np.mean(fitness)
+        best_fitness = np.mean(moving_performance_log)
 
         # normalize the fitness for more stable training
         normalized_fitness = (fitness - fitness.mean()) / (fitness.std() + 1e-8)
@@ -350,7 +345,7 @@ def main(
             # apply the fitness_weighted_perturbations to the current best weights proportionally to the LR
             
             # Post STDP weight influence on weights
-            weight_diff = np.array(gama_weights - best_weights)
+            weight_diff = np.array(population_weights - best_weights)
             normalized_weight_diff = (weight_diff - weight_diff.mean()) / (weight_diff.std() + 1e-8)
         
             best_weights = best_weights * (

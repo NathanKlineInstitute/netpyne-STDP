@@ -122,15 +122,6 @@ def main(id, out_path):
         #The closeest to atomic operation
         os.system('mv "' + out_path + '/Done/child_' + str(id) +'.tmp"  "' + out_path + '/Done/child_' + str(id) +'.pkl"')
         
-        # ### ---Generate model--- ###
-        # dconf = read_conf(config)
-        # # Initialize the model with dconf config
-        # dconf['sim']['duration'] = 1e4
-        # dconf['sim']['recordWeightStepSize'] = 1e4
-        # dconf['sim']['outdir'] = out_path + '/WorkingData/child_' + str(id) 
-        # model = NeuroSim(dconf, use_noise=False, save_on_control_c=False)
-        # fres_train = model.outpath(out_path + '/WorkingData/STDP_es_train_' + str(id) + '.csv')
-        # fres_eval = model.outpath(out_path + '/WorkingData/STDP_es_eval_' + str(id) + '.csv') 
 
         if child_data['Exit?']:
             # last round!

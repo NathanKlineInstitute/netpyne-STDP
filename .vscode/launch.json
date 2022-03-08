@@ -14,15 +14,15 @@
       //    "args": ["--out_path", "/mnt/d/LocalUserData/Box Sync/git_repo/netpyne-STDP/results/noSeed/", "--id", "0" ]
       // },
 
-      {
-         "name": "Python: parent",
-         "type": "python",
-         "request": "launch",
-         "program": "ChrisHananel/parent_process.py",
-         "console": "integratedTerminal",
-         "args": ["--config", "config-noSeed.json",]// "--resume", "True"]
-         // "args": ["train", "config-noSeed.json"]
-      }
+      // {
+      //    "name": "Python: parent",
+      //    "type": "python",
+      //    "request": "launch",
+      //    "program": "ChrisHananel/parent_process.py",
+      //    "console": "integratedTerminal",
+      //    "args": ["--config", "config-noSeed.json",]// "--resume", "True"]
+      //    // "args": ["train", "config-noSeed.json"]
+      // }
 
       // {
       //    "name": "Python: STDP_ES",
@@ -33,5 +33,16 @@
       //    "args": ["train", "config-noSeed.json",]// "--resume", "True"]
       //    // "args": ["train", "config-noSeed.json"]
       // }
+
+      {
+         "name": "Python: plot",
+         "type": "python",
+         "request": "launch",
+         "program": "ChrisHananel/plotfiles.py",
+         "console": "integratedTerminal",
+         "args": ["--configs", "pop-10,alpha-0,beta-0,gama-10.json  pop-10,alpha-0,beta-10,gama-10.json",]
+      }
+
+
    ]
 }
