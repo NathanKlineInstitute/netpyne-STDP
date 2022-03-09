@@ -35,15 +35,7 @@ def main(id, out_path):
     os.makedirs(out_path + '/WorkingData/', exist_ok=True)
     os.makedirs(out_path + '/Done/', exist_ok=True) 
         
-    ### ---Generate model--- ###
-    dconf = read_conf(config)
-    # Initialize the model with dconf config
-    dconf['sim']['duration'] = 1e4
-    dconf['sim']['recordWeightStepSize'] = 1e4
-    dconf['sim']['outdir'] = out_path + '/WorkingData/child_' + str(id) 
-    model = NeuroSim(dconf, use_noise=False, save_on_control_c=False)
-    fres_train = model.outpath(out_path + '/WorkingData/STDP_es_train_' + str(id) + '.csv')
-    fres_eval = model.outpath(out_path + '/WorkingData/STDP_es_eval_' + str(id) + '.csv') 
+    model = None
         
     while True:
         ## loading
@@ -56,6 +48,17 @@ def main(id, out_path):
         alpha = child_data['alpha']
         beta = child_data['beta']
         gamma = child_data['gamma']
+        
+        if model is None:
+            ### ---Generate model--- ###
+            dconf = read_conf(config)
+            # Initialize the model with dconf config
+            dconf['sim']['duration'] = 1e4
+            dconf['sim']['recordWeightStepSize'] = 1e4
+            dconf['sim']['outdir'] = out_path + '/WorkingData/child_' + str(id) 
+            model = NeuroSim(dconf, use_noise=False, save_on_control_c=False)
+            fres_train = model.outpath(out_path + '/WorkingData/STDP_es_train_' + str(id) + '.csv')
+            fres_eval = model.outpath(out_path + '/WorkingData/STDP_es_eval_' + str(id) + '.csv') 
                  
         # set model weights 
         model.setWeightArray(netpyne.sim, weights)
@@ -121,7 +124,7 @@ def main(id, out_path):
         #The closeest to atomic operation
         os.system('mv "' + out_path + '/Done/child_' + str(id) +'.tmp"  "' + out_path + '/Done/child_' + str(id) +'.pkl"')
         
-        ### ---Generate model--- ###
+        ### ---ReGenerate model--- ###
         dconf = read_conf(config)
         # Initialize the model with dconf config
         dconf['sim']['duration'] = 1e4
