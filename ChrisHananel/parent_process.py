@@ -315,17 +315,8 @@ def main(
                                     save=out_path + '/performanceVerbos',
                                     title=sim_name
                                     )                
-        
-        # calculating moving avarage
-        moving_performance_log[epoch % STOP_TRAIN_MOVING_AVG] = np.mean(fitness)
-        best_fitness = np.mean(moving_performance_log)
             
         # Evaluate children #
-        population_weights = []
-        for child in child_data:
-            population_weights.append(np.copy(child[OPTIMIZE_FOR+'_post_weights']))
-            if child[OPTIMIZE_FOR] > best_fitness:
-                best_fitness = child[OPTIMIZE_FOR]
         if OPTIMIZE_FOR == 'alpha':
             fitness = fitness_record[epoch, :, 0].reshape(-1, 1)   # all of ith epochs alpha fitness
         elif OPTIMIZE_FOR == 'beta':
@@ -334,6 +325,17 @@ def main(
             fitness = fitness_record[epoch, :, 2].reshape(-1, 1)   # all of ith epochs gamma fitness
         else:
             raise Exception("Invalid optimize_for parameter in config file")
+        
+        # calculating moving avarage
+        moving_performance_log[epoch % STOP_TRAIN_MOVING_AVG] = np.mean(fitness)
+        best_fitness = np.mean(moving_performance_log)
+        
+        # collecting weights 
+        population_weights = []
+        for child in child_data:
+            population_weights.append(np.copy(child[OPTIMIZE_FOR+'_post_weights']))
+            if child[OPTIMIZE_FOR] > best_fitness:
+                best_fitness = child[OPTIMIZE_FOR]
 
         # normalize the fitness for more stable training
         normalized_fitness = (fitness - fitness.mean()) / (fitness.std() + 1e-8)
