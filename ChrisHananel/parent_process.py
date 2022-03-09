@@ -190,10 +190,14 @@ def main(
     # Establish buffer folders for child outputs
     if resume:
         with open(out_path + '/bestweights.pkl', 'rb') as f:
-            save_data = pickle.load(f)    
-        best_weights = save_data['best_weights']
-        SIGMA = save_data['SIGMA']
-        LEARNING_RATE = save_data['LEARNING_RATE']
+            save_data = pickle.load(f)
+        if isinstance(save_data, dict):
+            best_weights = save_data['best_weights']
+            SIGMA = save_data['SIGMA']
+            LEARNING_RATE = save_data['LEARNING_RATE']
+        else:
+            best_weights = save_data
+                        
         os.system('rm -r "' + out_path + '/Ready/"')
         os.system('rm -r "' + out_path + '/WorkingData/"')
         os.system('rm -r "' + out_path + '/Done/"')
