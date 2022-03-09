@@ -190,7 +190,10 @@ def main(
     # Establish buffer folders for child outputs
     if resume:
         with open(out_path + '/bestweights.pkl', 'rb') as f:
-            best_weights = pickle.load(f)
+            save_data = pickle.load(f)    
+        best_weights = save_data['best_weights']
+        SIGMA = save_data['SIGMA']
+        LEARNING_RATE = save_data['LEARNING_RATE']
         os.system('rm -r "' + out_path + '/Ready/"')
         os.system('rm -r "' + out_path + '/WorkingData/"')
         os.system('rm -r "' + out_path + '/Done/"')
@@ -303,19 +306,7 @@ def main(
             f.write(str(g_list.tolist()).replace('[',''))
             f.write("\n")            
         
-        # This one saves weight data
-        if ((epoch + 1) % SAVE_WEIGHTS_EVERY_ITER) == 0 or (epoch+1)==epochs:
-            with open(out_path + '/bestweights.pkl', 'wb') as f:
-                pickle.dump(best_weights, f)
-            plot_performance(open_file=out_path + '/' + Agragate_log_file, 
-                             save=out_path + '/performance',
-                             title=sim_name
-                             )
-            plot_performance_verbos(open_file=out_path + '/' + Agragate_Verbos_log_file, 
-                                    save=out_path + '/performanceVerbos',
-                                    title=sim_name
-                                    )                
-            
+
         # Evaluate children #
         if OPTIMIZE_FOR == 'alpha':
             fitness = fitness_record[epoch, :, 0].reshape(-1, 1)   # all of ith epochs alpha fitness
@@ -359,6 +350,26 @@ def main(
         # decay sigma and the learning rate
         SIGMA *= SIGMA_DECAY
         LEARNING_RATE *= LR_DECAY
+        
+        # Saves weight data
+        save_data={
+            'best_weights':best_weights,
+            'SIGMA':SIGMA,
+            'LEARNING_RATE':LEARNING_RATE,
+        }
+        if ((epoch + 1) % SAVE_WEIGHTS_EVERY_ITER) == 0 or (epoch+1)==epochs:
+            with open(out_path + '/bestweights.pkl', 'wb') as f:
+                pickle.dump(save_data, f)
+            plot_performance(open_file=out_path + '/' + Agragate_log_file, 
+                             save=out_path + '/performance',
+                             title=sim_name
+                             )
+            plot_performance_verbos(open_file=out_path + '/' + Agragate_Verbos_log_file, 
+                                    save=out_path + '/performanceVerbos',
+                                    title=sim_name
+                                    )                
+            
+        
     done()
 
 

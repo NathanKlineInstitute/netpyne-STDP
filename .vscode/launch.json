@@ -40,7 +40,7 @@
          "request": "launch",
          "program": "ChrisHananel/plotfiles.py",
          "console": "integratedTerminal",
-         "args": ["--configs", "pop-10,alpha-0,beta-0,gama-10.json  pop-10,alpha-0,beta-10,gama-10.json",]
+         "args": ["--configs", "pop-10,alpha-0,beta-0,gama-10.json","--all", "."]
       }
 
 
