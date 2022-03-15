@@ -1,4 +1,3 @@
-from cProfile import label
 import os, sys, argparse
 import numpy as np
 import matplotlib.pyplot as plt
@@ -12,12 +11,12 @@ from conf import read_conf
 def plot_performance(data):
     # plotting
     fig, ax = plt.subplots()
-    title = ""
+    title = "EVOL vs EVOL+STDP-RL"
     for exp_name in data.keys():
-        if title == "":
-            title = exp_name
-        else:
-            title += " VS " + exp_name
+        # if title == "":
+        #     title = exp_name
+        # else:
+        #     title += " VS " + exp_name
 
         feilds = list(data[exp_name].keys())
         
@@ -29,14 +28,28 @@ def plot_performance(data):
             std = np.array(data[exp_name][k]["data"]).std(1)
             gen = len(data[exp_name][k]["data"])
             xAxies = np.linspace(0, gen, gen)
+            
+            if mean.sum() == 0:
+                continue
 
-            ax.fill_between(xAxies, mean + std, mean - std, alpha=0.2, linewidth=0)
-            ax.plot(xAxies, mean, linewidth=2, label= exp_name + ' ' + k)
+            label = exp_name + ' '
+            if k == 'Alpha':
+                label = 'EVOL'
+            elif k == 'Beta':
+                label = 'EVOL+STDP-RL - During STDP'
+            elif k == 'Gamma':
+                label = 'EVOL+STDP-RL - Post-STDP'
+
+            ax.fill_between(xAxies, 
+                            np.clip(mean + std, a_min=0, a_max=500), 
+                            np.clip(mean - std, a_min=0, a_max=500), 
+                            alpha=0.2, linewidth=0)
+            ax.plot(xAxies, mean, linewidth=2, label= label)
 
     ax.set_title(title)
     ax.set_xlabel("Generations")
     ax.set_ylabel("Performance")
-    ax.legend(prop={'size': 6})
+    ax.legend(prop={'size': 9})
     
     plt.savefig(title + r".png", dpi=300)
     plt.close()
@@ -48,10 +61,11 @@ def main(configs, report, all):
         files = (glob.glob(r'' + all + "/*.json"))
         configs_to_process = list()
         for f in files:
-            if f.split('/')[-1] != configs[0]:
-                configs_to_process.append([configs[0], f])
+            for conf in configs:
+                if f.split('/')[-1] != conf:
+                    configs_to_process.append([conf, f])
     else:
-      configs_to_process = configs 
+      configs_to_process = [configs]
 
     for pair in configs_to_process:
         data = dict()

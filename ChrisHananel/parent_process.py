@@ -147,7 +147,8 @@ def plot_performance_verbos(open_file, save, title=None):
 def main(
     config,              # Network config
     resume,              # Continue from the last save weights?
-):
+    noES,                # Evolve the weights?
+): 
     ### ---Assertions--- ###
     assert config is not None, 'Config must be given'
 
@@ -227,13 +228,12 @@ def main(
         
     fitness_record = np.zeros((epochs, population, 3))
     moving_performance_log = np.zeros(STOP_TRAIN_MOVING_AVG)
-        
+    population_weights = []
+    global_best_weights = None
+    global_best_score = 0
     ### ---Evolve--- ###
     for epoch in tqdm(range(epochs), mininterval=1, leave=True,):
-        
-        if np.mean(moving_performance_log) >= STOP_TRAIN_THRESHOLD:
-            break
-
+    
         # Mutated weights #
         perturbations = np.random.normal(0, SIGMA, (population, best_weights.size))
         perturbations[perturbations < -0.8] = -0.8
@@ -242,7 +242,13 @@ def main(
         tqdm.write('Running child process')
         for child_id in range(population):
 
-            child_weights = best_weights * (1 + perturbations[child_id])
+            if noES:
+                if len(population_weights)==0:
+                    child_weights = np.copy(best_weights)
+                else:
+                    child_weights = np.copy(population_weights[child_id])
+            else:
+                child_weights = best_weights * (1 + perturbations[child_id])
 
             dic_obj = {
                 'weights': child_weights, # Mutated weights # TODO: Figure out way to get numpy weights to child
@@ -318,6 +324,8 @@ def main(
             fitness = fitness_record[epoch, :, 1].reshape(-1, 1)   # all of ith epochs beta fitness
         elif OPTIMIZE_FOR == 'gamma':
             fitness = fitness_record[epoch, :, 2].reshape(-1, 1)   # all of ith epochs gamma fitness
+        elif OPTIMIZE_FOR == 'betagamma':
+            fitness = fitness_record[epoch, :, 2].reshape(-1, 1) + fitness_record[epoch, :, 1].reshape(-1, 1)
         else:
             raise Exception("Invalid optimize_for parameter in config file")
         
@@ -327,41 +335,58 @@ def main(
         # collecting weights 
         population_weights = []
         for child in child_data:
-            population_weights.append(np.copy(child[OPTIMIZE_FOR+'_post_weights']))
-
-        # normalize the fitness for more stable training
-        normalized_fitness = (fitness - fitness.mean()) / (fitness.std() + 1e-8)
-        fitness_weighted_mutations = (normalized_fitness * perturbations)
-
-        # Evolve parent #
-        if use_weights_to_mutate:
-            # best_weights = best_weights + use_weights_to_mutate * np.copy(gama_best_weight)
-            # apply the fitness_weighted_perturbations to the current best weights proportionally to the LR
-            
-            # Post STDP weight influence on weights
-            weight_diff = np.array(population_weights - best_weights)
-            normalized_weight_diff = (weight_diff - weight_diff.mean()) / (weight_diff.std() + 1e-8)
+            if OPTIMIZE_FOR == 'betagamma':
+                population_weights.append(np.copy(
+                    (child['beta_post_weights'] + child['gamma_post_weights'])/2
+                    ))
+            else:
+                population_weights.append(np.copy(child[OPTIMIZE_FOR+'_post_weights']))
+            score = population_weights[-1].mean()
+            if  score > global_best_score:
+                global_best_score = score
+                global_best_weights = np.copy(population_weights[-1])
         
-            best_weights = best_weights * (
-            1 + 
-            (LEARNING_RATE * fitness_weighted_mutations.mean(axis = 0)) * (1 - use_weights_to_mutate) +    # ES influence
-            (LEARNING_RATE * normalized_weight_diff.mean(axis = 0)) * (use_weights_to_mutate)            # STDP influence
-            )
+        if noES: 
+            if not global_best_weights is None:
+                best_weights = np.copy(global_best_weights)                
         else:
-            best_weights = best_weights * (1 + (LEARNING_RATE * fitness_weighted_mutations.mean(axis=0)))
+            # normalize the fitness for more stable training
+            normalized_fitness = (fitness - fitness.mean()) / (fitness.std() + 1e-8)
+            fitness_weighted_mutations = (normalized_fitness * perturbations)
 
-        # TODO: Potentially Sigma & LR Decay (not used in original)
-        # decay sigma and the learning rate
-        SIGMA *= SIGMA_DECAY
-        LEARNING_RATE *= LR_DECAY
+            # Evolve parent #
+            if use_weights_to_mutate:
+                # best_weights = best_weights + use_weights_to_mutate * np.copy(gama_best_weight)
+                # apply the fitness_weighted_perturbations to the current best weights proportionally to the LR
+                
+                # Post STDP weight influence on weights
+                weight_diff = np.array(population_weights - best_weights)
+                normalized_weight_diff = (weight_diff - weight_diff.mean()) / (weight_diff.std() + 1e-8)
+            
+                best_weights = best_weights * (
+                1 + 
+                (LEARNING_RATE * fitness_weighted_mutations.mean(axis = 0)) * (1 - use_weights_to_mutate) +    # ES influence
+                (LEARNING_RATE * normalized_weight_diff.mean(axis = 0)) * (use_weights_to_mutate)            # STDP influence
+                )
+            else:
+                best_weights = best_weights * (1 + (LEARNING_RATE * fitness_weighted_mutations.mean(axis=0)))
+
+            # TODO: Potentially Sigma & LR Decay (not used in original)
+            # decay sigma and the learning rate
+            SIGMA *= SIGMA_DECAY
+            LEARNING_RATE *= LR_DECAY
         
+        Threshould_check = np.mean(moving_performance_log) >= STOP_TRAIN_THRESHOLD
+         
         # Saves weight data
-        save_data={
-            'best_weights':best_weights,
-            'SIGMA':SIGMA,
-            'LEARNING_RATE':LEARNING_RATE,
-        }
-        if ((epoch + 1) % SAVE_WEIGHTS_EVERY_ITER) == 0 or (epoch+1)==epochs:
+        if ((epoch + 1) % SAVE_WEIGHTS_EVERY_ITER) == 0 or ((epoch+1)==epochs) or Threshould_check:
+            save_data={
+                'best_weights':best_weights,
+                'global_best_weights':global_best_weights,
+                'SIGMA':SIGMA,
+                'LEARNING_RATE':LEARNING_RATE,
+                'OPTIMIZE_FOR':OPTIMIZE_FOR,
+            }
             with open(out_path + '/bestweights.pkl', 'wb') as f:
                 pickle.dump(save_data, f)
             plot_performance(open_file=out_path + '/' + Agragate_log_file, 
@@ -371,9 +396,11 @@ def main(
             plot_performance_verbos(open_file=out_path + '/' + Agragate_Verbos_log_file, 
                                     save=out_path + '/performanceVerbos',
                                     title=sim_name
-                                    )                
-            
-        
+                                    )    
+
+            if Threshould_check:
+                tqdm.write(f"Threashould reach moving_performance_log{np.mean(moving_performance_log)} >= {STOP_TRAIN_THRESHOLD}")
+                break
     done()
 
 
@@ -381,9 +408,12 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("--resume", type=str, default='False')
     parser.add_argument("--config", type=str)
+    parser.add_argument("--noES", type=str, default='False')
+
 
     args = parser.parse_args()
     args.resume = True if args.resume == 'True' or args.resume == 'true' else False
+    args.noES = True if args.noES == 'True' or args.noES == 'true' else False
 
     main(**vars(args))
     
