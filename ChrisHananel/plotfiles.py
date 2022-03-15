@@ -11,12 +11,13 @@ from conf import read_conf
 def plot_performance(data):
     # plotting
     fig, ax = plt.subplots()
-    title = "EVOL vs EVOL+STDP-RL"
+    # title = "EVOL vs EVOL+STDP-RL"
+    title = ""
     for exp_name in data.keys():
-        # if title == "":
-        #     title = exp_name
-        # else:
-        #     title += " VS " + exp_name
+        if title == "":
+            title = exp_name
+        else:
+            title += " VS " + exp_name
 
         feilds = list(data[exp_name].keys())
         
