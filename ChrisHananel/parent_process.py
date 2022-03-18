@@ -147,7 +147,6 @@ def plot_performance_verbos(open_file, save, title=None):
 def main(
     config,              # Network config
     resume,              # Continue from the last save weights?
-    noES,                # Evolve the weights?
 ): 
     ### ---Assertions--- ###
     assert config is not None, 'Config must be given'
@@ -182,6 +181,7 @@ def main(
     STOP_TRAIN_MOVING_AVG = dconf['STDP_ES']['stop_train_moving_avg']
     OPTIMIZE_FOR = dconf['STDP_ES']['optimize_for']
     use_weights_to_mutate = dconf['STDP_ES']['use_weights_to_mutate']
+    noES = dconf['STDP_ES']['noES']
 
            
     # out_path uniquely identified per child
@@ -408,12 +408,10 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("--resume", type=str, default='False')
     parser.add_argument("--config", type=str)
-    parser.add_argument("--noES", type=str, default='False')
 
 
     args = parser.parse_args()
     args.resume = True if args.resume == 'True' or args.resume == 'true' else False
-    args.noES = True if args.noES == 'True' or args.noES == 'true' else False
 
     main(**vars(args))
     
