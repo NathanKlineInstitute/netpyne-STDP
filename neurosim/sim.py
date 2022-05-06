@@ -18,6 +18,7 @@ from matplotlib import pyplot as plt
 from cells import intf7
 from game_interface import GameInterface
 from critic import Critic
+from GazeboTeleport import Gazebo
 from utils.conns import getconv, getSec, getInitDelay, getDelay, getdminID, setrecspikes
 from utils.plots import plotRaster, plotWeights, saveActionsPerEpisode
 from utils.sync import syncdata_alltoall
@@ -198,6 +199,7 @@ class NeuroSim:
         sim.GameInterface = MockGameInterface(sim.AIGame, self.dconf)
 
     self.critic = Critic(self.dconf)
+    self.gazebo = Gazebo(self.dconf) #TODO: check it works
 
     # instantiate network populations
     sim.net.createPops()
@@ -826,7 +828,7 @@ class NeuroSim:
 
     return actions
 
-  def trainAgent(self, t):
+  def trainAgent(self, t): #TODO: Show new image with self.gazebo
     """ training interface between simulation and game environment
     """
     dconf = self.dconf
@@ -839,6 +841,9 @@ class NeuroSim:
       self.normInMeans = self.weightsMean(sim, ctype='in')
     if self.normalizeByOutputBalancing and not self.normOutMeans:
       self.normOutMeans = self.weightsMean(sim, ctype='out')
+    
+    # Show new image in gazebo
+    imageID, imageClass = self.gazebo.showRandImage()
 
     # for the first time interval use randomly selected actions
     if t < (self.tstepPerAction*self.actionsPerPlay):
@@ -849,7 +854,7 @@ class NeuroSim:
         actions.append(action)
     # the actions should be based on the activity of motor cortex (EMRIGHT, EMLEFT)
     else:
-      actions = self.getActions(sim, t)
+      actions = self.getActions(sim, t) # decide action
 
     t1 = datetime.now() - t1
     t2 = datetime.now()
@@ -859,7 +864,7 @@ class NeuroSim:
       is_unk_move = len([a for a in actions if a == self.unk_move]) > 0
       actions = [a if a != self.unk_move else sim.AIGame.randmove()
         for a in actions]
-      game_done = sim.AIGame.playGame(actions)
+      game_done = sim.AIGame.playGame(actions) # Action taken
       if game_done:
         ep_cnt = dconf['env']['episodes']
         eval_str = ''
@@ -887,7 +892,7 @@ class NeuroSim:
       if len(sim.AIGame.observations) == 0:
         raise Exception('Failed to get an observation from the Game')
       else:
-        reward = self.critic.calc_reward(actions[-1], self.dconf['env']['idealMove'])
+        reward = self.critic.calc_reward(actions[-1], imageClass) ##TODO: fix input to calc_reward
 
         # use py_broadcast to avoid converting to/from Vector
         sim.pc.py_broadcast(reward, 0)  # broadcast reward value to other nodes
@@ -896,7 +901,8 @@ class NeuroSim:
       # receive reward value from master node
       reward = sim.pc.py_broadcast(None, 0)
 
-
+    self.gazebo.moveImageBack(imageID) ##TODO: check this works
+    
     t2 = datetime.now() - t2
     t3 = datetime.now()
 

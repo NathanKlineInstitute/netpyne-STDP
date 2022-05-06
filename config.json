@@ -16,7 +16,7 @@
         "savemp4": 0,
         "episodes": 4,
         "unk_move": -1,
-        "idealMove": 2
+        "idealMove": 1
     },
     "moves": {
         "Prey & Orient": 0,
@@ -44,7 +44,7 @@
         "ResumeSimFromTs": null
     },
     "sim": {
-        "duration": 20,
+        "duration": 10,
         "dt": 0.6,
         "verbose": 0,
         "recordStep": 1.0,
@@ -309,5 +309,19 @@
                 "AM2": {"w": 4.125, "rate": 200},
                 "NM2": {"w": 0, "rate": 0},
                 "GA2": {"w": 1.875, "rate": 100}}
-    }
+    },
+    "Gazebo":{
+    	"OriginalPos":{"image1":[0,8,"Orient"],
+		"image2":[2,8,"Orient"], 
+		"image3":[4,8,"Orient"], 
+		"image4":[6,8,"Orient"],
+		"image5":[0,12,"Predator"],
+		"image6":[2,12,"Predator"],
+		"image7":[4,12,"Predator"],
+		"image8":[6,12,"Predator"],
+		"image9":[0,16,"Snap"], 
+		"image10":[2,16,"Snap"],
+		"image11":[4,16,"Snap"],
+		"image12":[6,16,"Snap"]},
+	"TargetPos":{"x":2.4, "y":0.0}}
 }

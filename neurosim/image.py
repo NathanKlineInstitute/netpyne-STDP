@@ -28,9 +28,8 @@ class ROSImage:
 	# Display whatever images are present
 	def displayNode(self):
 		#make a CV2 window to display image
-		cv2.namedWindow('Turtlebot Camera', cv2.WINDOW_NORMAL)	
 		cv2.imshow('Turtlebot Camera', self.currentImage)
-		cv2.waitKey(1) # HAVE to do this for image to show in window
+		cv2.waitKey(0) # HAVE to do this for image to show in window # CHANGED to 0
 		return
 		
 	# Get height and width
@@ -60,28 +59,29 @@ class ROSImage:
 
 	# Procedure to display image as 5x5 grid
 	def getImage(self):
-		print("Initialize program")
+		#print("Initialize program")
 		#declare variables 
+		cv2.namedWindow('Turtlebot Camera', cv2.WINDOW_AUTOSIZE)
 		height, width = 0,0
 		pImage = np.zeros((5,5)) #Processed image is 5x5 array
-		print("Declared variables")
+		#print("Declared variables")
 		# Collect image from gazebo
-		rospy.init_node('displayNode',anonymous=True)
-		print("Stop 1")
+		#rospy.init_node('displayNode',anonymous=True) # Called in GazeboTeleport
+		#print("Stop 1")
 		# launch the subscriber callback to store the image
 		imageSub = rospy.Subscriber(self.imageTopic,Image,self.callbackImage)
-		print("Stop 2")
+		#print("Stop 2")
 		rospy.sleep(0.5) # wait for callback to catch up
-		print("Stop 3")
+		#print("Stop 3")
 		rate = rospy.Rate(10)
-		print("Stop 4")
-		print("Set up ready")
+		#print("Stop 4")
+		#print("Set up ready")
 		#ProcessImage
 		if not rospy.is_shutdown():
-			self.displayNode()
+			#self.displayNode() # TODO: Fix display function
 			height, width = self.getImageSize(height, width)
 			pImage = self.processImage(pImage, height, width) # 5x5 image of average color
-			print(pImage)
+			#print(pImage)
 			imageList = pImage.reshape(25)
 			rate.sleep()
 		else:
