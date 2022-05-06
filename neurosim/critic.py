@@ -19,7 +19,7 @@ class Critic:
       self.negRewardBias = dconf['net']['negRewardBias']
 
   def calc_reward(self, curr_action, idealMove=0):
-    if type(curr_action) != np.ndarray:
+    if type(curr_action) != int:
       raise Exception('Wrong format for observations!')
       return 0.0
     elif idealMove==0:
