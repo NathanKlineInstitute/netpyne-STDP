@@ -19,8 +19,11 @@ A closed-loop neuronal network model that senses dynamic visual information from
     - `utils/` folder for helper functions
     - `tools/` folder of evaluation tools
     - `cells/` folder for defined cells
+    - `image.py` collects images from robot and turns into 5x5 stimulus to network
+    - `GazeboTeleport.py` shows robot a random stimulus and returns the class of that image
 
 - `mod/` the compiled NEURON objects
+- `gazebo/` the gazebo world and launch file for simulated environment
 
 
 
@@ -55,6 +58,7 @@ Compile mod files
 
 ### run
 
+    roslaunch gazebo/final.launch
     python3 neurosim/main.py run
 
 Check notebooks:
