@@ -135,7 +135,7 @@ def _find_best_timestep(wdir, timesteps, step=100):
   return [i for i, t in enumerate(timesteps) if t <= total_steps * 50.0][-1]
 
 def evaluate(eval_dir, duration=None, eps_duration=None, resume_tidx=-1,
-    display=False, verbose=False, sleep=False, save_data=False,
+    display=False, verbose=False, sleep=False, save_data=False, saveEnvObs=False,
     env_seed=None, rerun_episode=None, mock_env=False,
     mock_curr_step=None, mock_total_steps=None,
     resume_best_training=False, outdir=None):
@@ -186,6 +186,7 @@ def evaluate(eval_dir, duration=None, eps_duration=None, resume_tidx=-1,
   dconf['sim']['duration'] = duration if duration != None else eps_duration * 500
   dconf['sim']['saveWeights'] = 0
   dconf['sim']['doSaveData'] = 1 if save_data or mock_env else 0
+  dconf['sim']['saveEnvObs'] = 1 if saveEnvObs else 0
   dconf['sim']['plotRaster'] = 1 if mock_env else 0
   dconf['sim']['verbose'] = 1 if verbose else 0
   dconf['sim']['sleeptrial'] = sleep if sleep else 0

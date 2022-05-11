@@ -303,6 +303,19 @@ py neurosim/tools/eval_multimodel.py eval-selected-eps \
 
 WDIR=results/20220129-EVOL_b5-goodseed/continue_1/continue_1/continue_1/continue_1/continue_1/continue_1/continue_1/continue_1
 
+mkdir $WDIR/evalmockAllStates
+STEPS=20
+for ((i=0;i<$STEPS;i+=1)); do
+    echo "Evaluating Step $i / $STEPS"
+    py neurosim/main.py eval $WDIR --resume_tidx=1 --eps-duration 1 \
+        --mock-env 2 \
+        --duration 1300 \
+        --mock_curr_step $i \
+        --mock_total_steps $STEPS \
+        --outdir $WDIR/evalmockAllStates/step_${i}
+done
+
+
 for EPISODE_ID in 68 77
 do
     py neurosim/main.py eval $WDIR --resume_tidx=-1 \

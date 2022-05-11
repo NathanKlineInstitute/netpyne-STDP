@@ -70,12 +70,36 @@ class Critic:
     return np.abs(ang) < 0.01 and np.abs(angv) < 0.01
 
   def calc_reward(self, curr_obs, prev_obs=None, is_unk_move=False, game_done_eps=False):
+    ## theta omega policy from towardsdatascience
+    if self.type == 'theta_omega_policy':
+      if prev_obs is None:
+        return 0
+      if is_unk_move:
+        return self.bad();
+      pos_prev, _, theta, omega = prev_obs
+      pos_curr = curr_obs[0]
+      move = 1 if pos_curr > pos_prev else 0
+      
+      if abs(theta) < 0.03:
+        correct_move = 0 if omega < 0 else 1
+      else:
+        correct_move = 0 if theta < 0 else 1
+
+      if move == correct_move:
+        return self.max_reward
+      else:
+        return self.bad()
+
+
+    ### All Pos type
     if self.type == 'allpos':
       if is_unk_move:
         return self.negRewardBias
       if game_done_eps > 0:
         return game_done_eps / 500.0 - 1.0 # reward of -1 to 0
       return self.posRewardBias
+
+    ### The v1 type
     if type(prev_obs) != np.ndarray:
       if type(curr_obs) != np.ndarray:
         raise Exception('Wrong format for observations!')

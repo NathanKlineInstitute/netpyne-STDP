@@ -135,6 +135,7 @@ Evaluate the model before and after training:
             --env-seed 42 \
             --eps-duration 25 \
             --save-data \
+            --saveEnvObs \
             --rerun-episode ${EPISODE_ID}
     done
 
@@ -337,7 +338,7 @@ Use this on the latest step of the model
     py neurosim/tools/eval_multimodel.py eval-selected-eps \
             ${BSTDP_CONF},${BEVOL_CONF},${BCOMB_CONF} \
             --outdir=$OUTDIR \
-            --sort-by 16,7,78,66,12,49,83,60,4
+            --sort-by "68,74,10,19,55,32,31,22,77"
             
 
     # Weights:
