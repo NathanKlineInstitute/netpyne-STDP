@@ -10,7 +10,7 @@ def now_str(diplay_time=False):
 
 
 def _get_conf_file():
-  fnjson = 'config.json'
+  fnjson = '../config.json'
   for i in range(len(sys.argv)):
     if sys.argv[i].endswith('.json'):
       fnjson = sys.argv[i]

@@ -220,6 +220,7 @@ def rewards_steps(wdir, steps=[25, 50], outputfile=None):
   plt.ylabel('len(rewards) / len(total)')
 
   plt.savefig(outputfile)
+<<<<<<< HEAD
 
 def rewards_val_steps(wdir, outputfile=None):
   if not outputfile:

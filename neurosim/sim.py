@@ -416,6 +416,7 @@ class NeuroSim:
   #####################################################################################
 
   def setupSTDPWeights(self):
+    # this function sets up the network wiring rules (and the RL-STDP plasticity rules)
     synToMech = self.dconf['net']['synToMech']
     sytypes = self.dconf['net']['synToMech'].keys()
     if self.deactivateNMDA:
@@ -1016,4 +1017,7 @@ class NeuroSim:
       saveActionsPerEpisode(
           sim, self.epCount, self.outpath('ActionsPerEpisode.txt'), epTime=self.epTime)
       if sim.plotRaster:
+        plotRaster(sim, self.dconf, self.dnumc, self.outpath('rasterStart.png'), tlim=(0,2*1e3))
         plotRaster(sim, self.dconf, self.dnumc, self.outpath('raster.png'))
+        plotRaster(sim, self.dconf, self.dnumc, self.outpath('rasterEnd.png'), tlim=((self.dconf['sim']['duration']-2)*1e3,self.dconf['sim']['duration']*1e3))
+        

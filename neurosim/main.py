@@ -229,3 +229,4 @@ if __name__ == '__main__':
       'seedrun': main_seedrun,
       'cont_seedrun': continue_seedrun
   })
+
