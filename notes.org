@@ -1,0 +1,469 @@
+* 04mar22
+** to run
+
+To run the code you need python 3.8+ (or 3.7 should work) with the packages : 
+os, sys, argparse, numpy, time, glob, pickle, tqdm, matplotlib
+- basically normal python environment.
+
+To run the code:
+python ChrisHananel/parent_process.py --config pop-10,alpha-0,beta-100,gama-10.json
+
+Where all the parameters are in the JSON file. 
+
+To stop the simulation press Ctrl +C and then the parent process stop, but the child process will continue until they will finish run its epoch. Wait until all the child processes finish there tantrum.
+
+To resume from the same point run:
+python ChrisHananel/parent_process.py --config pop-10,alpha-0,beta-100,gama-10.json --resume true
+
+** tests to run
+
+all with pop size of 10
+make sure STDPRL AMPA wmax == 20000
+
+*** plain ES (beta 0)  (shell = shell)
+
+        "beta_iters": 0,
+and 	"outdir": "results/plainES",
+and             "wmax": 20000,
+
+python ChrisHananel/parent_process.py --config plainES.json
+
+started ~15:41 ...
+
+*** ES with STDP/RL - Baldwin effect -- no direct weight transfer) (beta 50) (shell = s0)
+
+this has
+        "beta_iters": 50, 
+and		"use_weights_to_mutate": 0
+and 	"outdir": "results/ESBaldwin",
+and             "wmax": 20000,
+
+python ChrisHananel/parent_process.py --config ESBaldwin.json
+
+started ~15:41 ...
+
+*** ES with STDP/RL - Lamarckian -- weight transfer) (beta 50) (shell = s2)
+
+this has
+        "beta_iters": 50, 
+and		"use_weights_to_mutate": 1
+and 	"outdir": "results/ESLamarck",
+and             "wmax": 20000,
+
+
+python ChrisHananel/parent_process.py --config ESLamarck.json
+
+started ~15:41 ...
+
+*** ES with STDP/RL - Lamarckian -- weight transfer), smaller RL weights, (beta 50) (shell = s3)
+
+this has
+        "beta_iters": 50, 
+and		"use_weights_to_mutate": 1
+and 	"outdir": "results/ESLamarckSmallRL",
+and             "wmax": 20000,
+and
+            "RLhebbwt": 0.004,
+            "RLantiwt": -0.004,
+
+python ChrisHananel/parent_process.py --config ESLamarckSmallRL.json
+
+started ~16:32 ...
+
+*** ES with STDP/RL - Baldwin -- NO weight transfer), smaller RL weights, (beta 50) (shell = s4)
+
+this has
+        "beta_iters": 50, 
+and		"use_weights_to_mutate": 1
+and 	"outdir": "results/ESBaldwinSmallRL",
+and             "wmax": 20000,
+and
+            "RLhebbwt": 0.004,
+            "RLantiwt": -0.004,
+
+python ChrisHananel/parent_process.py --config ESBaldwinSmallRL.json
+
+started ~16:43 ...
+
+* 05mar22
+** plain ES (beta 0) (shell=shell) -- with population size of 20
+
+
+        "beta_iters": 0,
+and 	"outdir": "results/plainESPop20",
+and             "wmax": 20000,
+and       "population_size": 20,
+
+python ChrisHananel/parent_process.py --config plainESPop20.json
+
+started ~9:21 ...
+
+stopped this one since looked mostly flat ... 
+
+** ES with STDP/RL - Baldwin beta=100, small small RL weight -- ESBaldwinBeta100SmallRL.json (shell=s5)
+
+        "beta_iters": 100,
+	"outdir": "results/ESBaldwinBeta100SmallRL",
+            "RLhebbwt": 0.002,
+            "RLantiwt": -0.002,
+        "population_size": 10,
+            "wmax": 20000,
+
+python ChrisHananel/parent_process.py --config ESBaldwinBeta100SmallRL.json
+
+started ~16:08 ...
+
+** ES with STDP/RL - Lamarck beta=100, small small RL weight -- ESLamarckBeta100SmallRL.json (shell=shell)
+
+        "beta_iters": 100,
+	"outdir": "results/ESLamarckBeta100SmallRL",
+            "RLhebbwt": 0.002,
+            "RLantiwt": -0.002,
+        "population_size": 10,
+            "wmax": 20000,
+
+python ChrisHananel/parent_process.py --config ESLamarckBeta100SmallRL.json
+
+started ~16:04 ...
+
+* 06mar22
+** h found bug - need to restart 
+** ES with STDP/RL - Baldwin effect -- no direct weight transfer) (beta 50) (shell = shell)
+
+this has
+        "beta_iters": 50, 
+and		"use_weights_to_mutate": 0
+and 	"outdir": "results/ESBaldwin",
+and             "wmax": 20000,
+
+python ChrisHananel/parent_process.py --config ESBaldwin.json
+
+started ~22:17 ... 
+
+** ES with STDP/RL - Lamarckian -- 100% weight transfer) (beta 50) (shell = s0)
+
+this has
+        "beta_iters": 50, 
+and		"use_weights_to_mutate": 1
+and 	"outdir": "results/ESLamarck",
+and             "wmax": 20000,
+
+
+python ChrisHananel/parent_process.py --config ESLamarck.json
+
+started ~22:17 ... 
+
+** ES with STDP/RL - Lamarckian -- 10% weight transfer), (beta 50) (shell = s2)
+
+this has
+        "beta_iters": 50, 
+and		"use_weights_to_mutate": 0.1
+and 	"outdir": "results/ESLamarck10Prct",
+and             "wmax": 20000,
+and
+            "RLhebbwt": 0.004,
+            "RLantiwt": -0.004,
+
+python ChrisHananel/parent_process.py --config ESLamarck10Prct.json
+                                               
+started ~22:17 ...
+
+** ES with STDP/RL - Lamarckian -- 100% weight transfer), smaller RL weights, (beta 50) (shell = s3)
+
+this has
+        "beta_iters": 50, 
+and		"use_weights_to_mutate": 1
+and 	"outdir": "results/ESLamarckSmallRL",
+and             "wmax": 20000,
+and
+            "RLhebbwt": 0.002,
+            "RLantiwt": -0.002,
+
+python ChrisHananel/parent_process.py --config ESLamarckSmallRL.json
+
+started ~22:25 ... 
+
+** ES with STDP/RL - Baldwin -- NO weight transfer), smaller RL weights, (beta 50) (shell = s4)
+
+this has
+        "beta_iters": 50, 
+and		"use_weights_to_mutate": 1
+and 	"outdir": "results/ESBaldwinSmallRL",
+and             "wmax": 20000,
+and
+            "RLhebbwt": 0.002,
+            "RLantiwt": -0.002,
+
+python ChrisHananel/parent_process.py --config ESBaldwinSmallRL.json
+
+started ~22:27 ... 
+
+* 07mar22
+** other bug for lamarck found - restart the lamarck simulations
+** new for json        "optimize_for": "gamma"
+that goes for both baldwin and lamarck
+
+** ES with STDP/RL - Lamarckian -- 100% weight transfer) (beta 50) (shell = s0) -->> stopped, was decaying
+
+this has
+        "beta_iters": 50, 
+and		"use_weights_to_mutate": 1
+and 	"outdir": "results/ESLamarck",
+and             "wmax": 20000,
+
+
+python ChrisHananel/parent_process.py --config ESLamarck.json
+
+started ~10:26 . . . 
+
+** ES with STDP/RL - Lamarckian -- 10% weight transfer), (beta 50) (shell = s2)
+
+this has
+        "beta_iters": 50, 
+and		"use_weights_to_mutate": 0.1
+and 	"outdir": "results/ESLamarck10Prct",
+and             "wmax": 20000,
+and
+            "RLhebbwt": 0.004,
+            "RLantiwt": -0.004,
+
+python ChrisHananel/parent_process.py --config ESLamarck10Prct.json
+                                               
+started ~10:26 ...
+
+** ES with STDP/RL - Lamarckian -- 100% weight transfer), smaller RL weights, (beta 50) (shell = s3) -->> stopped
+
+this has
+        "beta_iters": 50, 
+and		"use_weights_to_mutate": 1
+and 	"outdir": "results/ESLamarckSmallRL",
+and             "wmax": 20000,
+and
+            "RLhebbwt": 0.002,
+            "RLantiwt": -0.002,
+
+python ChrisHananel/parent_process.py --config ESLamarckSmallRL.json
+
+started ~10:27 ...
+
+stopped since was flat
+** ES with STDP/RL, Lamarckian, 10% weight transfer), (beta 50), smaller RL weights, (shell = s0)
+
+this has
+        "beta_iters": 50, 
+and		"use_weights_to_mutate": 0.1
+and 	"outdir": "results/ESLamarck10PrctSmallRL",
+and             "wmax": 20000,
+and
+            "RLhebbwt": 0.002,
+            "RLantiwt": -0.002,
+
+python ChrisHananel/parent_process.py --config ESLamarck10PrctSmallRL.json
+                                               
+started ~15:20 ...
+
+** ES with STDP/RL - Baldwin), smaller RL weights, (beta 500) (shell = s3)
+
+this has
+        "beta_iters": 500, 
+and		"use_weights_to_mutate": 0
+and 	"outdir": "results/ESBaldwinBeta500SmallRL",
+and             "wmax": 20000,
+and
+            "RLhebbwt": 0.002,
+            "RLantiwt": -0.002,
+
+python ChrisHananel/parent_process.py --config ESBaldwinBeta500SmallRL.json
+
+started ~15:34 ...
+
+* 08mar22
+** ES with STDP/RL - Baldwin), smaller RL weights, (beta 1000) (shell = s1000)
+
+this has
+        "beta_iters": 1000, 
+and		"use_weights_to_mutate": 0
+and 	"outdir": "results/ESBaldwinBeta1000SmallRL",
+and             "wmax": 20000,
+and
+            "RLhebbwt": 0.001,
+            "RLantiwt": -0.001,
+
+python ChrisHananel/parent_process.py --config ESBaldwinBeta1000SmallRL.json
+
+started ~21:54 ...
+
+* 11mar22
+** plain EVOL with alpha=40 (pop-10alpha-40beta-0gama-0.json) (shell=shell)
+
+python ChrisHananel/parent_process.py --config pop-10alpha-40beta-0gama-0.json
+
+started ~16:05 ...
+
+** plain EVOL with alpha=20 (pop-10alpha-20beta-0gama-0.json) (shell=s4)
+
+python ChrisHananel/parent_process.py --config pop-10alpha-20beta-0gama-0.json
+
+started ~16:05 ...
+
+* 14jun22
+** instructions from Daniel how to run cartpole with STDP/RL
+
+first, put those 3 configs in a folder (config.json, config2.json, config3.json)
+
+where WDIR is your directory where you have the configs
+and CONNSEED is the seed you want to use. the 139.. one is the best one
+
+
+then you can run this script in order:
+
+DIR=results/seedrun_l50-2022-06-02
+CONNSEED=1394398
+seedrunname=run_seed${CONNSEED}
+
+python3 neurosim/main.py seedrun $WDIR --fnjson $WDIR/config1.json --conn_seed $CONNSEED
+
+py neurosim/main.py cont_seedrun $WDIR/${seedrunname} $WDIR/config2.json
+py neurosim/main.py cont_seedrun $WDIR/${seedrunname}/continue_1 $WDIR/config3.json
+py neurosim/main.py continue $WDIR/${seedrunname}/continue_1/continue_1 --duration 6500
+py neurosim/main.py continue $WDIR/${seedrunname}/continue_1/continue_1/continue_1 --duration 5000
+py neurosim/main.py continue $WDIR/${seedrunname}/continue_1/continue_1/continue_1/continue_1 --duration 5000
+py neurosim/main.py continue $WDIR/${seedrunname}/continue_1/continue_1/continue_1/continue_1/continue_1 --duration 5000
+py neurosim/main.py continue $WDIR/${seedrunname}/continue_1/continue_1/continue_1/continue_1/continue_1/continue_1 --duration 5000
+
+** test STDP/RL sim
+
+WDIR=/home/samn/netpyne-STDP
+DIR=results/14jun22A
+CONNSEED=1394398
+seedrunname=run_seed${CONNSEED}
+
+python neurosim/main.py seedrun $WDIR --fnjson $WDIR/sn.json --conn_seed $CONNSEED
+
+python main.py seedrun /home/samn/netpyne-STDP/results --fnjson ../sn.json --conn_seed 1394393
+
+python
+import numpy as np
+from pylab import *
+ion()
+x = np.loadtxt('../results/run_seed1394393/ActionsPerEpisode.txt')
+plot(x)
+
+
+python main.py seedrun /home/samn/netpyne-STDP/results --fnjson ../sn.json --conn_seed 1394393
+
+python main.py seedrun /home/samn/netpyne-STDP/results --fnjson ../sn.json --conn_seed 1394394
+
+python
+import numpy as np
+from pylab import *
+ion()
+x = np.loadtxt('../results/run_seed1394393/ActionsPerEpisode.txt')
+x2 = np.loadtxt('../results/run_seed1394394/ActionsPerEpisode.txt')
+plot(x,'b'); plot(x2,'r')
+
+python
+import numpy as np
+from pylab import *
+ion()
+x2 = np.loadtxt('../results/run_seed1394394/ActionsPerEpisode.txt')
+plot(x2[:,0],x2[:,1],'b');
+
+xr = np.loadtxt('../results/run_seed1394394/ActionsRewards.txt')
+plot(xr[:,2])
+
+python main.py seedrun /home/samn/netpyne-STDP/results --fnjson ../sn.json --conn_seed 1394395
+
+python
+import numpy as np
+from pylab import *
+ion()
+x2 = np.loadtxt('../results/run_seed1394395/ActionsPerEpisode.txt')
+plot(x2[:,0],x2[:,1],'b');
+
+xr = np.loadtxt('../results/run_seed1394395/ActionsRewards.txt')
+plot(xr[:,2])
+
+xa = [mean(x2[idx:idx+20,1]) for idx in range(len(x2)-20)]
+
+* 15jun22
+** orig stdp/rl code used gain
+
+could try same here, so that network maintains stability, and not all weights move by same amounts
+
+python main.py seedrun /home/samn/netpyne-STDP/results --fnjson ../sn.json --conn_seed 1394396
+
+python
+import numpy as np
+from pylab import *
+ion()
+x = np.loadtxt('../results/run_seed1394396_gain_test/ActionsPerEpisode.txt') # with the adjusted (original from 2012) gain deltaw
+x2 = np.loadtxt('../results/run_seed1394396/ActionsPerEpisode.txt') # without the adjusted gain deltaw
+plot(x2[:,0],x2[:,1],'b');
+plot(x[:,0],x[:,1],'r');
+
+savefig('../gif/15jun22_a0.png') # [[/home/samn/netpyne-STDP/gif/15jun22_a0.png]]
+
+hmm, does look better with the old gain rule ... test longer ... 
+
+xr = np.loadtxt('../results/run_seed1394396/ActionsRewards.txt')
+plot(xr[:,2])
+
+xa = [mean(x2[idx:idx+20,1]) for idx in range(len(x2)-20)]
+
+python
+import numpy as np
+from pylab import *
+ion()
+x = np.loadtxt('../results/run_seed1394396_gain_test/ActionsPerEpisode.txt') # with the adjusted (original from 2012) gain deltaw
+x2 = np.loadtxt('../results/run_seed1394396_standard/ActionsPerEpisode.txt') # without the adjusted gain deltaw
+plot(x2[:,0],x2[:,1],'b');
+plot(x[:,0],x[:,1],'r');
+xlabel('Time (ms)',fontsize=25); ylabel('Performance',fontsize=25)
+
+savefig('../gif/15jun22_a1.png') # [[/home/samn/netpyne-STDP/gif/15jun22_a1.png]]
+
+xa = [mean(x[idx:idx+20,1]) for idx in range(len(x)-20)]
+xa2 = [mean(x2[idx:idx+20,1]) for idx in range(len(x2)-20)]
+
+plot(xa2,'b');
+plot(xa,'r');
+
+* 16jun22
+** other opt
+
+try evaluating combination (average) weight matrices from STDP/RL training 
+are the synaptic scaling rules turned off during evaluation? yes, turned off properly along with RLhebbwt, etc. in neurosim/main.py evaluate function
+
+python
+from pylab import *
+ion()
+import numpy as np
+import pandas, pickle, os
+import pandas as pd
+
+import sys
+sys.path.append(os.path.abspath(os.getcwd()))
+
+from neurosim.utils.weights import readWeights
+
+lwt = []
+for fn in os.listdir('weights_STDP-RL'):
+  if not fn.endswith('latest.pkl'): continue
+  lwt.append(readWeights('weights_STDP-RL/'+fn))
+
+len(lwt) # 10
+
+type(lwt[0]) # <class 'pandas.core.frame.DataFrame'>
+lwt[0].columns # Index(['time', 'preid', 'postid', 'weight'], dtype='object')
+
+hmm, wiring could differ based on different random seeds ... 
+
+what about running all 10 models in parallel and using their combined (voted) output to decide the move?
+
+or try adding, but first setup with 100% connectivity ... that way seed won't influence presence/absence of connection
+
+python main.py seedrun /home/samn/netpyne-STDP/results --fnjson ../sn.json --conn_seed 100
+
+can run 10-20 ... in parallel ... 
+
