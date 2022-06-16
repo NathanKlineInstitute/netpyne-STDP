@@ -62,11 +62,12 @@ NEURON {
   RANGE interval : Interval between current time t and previous spike.
   RANGE deltaw
   RANGE newweight
+  RANGE origweight : original weight	
   RANGE skip : Flag to skip 2nd set of conditions
   RANGE cumreward : cumulative reward magnitude so far
   RANGE maxreward : max reward for scaling
   GLOBAL initialtime
-  :RANGE NOSTDPTAG
+  RANGE NOSTDPTAG
 }
 
 ASSIGNED {
@@ -79,10 +80,12 @@ ASSIGNED {
   deltaw
   newweight
   cumreward
+  origweight
 }
 
 INITIAL {
   reset_eligibility()
+  origweight = synweight : store the original weight		      
 }
 
 PARAMETER {
@@ -106,7 +109,7 @@ PARAMETER {
   skip = 0
   maxreward = 0
   : cumreward = 0
-  :NOSTDPTAG = 0
+  NOSTDPTAG = 0
   initialtime = 1000 (ms) : initialization time before any weight changes possible
 }
 
@@ -204,28 +207,15 @@ PROCEDURE reward_punish (reinf) {
     if (softthresh == 1) { : If we have soft-thresholding on, apply it.
       deltaw = softthreshold(deltaw)
     }
-    :if (maxreward > 0.0) {
-    :  if (cumreward > maxreward) {
-    :    deltaw = 0.0
-    :  } else {
-    :    deltaw = deltaw * (1.0 - cumreward / maxreward)
-    :  }
-    :}
-    :if(fabs(deltaw)>0.0 && tlasthebbelig>20 && t>2400 && cumreward>0){
-    : printf("RL event: t = %g ms; reinf = %g; RLhebbwt = %g; RLlenhebb = %g; tlasthebbelig = %g; deltaw = %g, cumreward = %g\n",t,reinf,RLhebbwt,RLlenhebb,tlasthebbelig, deltaw, cumreward)
-    :}
-    :if (fabs(deltaw)>0.0){
-      adjustweight(deltaw) : Adjust the weight.
-    :  cumreward = cumreward + fabs(reinf)
-    :} : cumulative reward magnitude; only if weight changed
+    adjustweight(deltaw) : Adjust the weight.
   }
 }
 
 FUNCTION hebbRL () { : RL from pre before post spiking
-  :if (NOSTDPTAG) {
-  :  hebbRL = RLhebbwt
-  :}
-  :else
+  if (NOSTDPTAG) {
+    hebbRL = RLhebbwt
+  }
+  else
   if (tlasthebbelig < 0.0) { : If eligibility has not occurred yet return 0.0.
     hebbRL = 0.0
   }
@@ -243,9 +233,10 @@ FUNCTION hebbRL () { : RL from pre before post spiking
 }
 
 FUNCTION antiRL () { : RL from post before pre spiking
-  :if (NOSTDPTAG) {
-  :  antiRL = RLantiwt
-  :}
+  if (NOSTDPTAG) {
+    antiRL = RLantiwt
+  }
+  else
   if (tlastantielig < 0.0) { : If eligibility has not occurred yet return 0.0.
     antiRL = 0.0
   }
@@ -272,7 +263,8 @@ FUNCTION softthreshold (rawwc) {
 }
 
 PROCEDURE adjustweight (wc) {
-   synweight = synweight + wc : apply the synaptic modification, and then clip the weight if necessary to make sure it is between wbase and wmax.
+   : synweight = synweight + wc : apply the synaptic modification, and then clip the weight if necessary to make sure it is between wbase and wmax.
+   synweight = synweight + origweight * wc
    if (synweight > wmax) { synweight = wmax }
    if (synweight < wbase) { synweight = wbase }
 }

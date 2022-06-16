@@ -5,7 +5,11 @@ import numpy as np
 
 from conf import read_conf, init_wdir, backup_config
 from sim import NeuroSim
-from neurosim.utils.random import pseudo_random
+
+import sys
+sys.path.append(os.path.abspath(os.getcwd()))
+
+from utils.random import pseudo_random
 from utils.weights import readWeights
 
 
@@ -36,7 +40,8 @@ def main_seedrun(wdir, fnjson=None, conn_seed=None):
 
   outdir = dconf['sim']['outdir']
   if os.path.isdir(outdir):
-    raise Exception('You already tried this seed')
+    #raise Exception('You already tried this seed')
+    print('You already tried this seed - rerunning')
 
   dconf['sim']['seeds'] = {"conn": conn_seed, "stim": 1, "loc": 1}
 

@@ -33,11 +33,17 @@ def _getrate(dspkT, dspkID, pop, dnumc, totalDur=None, tlim=None):
   else:
     return 1e3*nspk/(totalDur*ncell)
 
-def saveActionsPerEpisode(sim, epCount, output_filename):
+def saveActionsPerEpisode(sim, epCount, output_filename, epTime=None):
   with open(output_filename, 'w') as fid5:
-    for i in range(len(epCount)):
-      fid5.write('\t%0.1f' % epCount[i])
-      fid5.write('\n')
+    if epTime is not None:
+      for i in range(len(epCount)):
+        fid5.write('\t%0.1f' % epTime[i])        
+        fid5.write('\t%0.1f' % epCount[i])
+        fid5.write('\n')
+    else:
+      for i in range(len(epCount)):
+        fid5.write('\t%0.1f' % epCount[i])
+        fid5.write('\n')
 
 
 def drawraster(lpop, dspkT, dspkID, dnumc,

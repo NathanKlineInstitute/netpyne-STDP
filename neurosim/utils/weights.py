@@ -2,8 +2,10 @@ import os
 import pickle
 import time
 import pandas as pd
+import sys
 
-from neurosim.cells import intf7
+sys.path.append(os.path.abspath(os.getcwd()))
+from cells import intf7
 
 def _LSynWeightToD(L):
   # convert list of synaptic weights to dictionary to save disk space

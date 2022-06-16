@@ -192,7 +192,8 @@ class NeuroSim:
     sim.AIGame = None  # placeholder
 
     self.NBsteps = 0  # this is a counter for recording the plastic weights
-    self.epCount = []
+    self.epCount = [] # time until the pole collapses
+    self.epTime = [] # simulation time at which episode ends
 
     if sim.rank == 0:  # sim rank 0 specific init
       from aigame import AIGame
@@ -484,6 +485,7 @@ class NeuroSim:
     for cell in sim.net.cells:
         for conn in cell.conns:
           if 'hSTDP' in conn:
+            # if conn.preGid < 80: continue
             weights.append(conn['hObj'].weight[self.PlastWeightIndex])
 
     return np.array(weights)
@@ -494,6 +496,7 @@ class NeuroSim:
     for cell in sim.net.cells:
         for conn in cell.conns:
           if 'hSTDP' in conn:
+            # if conn.preGid < 80: continue
             conn['hObj'].weight[self.PlastWeightIndex] = weights[pos]
             pos += 1
 
@@ -832,9 +835,10 @@ class NeuroSim:
 
     return actions
 
-  def trainAgent(self, t):
+  def trainAgent(self, simTime):
     """ training interface between simulation and game environment
     """
+    t = simTime
     dconf = self.dconf
     self.last_times.append(t)
 
@@ -881,7 +885,8 @@ class NeuroSim:
 
         last_steps = [k for k in sim.AIGame.count_steps if k != 0][-1]
         self.epCount.append(last_steps)
-        print('Episode finished in {} steps {} ()!'.format(last_steps, eval_str))
+        self.epTime.append(simTime)
+        print('t = '+str(round(simTime/1e3,2))+' s. Episode finished in {} steps {} ()!'.format(last_steps, eval_str))
 
         self.current_episode += 1
         if self.end_after_episode and self.end_after_episode <= self.current_episode:
@@ -900,6 +905,29 @@ class NeuroSim:
           is_unk_move,
           ep_cnt if game_done else 0)
 
+        if self.critic.type == 'allpos':
+          if game_done:
+            """
+            if len(self.epCount) > 1:
+              if self.epCount[-1] >= self.epCount[-2]:
+                reward = 0.1
+              else:
+                reward = -0.1
+            else:
+              reward = 0.
+            """
+            if len(self.epCount)>4:
+              reward = (self.epCount[-1] + self.epCount[-2]/2 + self.epCount[-3]/4 + self.epCount[-4]/8 + self.epCount[-4]/16)/500.
+              reward = reward / (1 + 1/2. + 1/4. + 1/8. + 1/16.) - 0.05
+            elif len(self.epCount)>1:
+              reward = np.mean(self.epCount)/500. - 0.05
+            elif len(self.epCount)>0:
+              reward = self.epCount[-1]/500. - 0.05
+            else:
+              reward = 0.0
+          else:
+            reward = 0.0
+          
         # use py_broadcast to avoid converting to/from Vector
         sim.pc.py_broadcast(reward, 0)  # broadcast reward value to other nodes
 
@@ -986,6 +1014,6 @@ class NeuroSim:
       if sim.plotWeights:
         plotWeights()
       saveActionsPerEpisode(
-          sim, self.epCount, self.outpath('ActionsPerEpisode.txt'))
+          sim, self.epCount, self.outpath('ActionsPerEpisode.txt'), epTime=self.epTime)
       if sim.plotRaster:
         plotRaster(sim, self.dconf, self.dnumc, self.outpath('raster.png'))
