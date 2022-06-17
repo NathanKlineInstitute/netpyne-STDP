@@ -467,3 +467,306 @@ python main.py seedrun /home/samn/netpyne-STDP/results --fnjson ../sn.json --con
 
 can run 10-20 ... in parallel ... 
 
+put into a bash script ... runseed.sh
+
+will run each for 500 s ... then evaluate each separately, then in combination ... 
+
+check outputs ... first look at perf during training across the 20 seeds ... 
+
+python
+import numpy as np
+from pylab import *
+ion()
+
+lperf = [np.loadtxt('../results/run_seed'+str(i)+'/ActionsPerEpisode.txt') for i in range(1,21,1)]
+
+for x in lperf: plot(x[:,0],x[:,1])
+
+lavgperf = [[mean(x[idx:idx+20,1]) for idx in range(len(x)-20)] for x in lperf]
+
+for x in lavgperf: plot(x)
+
+* 17jun22
+** check seed run outputs, evaluate, combine, evaluate
+
+python
+import numpy as np
+from pylab import *
+ion()
+
+lperf = [np.loadtxt('../results/run_seed'+str(i)+'/ActionsPerEpisode.txt') for i in range(1,21,1)]
+
+for x in lperf: plot(x[:,0],x[:,1])
+
+seems to be increasing slowly ... 
+
+savefig('gif/17jun22_a0.png') # [[./gif/17jun22_a0.png]]
+
+lavgperf = [[mean(x[idx:idx+20,1]) for idx in range(len(x)-20)] for x in lperf]
+
+for x in lavgperf: plot(x)
+
+savefig('gif/17jun22_a1.png') # [[./gif/17jun22_a1.png]]
+
+slow increase to fairly low level ... 
+
+next, to evaluate post-learning ... 
+
+made sn_eval.json that's same as sn.json but with RLhebbwt,RLantiwt set to 0 and normalization turned off (that's
+automated in main.py evaluate function)
+
+hmm, could just try main.py evaluation then ... 
+
+WDIR=/home/samn/netpyne-STDP/results/run_seed1
+py neurosim/main.py eval $WDIR --resume_tidx=0
+py neurosim/main.py eval $WDIR --resume_tidx=-1 --duration 250
+
+ok, put this into myeval.sh :
+
+for SEED in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20
+do
+    WDIR=/home/sam/netpyne-STDP/results/run_seed$SEED
+    echo $WDIR
+    python main.py eval $WDIR --resume_tidx=0 --conn_seed $SEED &
+    python main.py eval $WDIR --resume_tidx=-1 --duration 250  --conn_seed $SEED &
+done
+
+notice that got this error:
+ ERROR: Could not consume arg: --conn_seed
+but evaluation seems to have run to completion. since setup with all to all connectivity should be ok ... as
+long as initial weights were the same ... no guarantee ... 
+
+... check outputs ... each directory has diff evals from start/end of learning
+e.g.
+results/run_seed15/evaluation_0
+and
+results/run_seed15/evaluation_30
+
+python
+
+from pylab import *
+ion()
+import numpy as np
+
+lbef,laft=[],[]
+for seed in range(1,21,1):
+  lbef.append(np.loadtxt('../results/run_seed'+str(seed)+'/evaluation_0/ActionsPerEpisode.txt'))
+  laft.append(np.loadtxt('../results/run_seed'+str(seed)+'/evaluation_30/ActionsPerEpisode.txt'))
+  x = lbef[-1]; plot(x[:,0],x[:,1])
+
+pre-learning all look different ... 
+
+for x2 in laft: plot(x2[:,0],x2[:,1])
+
+xchg = [(mean(x2)-mean(x))/mean(x) for x,x2 in zip(lbef,laft)]
+xchg
+[1.4244053025062857, 1.486612494576398, 1.5994705658367117, 1.5073158621991447, 1.5420061955961133, 1.283893760404763, 1.3938113032925104, 1.5317605668719663, 1.5759562890254664, 1.4536223014137815, 1.5838198640071248, 1.4544552233795318, 1.5068645361802055, 1.5404808107747736, 1.523856320016677, 1.5513122319581272, 1.5552521923090539, 1.4356268696564622, 1.547313108894136, 1.5194510743197558]
+
+hist(xchg)
+savefig('gif/17jun22_a2.png') # [[./gif/17jun22_a2.png]]
+ok, so on average there's an improvement in performance for these models ... 
+
+np.amin(xchg) # 1.283893760404763
+np.amax(xchg) # 1.5994705658367117
+mean(xchg) # 1.5008643436609497
+
+next, to combine the learned weight matrices, and use that in a model to see if improves performance further. in the hybrid
+ES + STDP algorithm previously the matrices were weighted by performance/fitness ... could try simple average first.
+
+import sys
+sys.path.append(os.path.abspath(os.getcwd()))
+
+from utils.weights import readWeights
+
+lwt = []
+for seed in range(1,21,1):
+  lwt.append(readWeights('../results/run_seed'+str(seed)+'/synWeights_final.pkl'))
+
+len(lwt) # 20
+
+ncell = 280
+lcmat = [np.zeros((ncell,ncell)) for i in range(20)]
+for idx,wt in enumerate(lwt):
+  for i in range(len(wt)):
+    preid, postid, w = wt.ix[i,'preid'], wt.ix[i,'postid'], wt.ix[i,'weight']
+    lcmat[idx][preid,postid] = w
+
+imshow(lcmat[0],origin='lower',extent=(0,ncell,0,ncell))
+
+npcmat = np.array(lcmat)
+
+npcmat.shape # (20, 280, 280)
+
+avgcmat = np.mean(npcmat,axis=0)
+
+avgcmat.shape # (280, 280)
+
+imshow(avgcmat,origin='lower',extent=(0,ncell,0,ncell))
+colorbar()
+
+savefig('gif/17jun22_a3.png') # [[./gif/17jun22_a3.png]]
+
+next to save in format useable by model ... 
+
+finalt = 2500e3
+dout = {}
+wt = lwt[0]
+for i in range(len(wt)):
+  preid, postid = wt.ix[i,'preid'], wt.ix[i,'postid']
+  if preid not in dout: dout[preid] = {}
+  if postid not in dout[preid]: dout[preid][postid] = []
+  w = avgcmat[preid,postid]
+  dout[preid][postid].append([finalt, preid, postid, w])
+
+import pickle
+pickle.dump(dout,open('../results/22jun17_run_seed_avg_wt.pkl','wb'))
+
+ok, put that wt file into sn_eval.json and test its perf ... 
+
+(those sims actually ran for 3000 s, not 2500 s...)
+
+python main.py seedrun /home/samn/netpyne-STDP/results --fnjson ../sn_eval.json --conn_seed 33
+
+ok, check the output ... 
+
+python
+from pylab import *
+ion()
+import numpy as np
+
+x = np.loadtxt('../results/run_seed33/ActionsPerEpisode.txt') 
+np.mean(x[:,1]) # 24.37378640776699
+not good perf. level ... 
+
+hist(x[:,1])
+savefig('gif/17jun22_a4.png') # [[./gif/17jun22_a4.png]]
+
+lbef,laft=[],[]
+for seed in range(1,21,1):
+  lbef.append(np.loadtxt('../results/run_seed'+str(seed)+'/evaluation_0/ActionsPerEpisode.txt'))
+  laft.append(np.loadtxt('../results/run_seed'+str(seed)+'/evaluation_30/ActionsPerEpisode.txt'))
+  x = lbef[-1]; plot(x[:,0],x[:,1])
+
+lavgaft = [mean(xaft[:,1]) for xaft in laft]
+
+hist(lavgaft)
+plot([24.37, 24.37],[0,7],'k--')
+
+savefig('gif/17jun22_a5.png') # [[./gif/17jun22_a5.png]]
+
+so average weight matrix is at low end of performance compared to the others ... 
+
+check the matrices again ... 
+
+minv,maxv = 1e9,-1e9
+for cmat in lcmat:
+  minv = min(minv,np.amin(cmat)); maxv = max(maxv,np.amax(cmat))
+
+minv = min(minv, np.amin(avgcmat))  
+maxv = max(maxv, np.amax(avgcmat))  
+
+maxv = 10
+
+idx = 1
+for cmat in lcmat:
+  subplot(3,7,idx)
+  imshow(cmat,origin='lower',extent=(0,ncell,0,ncell),vmin=minv,vmax=maxv)
+  xlim((80,160)); ylim((0,120))
+  idx+=1
+
+subplot(3,7,21); imshow(avgcmat,origin='lower',extent=(0,ncell,0,ncell),vmin=minv,vmax=maxv); xlim((80,160)); ylim((0,120))
+
+savefig('gif/17jun22_a6.png') # [[./gif/17jun22_a6.png]]
+
+next, try the weighting by fitness, instead of simple average ... 
+
+weight by xchg ... 
+xchgsum = np.sum(xchg)
+lxchgwt = [xchg[i]/xchgsum for i in range(len(xchg))]
+
+wtcmt = np.zeros((280,280))
+for mt,fctr in zip(lcmat,lxchgwt): wtcmt += fctr*mt
+
+imshow(wtcmt,origin='lower',extent=(0,ncell,0,ncell),vmin=minv,vmax=maxv); xlim((80,160)); ylim((0,120))
+
+savefig('gif/17jun22_a7.png') # [[./gif/17jun22_a7.png]]
+
+finalt = 3000e3
+dout = {}
+wt = lwt[0]
+for i in range(len(wt)):
+  preid, postid = wt.ix[i,'preid'], wt.ix[i,'postid']
+  if preid not in dout: dout[preid] = {}
+  if postid not in dout[preid]: dout[preid][postid] = []
+  w = wtcmt[preid,postid]
+  dout[preid][postid].append([finalt, preid, postid, w])
+
+import pickle
+pickle.dump(dout,open('../results/22jun17_run_seed_weighted_wt.pkl','wb'))
+
+ok, try that one with eval ... 
+
+python main.py seedrun /home/samn/netpyne-STDP/results --fnjson ../sn_eval.json --conn_seed 44
+
+python
+from pylab import *
+ion()
+import numpy as np
+
+xavg = np.loadtxt('../results/run_seed33/ActionsPerEpisode.txt') # average weight matrix
+xchgwt = np.loadtxt('../results/run_seed44/ActionsPerEpisode.txt') # xchg fitness weighted weight matrix
+
+mean(xchgwt[:,1]) # 21.68695652173913 , even worse ... 
+
+if pursuing combined STDP matrices, may as well work on this in context of hybrid ES algorithm ... ? that
+makes it more automated ... 
+
+and raw fitness weighted??
+
+lbef,laft=[],[]
+for seed in range(1,21,1):
+  lbef.append(np.loadtxt('../results/run_seed'+str(seed)+'/evaluation_0/ActionsPerEpisode.txt'))
+  laft.append(np.loadtxt('../results/run_seed'+str(seed)+'/evaluation_30/ActionsPerEpisode.txt'))
+
+xperf = [median(x2[:,1]) for x2 in laft]
+xperfs = np.sum(xperf)
+xperf = [x/xperfs for x in xperf]
+
+wtcmt = np.zeros((280,280))
+for mt,fctr in zip(lcmat,xperf): wtcmt += fctr*mt
+
+imshow(wtcmt,origin='lower',extent=(0,ncell,0,ncell),vmin=minv,vmax=maxv); xlim((80,160)); ylim((0,120))
+
+savefig('gif/17jun22_a8.png') # [[./gif/17jun22_a8.png]]
+
+finalt = 3000e3
+dout = {}
+wt = lwt[0]
+for i in range(len(wt)):
+  preid, postid = wt.ix[i,'preid'], wt.ix[i,'postid']
+  if preid not in dout: dout[preid] = {}
+  if postid not in dout[preid]: dout[preid][postid] = []
+  w = wtcmt[preid,postid]
+  dout[preid][postid].append([finalt, preid, postid, w])
+
+import pickle
+pickle.dump(dout,open('../results/22jun17_run_seed_perfweighted_wt.pkl','wb'))
+
+ok, try that one ... 
+
+python main.py seedrun /home/samn/netpyne-STDP/results --fnjson ../sn_eval.json --conn_seed 55
+
+python
+from pylab import *
+ion()
+import numpy as np
+
+xavg = np.loadtxt('../results/run_seed33/ActionsPerEpisode.txt') # average weight matrix
+xchgwt = np.loadtxt('../results/run_seed44/ActionsPerEpisode.txt') # xchg fitness weighted weight matrix
+xperfwt = np.loadtxt('../results/run_seed55/ActionsPerEpisode.txt') # performance weighted weight matrix
+
+mean(xperfwt[:,1]) # 21.969298245614034
+median(xperfwt[:,1]) # 18.0
+
+no better ...
+
