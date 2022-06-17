@@ -263,8 +263,8 @@ FUNCTION softthreshold (rawwc) {
 }
 
 PROCEDURE adjustweight (wc) {
-   : synweight = synweight + wc : apply the synaptic modification, and then clip the weight if necessary to make sure it is between wbase and wmax.
-   synweight = synweight + origweight * wc
+   synweight = synweight + wc : apply the synaptic modification, and then clip the weight if necessary to make sure it is between wbase and wmax.
+   : synweight = synweight + origweight * wc
    if (synweight > wmax) { synweight = wmax }
    if (synweight < wbase) { synweight = wbase }
 }
