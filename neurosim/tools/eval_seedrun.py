@@ -165,7 +165,7 @@ def steps_per_eps(wdir, steps=100, stype='avg', modifier=None, parts=1, seed_nrs
     for wd in os.listdir(wdir) if wd.startswith('run_seed')]
 
   # valid_seeds = [
-  #   '5397326', '7892276', '932160', '6623146',
+  #   '5397326', '7892276', '1932160', '6623146',
   #   '9300610', '5381445', '2544501', '5140568',
   #   '1257804', '1394398']
   # seedruns = [(seed,sr) for seed,sr in seedruns if seed in valid_seeds]
@@ -194,6 +194,10 @@ def steps_per_eps(wdir, steps=100, stype='avg', modifier=None, parts=1, seed_nrs
             tr_res.append(float(t))
       else:
         tr_res = _extract_steps_per_ep(seedrun_wdir, steps, stype)
+        # # RM: This code is used to cache results
+        # with open(os.path.join('results/seedrun_m1-2022-01-16/steps_per_eps/normal', '{}-{}{}.tsv'.format(seed, stype, steps)), 'w') as out:
+        #   for t in tr_res:
+        #     out.write(str(t) + '\n')
       plt.plot(tr_res)
 
     plt.legend(['model seed: {}'.format(sidx+1+pstep*p if seed_nrs else seed)
