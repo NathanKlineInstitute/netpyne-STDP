@@ -64,7 +64,8 @@ def analyze_samples(wdir, modifier=None):
 
 
 def show_analyze_once(wdir, modifier=None, find_modifier=False,
-                      steps=100, stype='avg', evaltype='stdp', no_swarm=False):
+                      steps=100, stype='avg', evaltype='stdp', no_swarm=False,
+                      cached_eps_dir=None):
   seedruns = [(wd.replace('run_seed', ''), os.path.join(wdir, wd))
     for wd in os.listdir(wdir) if wd.startswith('run_seed')]
 
@@ -74,8 +75,17 @@ def show_analyze_once(wdir, modifier=None, find_modifier=False,
   assert stype in ['avg', 'median']
   aggs_seed = {}
   for seed, seedrun_f in seedruns:
-    tr_res = _extract_steps_per_ep(seedrun_f, steps, stype,
-        find_modifier=find_modifier, filetype=evaltype)
+    if cached_eps_dir:
+      tr_res = []
+      cached_path = os.path.join(cached_eps_dir, '{}-{}{}.tsv'.format(seed, stype, steps))
+      if not os.path.isfile(cached_path):
+        continue
+      with open(cached_path) as f:
+        for t in f:
+          tr_res.append(float(t))
+    else:
+      tr_res = _extract_steps_per_ep(seedrun_f, steps, stype,
+          find_modifier=find_modifier, filetype=evaltype)
     print([i for i,k in enumerate(tr_res) if k == max(tr_res)][0])
     aggs_seed[seed] = max(tr_res)
 
@@ -147,11 +157,18 @@ def _extract_steps_per_ep(wdir, steps, stype, filetype='stdp', find_modifier=Fal
     return _get_agg(training_results, steps, func)
 
 
-def steps_per_eps(wdir, steps=100, stype='avg', modifier=None, parts=1, seed_nrs=False):
+def steps_per_eps(wdir, steps=100, stype='avg', modifier=None, parts=1, seed_nrs=False,
+                  cached_eps_dir=None):
   assert stype in ['avg', 'median']
 
   seedruns = [(wd.replace('run_seed', ''), os.path.join(wdir, wd))
     for wd in os.listdir(wdir) if wd.startswith('run_seed')]
+
+  # valid_seeds = [
+  #   '5397326', '7892276', '932160', '6623146',
+  #   '9300610', '5381445', '2544501', '5140568',
+  #   '1257804', '1394398']
+  # seedruns = [(seed,sr) for seed,sr in seedruns if seed in valid_seeds]
 
   if modifier:
     seedruns = [(seed, os.path.join(seedrun_f, modifier)) for seed, seedrun_f in seedruns]
@@ -170,7 +187,13 @@ def steps_per_eps(wdir, steps=100, stype='avg', modifier=None, parts=1, seed_nrs
       'average' if stype == 'avg' else stype, steps))
     # plt.title('Performance during training, evaluated using {} over {} episodes'.format(stype, steps))
     for seed, seedrun_wdir in seedruns_batch:
-      tr_res = _extract_steps_per_ep(seedrun_wdir, steps, stype)
+      if cached_eps_dir:
+        tr_res = []
+        with open(os.path.join(cached_eps_dir, '{}-{}{}.tsv'.format(seed, stype, steps))) as f:
+          for t in f:
+            tr_res.append(float(t))
+      else:
+        tr_res = _extract_steps_per_ep(seedrun_wdir, steps, stype)
       plt.plot(tr_res)
 
     plt.legend(['model seed: {}'.format(sidx+1+pstep*p if seed_nrs else seed)

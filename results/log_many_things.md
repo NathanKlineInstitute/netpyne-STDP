@@ -335,3 +335,32 @@ do
         --save-data \
         --rerun-episode ${EPISODE_ID}
 done
+
+# Copy all weights for EVOL into one folder:
+
+
+mkdir results/seedrun_evol-2022-02-20/weights_EVOL
+
+
+for seed in run_seed1257804 run_seed1932160 run_seed2544501 run_seed5140568 run_seed5381445 run_seed6623146 run_seed7892276 run_seed9300610
+do
+    echo $seed
+    WDIR=results/seedrun_evol-2022-02-20/$seed/continue_1/
+    cp $WDIR/synWeights.pkl results/seedrun_evol-2022-02-20/weights_EVOL/${seed}_synWeights_latest.pkl
+
+    WDIR=results/seedrun_evol-2022-02-20/$seed/
+    cp $WDIR/synWeights.pkl results/seedrun_evol-2022-02-20/weights_EVOL/${seed}_synWeights_original.pkl
+done
+
+
+seed=run_seed1394398
+cp results/seedrun_evol-2022-02-20/${seed}/continue_1/continue_1/continue_1/continue_1/continue_1/continue_1/continue_1/continue_1/synWeights.pkl \
+    results/seedrun_evol-2022-02-20/weights_EVOL/${seed}_synWeights_latest.pkl
+WDIR=results/seedrun_evol-2022-02-20/$seed/
+cp $WDIR/synWeights.pkl results/seedrun_evol-2022-02-20/weights_EVOL/${seed}_synWeights_original.pkl
+
+seed=run_seed5397326
+cp results/seedrun_evol-2022-02-20/${seed}/continue_1/continue_1/continue_1/continue_1/continue_1/continue_1/continue_1/continue_1/continue_1/continue_1/synWeights.pkl \
+    results/seedrun_evol-2022-02-20/weights_EVOL/${seed}_synWeights_latest.pkl
+WDIR=results/seedrun_evol-2022-02-20/$seed/
+cp $WDIR/synWeights.pkl results/seedrun_evol-2022-02-20/weights_EVOL/${seed}_synWeights_original.pkl
