@@ -364,3 +364,15 @@ cp results/seedrun_evol-2022-02-20/${seed}/continue_1/continue_1/continue_1/cont
     results/seedrun_evol-2022-02-20/weights_EVOL/${seed}_synWeights_latest.pkl
 WDIR=results/seedrun_evol-2022-02-20/$seed/
 cp $WDIR/synWeights.pkl results/seedrun_evol-2022-02-20/weights_EVOL/${seed}_synWeights_original.pkl
+
+
+
+# Generate the figure 4 plot by using the notebook: `Plot diffs between plasticity schedules.ipynb`
+
+
+```
+aggs_by_step = [[256.8900, 166.5550, 292.0650, 269.0700, 222.4450, 82.5850, 138.2000, 78.9800, 171.8400, 117.4750],
+    [497.75, 496.5, 496.75, 499.25, 490.0, 497.5, 498.0, 500.0, 499.5, 500.0]]
+labels = ['EA→EM plastic', 'ES→EA→EM plastic']
+
+```

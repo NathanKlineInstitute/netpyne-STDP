@@ -235,21 +235,21 @@ py neurosim/tools/eval_multimodel.py train-perf $WDIR --wdir-name "STDP-RL Model
 
 # Now for the rest
 
-ALL10Seeds="5397326 7892276 932160 6623146 9300610 5381445 2544501 5140568 1257804 1394398"
+ALL10Seeds="5397326 7892276 1932160 6623146 9300610 5381445 2544501 5140568 1257804 1394398"
 
-for seed in 5397326 7892276 932160 6623146 9300610 5381445 2544501 5140568 1257804
+for seed in 5397326 7892276 1932160 6623146 9300610 5381445 2544501 5140568 1257804
 do
     seedrunname=run_seed${seed}
     # echo "Running $seedrunname Run 1"
     # python3 neurosim/main.py seedrun $WDIR --fnjson $WDIR/config1.json --conn_seed ${seed}
     # echo "Running $seedrunname Run 2"
     # py neurosim/main.py cont_seedrun $WDIR/${seedrunname} $WDIR/config2.json
-    # echo "Running $seedrunname Run 3 and onwards"
+    echo "Running $seedrunname Run 3 and onwards"
     # py neurosim/main.py cont_seedrun $WDIR/${seedrunname}/continue_1 $WDIR/config3b.json  --index 3
     # py neurosim/main.py continue $WDIR/${seedrunname}/continue_1/continue_3 --duration 5000 --index 3
     # py neurosim/main.py continue $WDIR/${seedrunname}/continue_1/continue_3/continue_3 --duration 5000 --index 3
-    py neurosim/main.py continue $WDIR/${seedrunname}/continue_1/continue_3/continue_3/continue_3 --duration 5000 --index 3
-    # py neurosim/main.py continue $WDIR/${seedrunname}/continue_1/continue_3/continue_3/continue_3/continue_3 --duration 5000 --index 3
+    # py neurosim/main.py continue $WDIR/${seedrunname}/continue_1/continue_3/continue_3/continue_3 --duration 5000 --index 3
+    py neurosim/main.py continue $WDIR/${seedrunname}/continue_1/continue_3/continue_3/continue_3/continue_3 --duration 5000 --index 3
     # py neurosim/main.py continue $WDIR/${seedrunname}/continue_1/continue_3/continue_3/continue_3/continue_3/continue_3 --duration 5000 --index 3
 done
 
@@ -260,13 +260,65 @@ py neurosim/tools/eval_seedrun.py train-perf $WDIR --modifier continue_1/continu
 
 # Long version
 python3 neurosim/tools/eval_seedrun.py analyze $WDIR --modifier continue_1/continue_3/continue_3/continue_3/continue_3/continue_3/continue_3
-py neurosim/tools/eval_seedrun.py train-perf $WDIR --modifier continue_1/continue_3/continue_3/continue_3/continue_3/continue_3/continue_3 --stype avg --steps 100
+py neurosim/tools/eval_seedrun.py train-perf $WDIR --modifier continue_1/continue_3/continue_3/continue_3/continue_3/continue_3 --stype avg --steps 100
 
 # Regenerate figure 3 plots for 10 seeds only from the prepared cached results:
 
 WDIR=results/seedrun_m1-2022-01-16
-py neurosim/tools/eval_seedrun.py train-perf $WDIR --modifier continue_1/continue_1/continue_2/continue_2/continue_2/continue_2/continue_2 --stype avg --steps 100 --parts 2 --seed_nrs \
-    --cached_eps_dir $WDIR/steps_per_eps
+py neurosim/tools/eval_seedrun.py train-perf $WDIR --modifier continue_1/continue_1/continue_2/continue_2/continue_2/continue_2/continue_2 --stype avg --steps 100 --seed_nrs \
+    --cached_eps_dir $WDIR/steps_per_eps/normal
 
 python3 neurosim/tools/eval_seedrun.py a1 $WDIR --modifier continue_1/continue_1/continue_2/continue_2/continue_2/continue_2/continue_2 \
-    --cached_eps_dir $WDIR/steps_per_eps
+    --cached_eps_dir $WDIR/steps_per_eps/normal
+[[102.23, 90.82, 75.18, 98.46, 132.6, 157.13, 125.22, 146.2, 114.28, 114.79]]
+
+py neurosim/tools/eval_seedrun.py train-perf $WDIR --modifier continue_1/continue_3/continue_3/continue_3/continue_3/continue_3 --stype avg --steps 100 --seed_nrs \
+    --cached_eps_dir $WDIR/steps_per_eps/wEAplastic
+
+python3 neurosim/tools/eval_seedrun.py a1 $WDIR --modifier continue_1/continue_3/continue_3/continue_3/continue_3/continue_3 \
+    --cached_eps_dir $WDIR/steps_per_eps/wEAplastic
+[[106.09, 88.23, 79.77, 113.92, 112.66, 152.8, 112.5, 141.85, 113.04, 112.18]]
+
+
+# Individual steps:
+
+    WDIR=results/seedrun_m1-2022-01-16/run_seed1394398/continue_1/continue_1/continue_2/continue_2/continue_2/continue_2/continue_2
+    py neurosim/tools/eval_multimodel.py train-perf $WDIR "Seed-6(Best)" \
+        results/seedrun_m1-2022-01-16/steps_per_eps/
+
+    WDIR=results/seedrun_m1-2022-01-16/run_seed1394398/continue_1/continue_3/continue_3/continue_3/continue_3
+    py neurosim/tools/eval_multimodel.py train-perf $WDIR "Seed-6(Best) wEA plastic" \
+        results/seedrun_m1-2022-01-16/steps_per_eps/
+
+## Code to generate the figure 3 plot E: 
+# by using the notebook: `Plot diffs between plasticity schedules.ipynb`
+
+```
+aggs_by_step = [[102.23, 90.82, 75.18, 98.46, 132.6, 157.13, 125.22, 146.2, 114.28, 114.79], 
+ [106.09, 88.23, 79.77, 113.92, 112.66, 152.8, 112.5, 141.85, 113.04, 112.18]]
+plog = False
+labels = ['EA→EM plastic', 'ES→EA→EM plastic']
+
+```
+
+
+# Generate INIT models on All-Inputs dataset:
+
+ run_seed1257804 run_seed1932160 run_seed2544501 run_seed5140568 run_seed5381445 run_seed6623146 run_seed7892276 run_seed9300610
+
+for seed in run_seed1394398 run_seed5397326
+do
+    echo $seed
+    WDIR=results/seedrun_m1-2022-01-16/$seed
+    mkdir $WDIR/atinit_evalmockAllStates
+    STEPS=20
+    for ((i=0;i<$STEPS;i+=1)); do
+        echo "Evaluating $seed Step $i / $STEPS"
+        py neurosim/main.py eval $WDIR --resume_tidx=0 --eps-duration 1 \
+            --mock-env 2 \
+            --duration 1300 \
+            --mock_curr_step $i \
+            --mock_total_steps $STEPS \
+            --outdir $WDIR/atinit_evalmockAllStates/step_${i}
+    done
+done
