@@ -1,0 +1,22 @@
+{
+    "params": {
+        "STDP-RL:AMPA:RLhebbwt": [0.01, 0.005, 0.001, 0.0005],
+        "STDP-RL:AMPA:RLantiwt": [-0.01, -0.005, -0.001, -0.0005],
+        "sim:targetedNonEM": [0, 1],
+        "sim:targetedRLDscntFctr": [0.5, 0.8, 1.0],
+        "simtype:ResumeSimFromFile": [
+            "results/hpsearch-2022-01-11/best/1_run_2371/synWeights_final.pkl",
+            "results/hpsearch-2022-01-11/best/2_run_2475/synWeights_final.pkl",
+            "results/hpsearch-2022-01-11/best/3_run_2329/synWeights_final.pkl",
+            "results/hpsearch-2022-01-11/best/4_run_2624/synWeights_final.pkl"],
+        "sim:seeds:conn": [9593185, 2542033],
+        "sim:targetedRLOppFctr": [0.8, 0.9, 1.0],
+        "critic:posRewardBias": [1.5, 2.0, 2.5],
+        "critic:angv_bias": [0.7, 1.0, 1.2]
+    },
+    "conditions": [
+        ["STDP_RL_AMPA_RLhebbwt == - STDP_RL_AMPA_RLantiwt", 2],
+        ["sim_targetedNonEM == 1 or sim_targetedRLDscntFctr == 1.0", 4],
+        ["('run_2371' in simtype_ResumeSimFromFile and sim_seeds_conn == 9593185) or (not 'run_2371' in simtype_ResumeSimFromFile and sim_seeds_conn == 2542033)", 6]
+    ]
+}
