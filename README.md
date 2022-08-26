@@ -1,7 +1,19 @@
 # NeuroSim CartPole model
-Adatapted from SMARTAgent on May 24th 2021
+Adatapted from [SMARTAgent](https://github.com/NathanKlineInstitute/SMARTAgent) on May 24th 2021
 
 A closed-loop neuronal network model that senses dynamic visual information from the AIgame enviroment and learns to produce actions that maximize game reward through spike-timing dependent reinforcement learning.
+
+This project is related to the paper:
+
+#### Spiking neuronal networks learn motor control through reinforcement and evolutionary learning
+Hasegan D, Deible M, Earl C, D'Onofrio D, Hazan H, Anwar H, Neymotin SA. 
+
+bioRxiv: [https://doi.org/10.1101/2021.11.20.469405](https://doi.org/10.1101/2021.11.20.469405)
+
+Published in: TODO
+
+
+---
 
 ### Project structure
 
@@ -112,6 +124,8 @@ Run tests:
 Or continue training model
 
     python3 neurosim/train_es.py continue results/20210907-ES1500it --iterations 500
+
+---
 
 ### Tools/Evaluation
 
@@ -303,7 +317,10 @@ Use this on the latest step of the model
 
     py neurosim/tools/eval_multimodel.py trace $WDIR
 
-### To generate all results:
+### To generate more results:
+
+Beware: this specific code was used for previous versions. 
+New and updated plot-generation scripts are found in the logs of the individual seedruns: `seedrun_m1-2022-01-16` and `seedrun_evol-2022-02-20`.
 
     BSTDP_WDIR=results/hpsearch-2021-09-06/best/1_run_168
     BEVOL_WDIR=results/20210907-ES1500it
