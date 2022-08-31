@@ -5,7 +5,7 @@ A closed-loop neuronal network model that senses dynamic visual information from
 
 This project is related to the paper:
 
-#### Spiking neuronal networks learn motor control through reinforcement and evolutionary learning
+#### Training spiking neuronal networks to perform motor control using reinforcement and evolutionary learning
 Hasegan D, Deible M, Earl C, D'Onofrio D, Hazan H, Anwar H, Neymotin SA. 
 
 bioRxiv: [https://doi.org/10.1101/2021.11.20.469405](https://doi.org/10.1101/2021.11.20.469405)
