@@ -4,9 +4,9 @@ matplotlib
 pandas
 PyOpenGL
 scikit-image
-gym[atari]
+gym[atari]==0.25.2
 neuron
-netpyne
+netpyne==1.0.0.2
 ipython
 jupyter
 pytest
