@@ -5,7 +5,7 @@ pandas
 PyOpenGL
 scikit-image
 gym[atari]==0.25.2
-neuron
+neuron==8.1.0 
 netpyne==1.0.0.2
 ipython
 jupyter
