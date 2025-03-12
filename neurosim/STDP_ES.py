@@ -113,7 +113,7 @@ def train(dconf=None, outdir=None):
     EPISODES_PER_ITER_ES = dconf['STDP_ES']['alpha_iters']
     EPISODES_PER_ITER_DURING_STDP = dconf['STDP_ES']['beta_iters']
     EPISODES_PER_ITER_POST_STDP = dconf['STDP_ES']['gamma_iters']
-    SAVE_WEIGHTS_EVERY_ITER = dconf['STDP_ES']['save_weights_every_iter'] 
+    SAVE_WEIGHTS_EVERY_ITER = dconf['STDP_ES']['save_weights_every_iter']
 
 
     #### SETUP NETWORK ####
@@ -161,17 +161,40 @@ def train(dconf=None, outdir=None):
             Process(target=run_model, args=(q[-1], neurosim, EPISODES_PER_ITER_ES, mutated_weights, EPISODES_PER_ITER_DURING_STDP, EPISODES_PER_ITER_POST_STDP, i))
             )
           proc[-1].start()
-
-        # Await returns...
-        for i in range(POPULATION_SIZE):
+          
           returnV = q[i].get()
           fitness_STDP.append(returnV[0])
           # post_STDP_weights.append(returnV[1])
           fitness_NoSTDP.append(returnV[2])
           fitness_post_STDP.append(returnV[3])
           proc[i].join()
+        # # Await returns...
+        # cleared = list()
+        # while True:
+        #     for i in range(POPULATION_SIZE):
+        #       try:
+        #         returnV = q[i].get(False, 0.5)
+        #         fitness_STDP.append(returnV[0])
+        #         # post_STDP_weights.append(returnV[1])
+        #         fitness_NoSTDP.append(returnV[2])
+        #         fitness_post_STDP.append(returnV[3])
+        #         proc[i].join()
+        #         cleared.append(i)
+        #         print(f'process {i} Finished')
+        #       except:
+        #         pass
+    
+        #     allExited = True
+        #     for t in proc:
+        #         if t.exitcode is None:
+        #             allExited = False
+        #             break
+        #     if allExited & (len(cleared)==POPULATION_SIZE):
+        #         break
+          
         proc.clear()
         q.clear()    
+ 
 
         # For now, use STDP as primary fitness
         fitness = fitness_post_STDP
@@ -204,7 +227,7 @@ def train(dconf=None, outdir=None):
         # apply the fitness_weighted_perturbations to the current best weights proportionally to the LR
         best_weights = best_weights * (1 + (LEARNING_RATE * fitness_weighted_perturbations.mean(axis = 0)))
 
-        # decay sigma and the learning rate
+       # decay sigma and the learning rate
         SIGMA *= SIGMA_DECAY
         LEARNING_RATE *= LR_DECAY
 
@@ -249,25 +272,25 @@ def train(dconf=None, outdir=None):
     # neurosim.save()
 
 
-def continue_main(wdir, iterations=100, index=None):
-  dconf_path = os.path.join(wdir, 'backupcfg_sim.json')
+# def continue_main(wdir, iterations=100, index=None):
+#   dconf_path = os.path.join(wdir, 'backupcfg_sim.json')
 
-  outdir = os.path.join(wdir, 'continue_{}'.format(1 if index == None else index))
-  dconf = read_conf(dconf_path, outdir=outdir)
-  synWeights_file = os.path.join(wdir, 'synWeights.pkl')
+#   outdir = os.path.join(wdir, 'continue_{}'.format(1 if index == None else index))
+#   dconf = read_conf(dconf_path, outdir=outdir)
+#   synWeights_file = os.path.join(wdir, 'synWeights.pkl')
 
-  dconf['simtype']['ResumeSim'] = 1
-  dconf['simtype']['ResumeSimFromFile'] = synWeights_file
-  if iterations != None:
-    dconf['ES_STDP']['iterations'] = iterations
-  dconf['sim']['plotRaster'] = 0
+#   dconf['simtype']['ResumeSim'] = 1
+#   dconf['simtype']['ResumeSimFromFile'] = synWeights_file
+#   if iterations != None:
+#     dconf['ES_STDP']['iterations'] = iterations
+#   dconf['sim']['plotRaster'] = 0
 
-  train(dconf)
+#   train(dconf)
 
 if __name__ == "__main__":
   fire.Fire({
       'train': train,
-      'continue': continue_main
+      # 'continue': continue_main
   })
 
 

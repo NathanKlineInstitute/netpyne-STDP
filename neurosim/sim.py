@@ -4,17 +4,17 @@ from neuron import h
 import random
 import signal
 import sys
-import pickle
 import os, sys
 import time
 import math
 import json
 import numpy as np
-import pandas as pd
 from datetime import datetime
 from collections import OrderedDict, deque
 from matplotlib import pyplot as plt
+from tqdm import tqdm
 
+sys.path.append(os.path.abspath(os.getcwd()))
 from cells import intf7
 from game_interface import GameInterface
 from critic import Critic
@@ -24,7 +24,7 @@ from utils.sync import syncdata_alltoall
 from utils.weights import saveSynWeights, readWeights, getWeightIndex, getInitSTDPWeight
 
 # this will not work properly across runs with different number of nodes
-random.seed(1234)
+# random.seed(1234)
 
 
 def isExc(ty): return ty.startswith('E')
@@ -229,14 +229,14 @@ class NeuroSim:
         self.resumeSTDPWeights(sim, A[A.time == resume_ts])
         sim.pc.barrier()  # wait for other nodes
         if sim.rank == 0:
-          print('Updated STDP weights')
+          tqdm.write('Updated STDP weights')
         # if 'normalizeWeightsAtStart' in self.dconf['sim']:
         #   if self.dconf['sim']['normalizeWeightsAtStart']:
         #     normalizeAdjustableWeights(sim, 0, lrecpop)
-        #     print(sim.rank,'normalized adjustable weights at start')
+        #     tqdm.write(sim.rank,'normalized adjustable weights at start')
         #     sim.pc.barrier() # wait for other nodes
       except Exception as err:
-        print('Could not restore STDP weights from file.')
+        tqdm.write('Could not restore STDP weights from file.')
         raise err
 
     if sim.rank == 0:
@@ -270,8 +270,8 @@ class NeuroSim:
     self.STDP_active = True
     self.end_after_episode = False
 
-    if save_on_control_c:
-      signal.signal(signal.SIGINT, self._handler)
+    # if save_on_control_c:
+    #   signal.signal(signal.SIGINT, self._handler)
 
 
     ################################
@@ -390,7 +390,7 @@ class NeuroSim:
         for sy, dsy in dpoty.items():
           damp = self.dconf['net']['noiseDamping']['E' if isExc(poty) else 'I']
           Weight, Rate = dsy['w'] * damp, dsy['rate']
-          # print(poty, isExc(poty), damp, Weight)
+          # tqdm.write(poty, isExc(poty), damp, Weight)
           if Weight > 0.0 and Rate > 0.0:
             # only create the netstims if rate,weight > 0
             stimty = 'stimNoise'+poty+'_'+sy
@@ -448,7 +448,7 @@ class NeuroSim:
             }
             # Setup STDP plasticity rules
             if ct in stdpConns and stdpConns[ct] and self.dSTDPparams[synToMech[sy]]['RLon']:
-              print('Setting RL-STDP on {} ({})'.format(k, weight))
+              tqdm.write('Setting RL-STDP on {} ({})'.format(k, weight))
               self.netParams.connParams[k]['plast'] = {
                   'mech': 'STDP', 'params': self.dSTDPparams[synToMech[sy]]}
               self.netParams.connParams[k]['weight'] = getInitSTDPWeight(
@@ -476,7 +476,7 @@ class NeuroSim:
           # hSTDP = conn.get('hSTDP')
           #hSTDP.cumreward = cConnW.at[idx,'cumreward']
           if self.dconf['verbose'] != 0:
-            print('weight updated:', cW)
+            tqdm.write('weight updated:', cW)
 
   def getWeightArray(self, sim):
     weights = []
@@ -536,7 +536,7 @@ class NeuroSim:
         cell_scales[cell.gid] = cell_scale
     if self.normalizeVerbose:
       llscales = sorted(list(cell_scales.items()), key=lambda x:x[1])
-      print('Inminmax scales:', llscales[0], llscales[-1])
+      tqdm.write('Inminmax scales:', llscales[0], llscales[-1])
     if self.normalizeInPrint:
       with open(self.normalizeInPrintFilename, 'a') as out:
         out.write(json.dumps({
@@ -553,7 +553,7 @@ class NeuroSim:
     pop_spikes = dict([(v, 0) for v in set(neuronal_pop.values())])
     if len(spkts) > 0:
       # if random.random() < 0.005:
-      #   print('length', len(spkts), spkts.buffer_size())
+      #   tqdm.write('length', len(spkts), spkts.buffer_size())
       len_skts = len(spkids)
       for idx in range(len_skts):
         i = len_skts - 1 - idx
@@ -586,7 +586,7 @@ class NeuroSim:
     input_rates = sim.GameInterface.input_firing_rates()
     input_rates = syncdata_alltoall(sim, input_rates)
 
-    # if sim.rank == 0: print(dFiringRates['EV1'])
+    # if sim.rank == 0: tqdm.write(dFiringRates['EV1'])
     # update input firing rates for stimuli to ER,EV1 and direction sensitive cells
     # different rules/code when dealing with artificial cells
     if self.ECellModel == 'IntFire4' or self.ECellModel == 'INTF7':
@@ -671,25 +671,25 @@ class NeuroSim:
     dconf = self.dconf
     if self.targetedRL >= 1:
       if self.targetedNonEM>=1:
-        if dconf['verbose']: print('Apply RL to nonEM')
+        if dconf['verbose']: tqdm.write('Apply RL to nonEM')
         for preCGid, STDPmech in self.dSTDPmech['nonEM']:
           STDPmech.reward_punish(
             float(reward * self.targetedRLDscntFctr) * outNormScale(preCGid))
       if self.targetedRL == 1: #RL=1: Apply to all of EM
         for pop, pop_moves in dconf['pop_to_moves'].items():
-          if dconf['verbose']: print('Apply RL to ', pop)
+          if dconf['verbose']: tqdm.write('Apply RL to ', pop)
           for preCGid, STDPmech in self.dSTDPmech[pop]:
             STDPmech.reward_punish(reward * outNormScale(preCGid))
       elif self.targetedRL >= 2:
         for moveName, moveID in dconf['moves'].items():
           if actions[-1] == moveID:
-            if dconf['verbose']: print('Apply RL to EM', moveName)
+            if dconf['verbose']: tqdm.write('Apply RL to EM', moveName)
             for preCGid, STDPmech in self.dSTDPmech[moveName]:
               STDPmech.reward_punish(reward * self.targetedRLMainFctr * outNormScale(preCGid))
             if self.targetedRL >= 3: 
               for oppMoveName in dconf['moves'].keys():
                 if oppMoveName != moveName: #ADD: and oppMoveName fires
-                  if dconf['verbose']: print('Apply -RL to EM', oppMoveName)
+                  if dconf['verbose']: tqdm.write('Apply -RL to EM', oppMoveName)
                   for preCGid, STDPmech in self.dSTDPmech[oppMoveName]:
                     STDPmech.reward_punish(
                       reward * (-self.targetedRLOppFctr) * outNormScale(preCGid))
@@ -703,7 +703,7 @@ class NeuroSim:
 
       if self.normalizeVerbose >= 2:
         llscales = sorted(list(cell_scales.items()), key=lambda x:x[1])
-        print('Outminmax scales:', llscales[0], llscales[-1])
+        tqdm.write('Outminmax scales:', llscales[0], llscales[-1])
 
   def resetEligibilityTrace(self):
     for _, STDPmech in self.dSTDPmech['all']:
@@ -732,7 +732,7 @@ class NeuroSim:
             for gid in cgids_ch:
               self.normInMeans[gid] *= scalar
           if self.normalizeVerbose:
-            print('GC:{}{}! curr {} target {}'.format(
+            tqdm.write('GC:{}{}! curr {} target {}'.format(
               '+' if scalar > 1.0 else '-', popname, 
               curr_freq, target_freq))
 
@@ -795,23 +795,25 @@ class NeuroSim:
     actions = []
     if sim.rank == 0:
       if self.dconf['verbose']:
-        print('t={}: {} spikes: {}'.format(
+        tqdm.write('t={}: {} spikes: {}'.format(
             round(t, 2), ','.join(moves), ','.join([str(move_freq[m]) for m in moves])))
-      with open(sim.MotorOutputsfilename, 'a') as fid4:
-        fid4.write('%0.1f' % t)
-        for ts in range(int(self.actionsPerPlay)):
-          fid4.write(
-              '\t' + '\t'.join([str(round(move_freq[m][ts], 1)) for m in moves]))
-        fid4.write('\n')
+      
+      if self.dconf['sim']['save_logs']:
+        with open(sim.MotorOutputsfilename, 'a') as fid4:
+          fid4.write('%0.1f' % t)
+          for ts in range(int(self.actionsPerPlay)):
+            fid4.write(
+                '\t' + '\t'.join([str(round(move_freq[m][ts], 1)) for m in moves]))
+          fid4.write('\n')
 
       for ts in range(int(self.actionsPerPlay)):
         no_firing_rates = sum([v[ts] for v in move_freq.values()]) == 0
         if no_firing_rates:
           # Should we initialize with random?
           if self.dconf['verbose']:
-            print('Warning: No firing rates for moves {}!'.format(','.join(moves)))
-          else:
-            print('.', end='')
+            tqdm.write('Warning: No firing rates for moves {}!'.format(','.join(moves)))
+          # else:
+          #   tqdm.write('.', end='')
           actions.append(self.unk_move)
         else:
           mvsf = [(m, f[ts]) for m, f in move_freq.items()]
@@ -820,25 +822,33 @@ class NeuroSim:
           best_move, best_move_freq = mvsf[0]
           if best_move_freq == mvsf[-1][1]:
             if self.dconf['verbose']:
-              print('Warning: No discrimination between moves, fired: {}!'.format(
+              tqdm.write('Warning: No discrimination between moves, fired: {}!'.format(
                 [f for m,f in mvsf]))
-            else:
-              print(str(round(best_move_freq)) + '-', end='')
+            # else:
+            #   tqdm.write(str(round(best_move_freq)) + '-', end='')
             actions.append(self.unk_move)
           else:
             actions.append(self.dconf['moves'][best_move])
           if self.dconf['verbose']:
-            print('Selected Move', best_move)
+            tqdm.write('Selected Move', best_move)
 
     return actions
 
-  def trainAgent(self, t):
+  def trainAgent(self, simTime):
     """ training interface between simulation and game environment
     """
     dconf = self.dconf
-    self.last_times.append(t)
+    self.last_times.append(simTime)
 
     t1 = datetime.now()
+    
+    if self.end_after_episode <= self.current_episode:
+      tqdm.write('Current Episode ended')
+      sys.exit()
+
+    if self.earlyStoppingCriteria and eval_ep and eval_ep < self.earlyStoppingCriteria:
+      tqdm.write('Early stopping activated')
+      sys.exit()
 
     # Measure and cache normalized initial weights
     if self.normalizeSynInputs and not self.normInMeans:
@@ -847,7 +857,7 @@ class NeuroSim:
       self.normOutMeans = self.weightsMean(sim, ctype='out')
 
     # for the first time interval use randomly selected actions
-    if t < (self.tstepPerAction*self.actionsPerPlay):
+    if simTime < (self.tstepPerAction*self.actionsPerPlay):
       actions = []
       movecodes = [v for k, v in dconf['moves'].items()]
       for _ in range(int(self.actionsPerPlay)):
@@ -855,7 +865,7 @@ class NeuroSim:
         actions.append(action)
     # the actions should be based on the activity of motor cortex (EMRIGHT, EMLEFT)
     else:
-      actions = self.getActions(sim, t)
+      actions = self.getActions(sim, simTime)
 
     t1 = datetime.now() - t1
     t2 = datetime.now()
@@ -868,6 +878,7 @@ class NeuroSim:
       rewards, game_done = sim.AIGame.playGame(actions)
       ep_cnt = None
       if game_done:
+        self.current_episode += 1
         ep_cnt = dconf['env']['episodes']
         eval_str = ''
         eval_ep = None
@@ -881,14 +892,7 @@ class NeuroSim:
 
         last_steps = [k for k in sim.AIGame.count_steps if k != 0][-1]
         self.epCount.append(last_steps)
-        print('Episode finished in {} steps {} ()!'.format(last_steps, eval_str))
-
-        self.current_episode += 1
-        if self.end_after_episode and self.end_after_episode <= self.current_episode:
-          sys.exit()
-
-        if self.earlyStoppingCriteria and eval_ep and eval_ep < self.earlyStoppingCriteria:
-          sys.exit()
+        tqdm.write('Episode finished in {} steps {} ()!'.format(last_steps, eval_str))
 
       # specific for CartPole-v1. TODO: move to a diff file
       if len(sim.AIGame.observations) == 0:
@@ -914,7 +918,7 @@ class NeuroSim:
     if self.STDP_active and reward != 0.0:
       if dconf['verbose']:
         if sim.rank == 0:
-          print('t={} Reward:{} Actions: {}'.format(round(t, 2), reward, actions))
+          tqdm.write('t={} Reward:{} Actions: {}'.format(round(simTime, 2), reward, actions))
       self.applySTDP(sim, reward, actions)
 
     # Reset eligibility trace
@@ -927,12 +931,13 @@ class NeuroSim:
     if sim.rank == 0:
       tvec_actions = []
       for ts in range(len(actions)):
-        tvec_actions.append(t-self.tstepPerAction*(len(actions)-ts-1))
+        tvec_actions.append(simTime-self.tstepPerAction*(len(actions)-ts-1))
 
-      with open(sim.ActionsRewardsfilename, 'a') as fid3:
-        obs = '\t{}'.format(json.dumps(list(sim.AIGame.observations[-1]))) if self.saveEnvObs else ''
-        for action, t in zip(actions, tvec_actions):
-          fid3.write('%0.1f\t%0.1f\t%0.5f%s\n' % (t, action, reward, obs))
+      if dconf['sim']['save_logs']:
+        with open(sim.ActionsRewardsfilename, 'a') as fid3:
+          obs = '\t{}'.format(json.dumps(str(list(sim.AIGame.observations[-1])))) if self.saveEnvObs else ''
+          for action, simTime in zip(actions, tvec_actions):
+            fid3.write('%0.1f\t%0.1f\t%0.5f%s\n' % (simTime, action, reward, obs))
 
     # update firing rate of inputs to R population (based on game state)
     self.updateInputRates(sim)
@@ -943,16 +948,17 @@ class NeuroSim:
     self.NBsteps += 1
     if self.NBsteps % self.recordWeightStepSize == 0:
       if dconf['verbose'] > 0 and sim.rank == 0:
-        print('Weights Recording Time:', t, 'NBsteps:', self.NBsteps,
+        tqdm.write('Weights Recording Time:', simTime, 'NBsteps:', self.NBsteps,
               'recordWeightStepSize:', self.recordWeightStepSize)
-      self.recordWeights(sim, t)
+      self.recordWeights(sim, simTime)
     if self.STDP_active and self.normalizeSynInputs and self.NBsteps % self.normalizeInStepSize == 0:
       self.normalizeInWeights(sim)
 
     t5 = datetime.now() - t5
     if random.random() < 0.001:
-      print(t, [round(tk.microseconds / 1000, 0)
-                for tk in [t1, t2, t3, t4, t5]])
+      buf = [round(tk.microseconds / 1000, 0) for tk in [t1, t2, t3, t4, t5]]
+      buf = str(simTime) + ' ' + ','.join(str(buf).replace(']','').replace('[','').split(','))
+      tqdm.write(buf)
 
     if 'sleeptrial' in dconf['sim'] and dconf['sim']['sleeptrial']:
       time.sleep(dconf['sim']['sleeptrial'])
@@ -962,12 +968,13 @@ class NeuroSim:
     self.current_episode = 0
     sim.runSimWithIntervalFunc(tPerPlay, self.trainAgent)
     # A Control-C will break from 'runSimWithIntervalFunc' but still save
+    tqdm.write('saving.....')
     self.save()
 
 
   def _handler(self, signal_received, frame):
       # Handle any cleanup here
-      print('SIGINT or CTRL-C detected. Exiting gracefully')
+      tqdm.write('SIGINT or CTRL-C detected. Exiting gracefully')
       self.save()
       sys.exit()
 

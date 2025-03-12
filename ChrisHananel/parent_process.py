@@ -1,0 +1,424 @@
+import os, sys, argparse
+import numpy as np
+import time, glob, pickle
+from tqdm import tqdm
+import matplotlib.pyplot as plt
+import signal
+
+import netpyne
+sys.path.append(os.path.abspath(os.getcwd()))
+sys.path.append(os.path.abspath(os.getcwd()) + '/neurosim/')
+from sim import NeuroSim
+from conf import read_conf, backup_config
+
+def signal_handler(signal, frame):
+        done()
+        sys.exit(0)
+
+signal.signal(signal.SIGINT, signal_handler)
+out_path = None
+
+def done():
+    global out_path
+    os.system('rm -r "' + out_path + '/Ready/"')
+    os.system('rm -r "' + out_path + '/WorkingData/"')
+    os.system('rm -r "' + out_path + '/Done/"')
+
+def generate_starting_weights(config, path) -> np.array: 
+
+    config['sim']['duration'] = 1e4
+    config['sim']['recordWeightStepSize'] = 1e4
+    config['sim']['outdir'] = path 
+    
+    neurosim = NeuroSim(config, use_noise=False, save_on_control_c=False)
+    return config, neurosim.getWeightArray(netpyne.sim)
+
+def plot_performance(open_file, save, title=None):
+    data = dict()
+    feilds = list()
+    n_generations = 0
+    with open(open_file,'rt') as f:
+        # read lagent
+        st = f.readline()
+        for field in st.split(','):
+            field = field.replace('\n','')
+            feilds.append(field)
+            data[field] = {
+                'data': list(),
+                'feild_size': 0
+            }
+        #read feild size
+        st = f.readline().split(',')
+        for i, field in enumerate(data.keys()):
+            data[field]['feild_size'] = int(st[i])
+            
+        #space
+        st = f.readline().split(',')
+        
+        #data
+        for i_d, d in enumerate(f):
+            n_generations += 1
+            pop_counter =  i_d % data['pop']['feild_size']
+            if pop_counter == 0:
+                for k in data.keys():
+                    if k == feilds[-1]:
+                        continue
+                    data[k]['data'].append(np.zeros(data['pop']['feild_size']))
+            for i_v, v in enumerate(d.replace('\n','').split(',')):
+                data[feilds[i_v]]['data'][-1][pop_counter] = float(v)
+                
+    # plotting
+    plt.figure()
+    xAxies = list()
+    counter = np.zeros(data['pop']['feild_size'])
+    for g in range(n_generations // data['pop']['feild_size']):
+        xAxies.extend(counter.tolist())
+        counter +=1
+    
+    if title is None:
+        plt.title('')
+    else:
+        plt.title(title)
+    plt.xlabel('Generations') 
+    plt.ylabel('Performance') 
+    
+    for k,v in data.items():
+        if k == feilds[-1]:
+            continue
+        plt.scatter(xAxies, np.array(data[k]['data']).reshape(-1), label = k, s=0.5, alpha=0.3)
+    
+    plt.legend(prop={'size': 6})
+    plt.savefig(save + r".png", dpi=300)
+  
+def plot_performance_verbos(open_file, save, title=None):
+    data = dict()
+    feilds = list()
+    n_generations = 0
+    with open(open_file,'rt') as f:
+        # read lagent
+        st = f.readline()
+        for field in st.split(','):
+            field = field.replace('\n','')
+            feilds.append(field)
+            data[field] = {
+                'data': list(),
+                'feild_size': 0
+            }
+        #read feild size
+        st = f.readline().split(',')
+        for i, field in enumerate(data.keys()):
+            data[field]['feild_size'] = int(st[i]) if int(st[i]) > 0 else 1
+            
+        #space
+        st = f.readline().split(',')
+        
+        #data
+        for i_d, d in enumerate(f):
+            n_generations += 1
+            for i_v, v in enumerate(d.replace(']\n','').replace(' ','').split(']')):
+                data[feilds[i_v]]['data'].append(np.array(v.split(','), dtype=float))
+                
+    # plotting
+    plt.figure()
+    
+    if title is None:
+        plt.title('')
+    else:
+        plt.title(title)
+    plt.xlabel('Generations') 
+    plt.ylabel('Performance') 
+    
+    for k,v in data.items():
+        if k == feilds[-1]:
+            continue
+        
+        yAxies = np.array(data[k]['data']).reshape(-1)
+        xAxies = list()
+        for i in range(n_generations):
+            for j in range(data[k]['feild_size'] * data['pop']['feild_size']):
+                xAxies.append(i)
+        
+        plt.scatter(np.array(xAxies), yAxies, label = k, s=0.5, alpha=0.3)
+    
+    plt.legend()
+    plt.savefig(save + r".png") 
+        
+        
+def main(
+    config,              # Network config
+    resume,              # Continue from the last save weights?
+): 
+    ### ---Assertions--- ###
+    assert config is not None, 'Config must be given'
+
+
+
+    ### ---Constants--- ###
+    SUB_PROCESS_FILE = os.path.abspath(os.getcwd()) + '/ChrisHananel/child_process.py'
+    Agragate_log_file = 'performance.csv'
+    Agragate_Verbos_log_file = 'performance_verbos.csv'
+    
+
+    ### ---Initialize--- ###
+    dconf = read_conf(config)
+
+    #### --- Set variabels--- ###
+    sim_name = dconf['sim']['outdir'].split('/')[-1]
+    epochs = dconf['STDP_ES']['iterations']
+    population = dconf['STDP_ES']['population_size']
+    alpha = dconf['STDP_ES']['alpha_iters']
+    beta = dconf['STDP_ES']['beta_iters']
+    gamma = dconf['STDP_ES']['gamma_iters']
+
+    SIGMA = dconf['STDP_ES']['sigma'] # 0.1 # standard deviation of perturbations applied to each member of population
+    LEARNING_RATE = dconf['STDP_ES']['learning_rate'] # 1 # what percentage of the return normalized perturbations to add to best_weights
+    # How much to decay the learning rate and sigma by each episode. In theory
+    # this should lead to better
+    LR_DECAY = dconf['STDP_ES']['decay_lr'] # 1
+    SIGMA_DECAY = dconf['STDP_ES']['decay_sigma'] # 1
+    SAVE_WEIGHTS_EVERY_ITER = dconf['STDP_ES']['save_weights_every_iter']
+    STOP_TRAIN_THRESHOLD = dconf['STDP_ES']['stop_train_threashold']
+    STOP_TRAIN_MOVING_AVG = dconf['STDP_ES']['stop_train_moving_avg']
+    OPTIMIZE_FOR = dconf['STDP_ES']['optimize_for']
+    use_weights_to_mutate = dconf['STDP_ES']['use_weights_to_mutate']
+    noES = dconf['STDP_ES']['noES']
+
+           
+    # out_path uniquely identified per child
+    global out_path
+    out_path = os.path.join(os.getcwd(), 'results', f'{sim_name}')
+        
+    # Establish buffer folders for child outputs
+    if resume:
+        with open(out_path + '/bestweights.pkl', 'rb') as f:
+            save_data = pickle.load(f)
+        if isinstance(save_data, dict):
+            best_weights = save_data['best_weights']
+            SIGMA = save_data['SIGMA']
+            LEARNING_RATE = save_data['LEARNING_RATE']
+        else:
+            best_weights = save_data
+                        
+        os.system('rm -r "' + out_path + '/Ready/"')
+        os.system('rm -r "' + out_path + '/WorkingData/"')
+        os.system('rm -r "' + out_path + '/Done/"')
+        os.makedirs(out_path + '/Ready/')
+    else:            
+        try:
+            os.makedirs(out_path + '/Ready/')
+        except FileExistsError:
+            raise Exception("Re-using simulation name, pick a different name")
+    
+        with open(out_path + '/' + Agragate_log_file,'wt') as f:
+            f.write('Alpha,Beta,Gamma,pop\n')
+            f.write(f'{alpha},{beta},{gamma},{population}\n')
+            f.write(f'\n')
+        
+        with open(out_path + '/' + Agragate_Verbos_log_file,'wt') as f:
+            f.write('Alpha,Beta,Gamma,pop\n')
+            f.write(f'{alpha},{beta},{gamma},{population}\n')
+            f.write(f'\n') 
+        
+        ### ---backup--- ###
+        os.system('cp "' + config + '" "' + out_path + '/"')
+        os.system('tar cvzf "'+ out_path + '/code_backp.tar.gz" ChrisHananel/*.* neurosim/*.*')
+
+        ### ---Initialize weights--- ###
+        dconf, best_weights = generate_starting_weights(dconf, out_path)
+        
+    fitness_record = np.zeros((epochs, population, 3))
+    moving_performance_log = np.zeros(STOP_TRAIN_MOVING_AVG)
+    population_weights = []
+    global_best_weights = None
+    global_best_score = 0
+    ### ---Evolve--- ###
+    for epoch in tqdm(range(epochs), mininterval=1, leave=True,):
+    
+        # Mutated weights #
+        perturbations = np.random.normal(0, SIGMA, (population, best_weights.size))
+        perturbations[perturbations < -0.8] = -0.8
+
+        # Mutate & run population #
+        tqdm.write('Running child process')
+        for child_id in range(population):
+
+            if noES:
+                if len(population_weights)==0:
+                    child_weights = np.copy(best_weights)
+                else:
+                    child_weights = np.copy(population_weights[child_id])
+            else:
+                child_weights = best_weights * (1 + perturbations[child_id])
+
+            dic_obj = {
+                'weights': child_weights, # Mutated weights # TODO: Figure out way to get numpy weights to child
+                'config':   config,             # Config file TODO: path?
+                'alpha':    alpha,              # Num. Pre-STDP iters
+                'beta':     beta,               # Num. STDP iters
+                'gamma':    gamma,              # Num. Post-STDP iters
+                'Exit?':    (epoch+1)==epochs   # last round?
+                # what ever you would like to return to parent
+            }
+            ## --Save data for child process-- ##
+            with open(out_path + '/Ready/child_' + str(child_id) +'.pkl.new', 'wb') as out:
+                pickle.dump(dic_obj, out)
+        
+        #release data
+        for child_id in range(population):
+            os.system('mv "' +out_path + '/Ready/child_' + str(child_id) +'.pkl.new" "' +out_path + '/Ready/child_' + str(child_id) +'.pkl"')
+            if epoch == 0:
+                   # Prepare command for child process #
+                args = {
+                    'id':       child_id,
+                    'out_path': '"' + out_path + '"',  # Output file path
+                }
+                shell_command = ' '.join(['python3', "'" + SUB_PROCESS_FILE + "'", *(f'--{k} {v}' for k,v in args.items()), '&'])
+
+                # Create parallel process #
+                os.system(shell_command)
+                
+            #     # from child_process import run_simulation
+            #     # run_simulation(id=child_id, out_path=out_path)
+
+        # Await outputs #
+        time.sleep(10)
+        files = None
+        while(True):
+            files = (glob.glob(r'' + out_path + "/Done/*.pkl"))
+            if len(files) >= population:
+                break
+            time.sleep(1)
+        
+        child_data = list()
+        for file in files:
+            with open(file, 'rb') as out:
+                child_data.append(pickle.load(out))
+            
+            # delete the file after we collect the data
+            os.system('rm "'+ file + '"')
+
+        # Record #
+        a_list = []; b_list = []; g_list = []
+        with open(out_path + '/' + Agragate_log_file,'at') as f:    
+            for data in child_data:
+                fitness_record[epoch, data['id'], :] = data['alpha'], data['beta'], data['gamma']        
+                a_list.append(data['alpha_results'])
+                b_list.append(data['beta_results'])
+                g_list.append(data['gama_results'])
+                f.write(f"{data['alpha']},{data['beta']},{data['gamma']}\n")
+        a_list = np.array(a_list).reshape(-1)
+        b_list = np.array(b_list).reshape(-1)
+        g_list = np.array(g_list).reshape(-1)
+        
+        with open(out_path + '/' + Agragate_Verbos_log_file,'at') as f:    
+            f.write(str(a_list.tolist()).replace('[',''))
+            f.write(str(b_list.tolist()).replace('[',''))
+            f.write(str(g_list.tolist()).replace('[',''))
+            f.write("\n")            
+        
+
+        # Evaluate children #
+        if OPTIMIZE_FOR == 'alpha':
+            fitness = fitness_record[epoch, :, 0].reshape(-1, 1)   # all of ith epochs alpha fitness
+        elif OPTIMIZE_FOR == 'beta':
+            fitness = fitness_record[epoch, :, 1].reshape(-1, 1)   # all of ith epochs beta fitness
+        elif OPTIMIZE_FOR == 'gamma':
+            fitness = fitness_record[epoch, :, 2].reshape(-1, 1)   # all of ith epochs gamma fitness
+        elif OPTIMIZE_FOR == 'betagamma':
+            fitness = fitness_record[epoch, :, 2].reshape(-1, 1) + fitness_record[epoch, :, 1].reshape(-1, 1)
+        else:
+            raise Exception("Invalid optimize_for parameter in config file")
+        
+        # calculating moving avarage
+        moving_performance_log[epoch % STOP_TRAIN_MOVING_AVG] = np.mean(fitness)
+        
+        # collecting weights 
+        population_weights = []
+        for child in child_data:
+            if OPTIMIZE_FOR == 'betagamma':
+                population_weights.append(np.copy(
+                    (child['beta_post_weights'] + child['gamma_post_weights'])/2
+                    ))
+            else:
+                population_weights.append(np.copy(child[OPTIMIZE_FOR+'_post_weights']))
+            score = population_weights[-1].mean()
+            if  score > global_best_score:
+                global_best_score = score
+                global_best_weights = np.copy(population_weights[-1])
+        
+        if noES: 
+            if not global_best_weights is None:
+                best_weights = np.copy(global_best_weights)                
+        else:
+            # normalize the fitness for more stable training
+            normalized_fitness = (fitness - fitness.mean()) / (fitness.std() + 1e-8)
+            fitness_weighted_mutations = (normalized_fitness * perturbations)
+
+            # Evolve parent #
+            if use_weights_to_mutate:
+                # best_weights = best_weights + use_weights_to_mutate * np.copy(gama_best_weight)
+                # apply the fitness_weighted_perturbations to the current best weights proportionally to the LR
+                
+                # Post STDP weight influence on weights
+                weight_diff = np.array(population_weights - best_weights)
+                normalized_weight_diff = (weight_diff - weight_diff.mean()) / (weight_diff.std() + 1e-8)
+            
+                best_weights = best_weights * (
+                1 + 
+                (LEARNING_RATE * fitness_weighted_mutations.mean(axis = 0)) * (1 - use_weights_to_mutate) +    # ES influence
+                (LEARNING_RATE * normalized_weight_diff.mean(axis = 0)) * (use_weights_to_mutate)            # STDP influence
+                )
+            else:
+                best_weights = best_weights * (1 + (LEARNING_RATE * fitness_weighted_mutations.mean(axis=0)))
+
+            # TODO: Potentially Sigma & LR Decay (not used in original)
+            # decay sigma and the learning rate
+            SIGMA *= SIGMA_DECAY
+            LEARNING_RATE *= LR_DECAY
+        
+        Threshould_check = np.mean(moving_performance_log) >= STOP_TRAIN_THRESHOLD
+         
+        # Saves weight data
+        if ((epoch + 1) % SAVE_WEIGHTS_EVERY_ITER) == 0 or ((epoch+1)==epochs) or Threshould_check:
+            save_data={
+                'best_weights':best_weights,
+                'global_best_weights':global_best_weights,
+                'SIGMA':SIGMA,
+                'LEARNING_RATE':LEARNING_RATE,
+                'OPTIMIZE_FOR':OPTIMIZE_FOR,
+            }
+            with open(out_path + '/bestweights.pkl', 'wb') as f:
+                pickle.dump(save_data, f)
+            plot_performance(open_file=out_path + '/' + Agragate_log_file, 
+                             save=out_path + '/performance',
+                             title=sim_name
+                             )
+            plot_performance_verbos(open_file=out_path + '/' + Agragate_Verbos_log_file, 
+                                    save=out_path + '/performanceVerbos',
+                                    title=sim_name
+                                    )    
+
+            if Threshould_check:
+                tqdm.write(f"Threashould reach moving_performance_log{np.mean(moving_performance_log)} >= {STOP_TRAIN_THRESHOLD}")
+                break
+    done()
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--resume", type=str, default='False')
+    parser.add_argument("--config", type=str)
+
+
+    args = parser.parse_args()
+    args.resume = True if args.resume == 'True' or args.resume == 'true' else False
+
+    main(**vars(args))
+    
+    # out_path = '/mnt/d/LocalUserData/Box Sync/git_repo/netpyne-STDP/results/noSeed'
+    # Agragate_log_file = 'performance.csv'
+    # plot_performance(open_file=out_path + '/' + Agragate_log_file, save=out_path + '/performance')
+    # Agragate_Verbos_log_file = 'performance_verbos.csv'
+    # plot_performance_verbos(open_file=out_path + '/' + Agragate_Verbos_log_file, save=out_path + '/performanceVerbos')
+
+
